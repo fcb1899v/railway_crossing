@@ -16,11 +16,15 @@ import 'upgrade.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]); //縦向き指定
+  SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeLeft]); //縦向き指定
   MobileAds.instance.initialize();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await dotenv.load(fileName: 'assets/.env');
-  initSettings().then((_) => runApp(const ProviderScope(child: MyApp())));
+  initSettings().then((_) =>
+    runApp(const ProviderScope(
+      child: MyApp())
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -31,13 +35,11 @@ class MyApp extends StatelessWidget {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       title: 'LETS SIGNAL',
-      theme: ThemeData(
-        colorScheme: const ColorScheme.light(primary: greenColor),
-      ),
+      theme: ThemeData(colorScheme: const ColorScheme.light(primary: greenColor)),
       debugShowCheckedModeBanner: false,
-      home: const MyHomePage(),
+      home: MyHomePage(),
       routes: {
-        '/h' : (_) => const MyHomePage(),
+        '/h' : (_) => MyHomePage(),
         '/s' : (_) => const MySettingsPage(),
         '/u' : (_) => const MyUpgradePage(),
       },

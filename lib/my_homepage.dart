@@ -1,344 +1,476 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:devicelocale/devicelocale.dart';
+import 'package:fab_circular_menu_plus/fab_circular_menu_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:vibration/vibration.dart';
 import 'common_extension.dart';
 import 'common_widget.dart';
 import 'constant.dart';
 import 'main.dart';
-import 'plan_viewmodel.dart';
+import 'plan_provider.dart';
 import 'admob_banner.dart';
 
 class MyHomePage extends HookConsumerWidget {
-  const MyHomePage({super.key});
+
+  final GlobalKey<FabCircularMenuPlusState> fabKey = GlobalKey();
+  MyHomePage({super.key});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
 
     final width = context.width();
     final height = context.height();
 
-    final counter = useState(0);
-    final isPressed = useState(false);
-    final isGreen = useState(false);
+    final countryNumber = useState(0);
+
+    //State
+    final isLeftOn = useState(false);
+    final isRightOn = useState(false);
+    final isLeftWait = useState(false);
+    final isRightWait = useState(false);
     final isYellow = useState(false);
-    final isArrow = useState(false);
-    final isFlash = useState(false);
-    final opaque = useState(false);
-    final isPedestrian = useState(true);
-    final isSound = useState('sound'.getSettingsValueBool(true));
+    final isEmergency = useState(false);
+    final isPossibleEmergency = useState(true);
 
-    final plan = ref.read(planProvider.notifier);
+    //Audio
+    final warningPlayer = AudioPlayer();
+    final leftTrainPlayer = AudioPlayer();
+    final rightTrainPlayer = AudioPlayer();
+    final emergencyPlayer = AudioPlayer();
+
+    //Image
+    final barFrontImage = useState(barFrontImageJPOff);
+    final barBackImage = useState(barBackImageJPOff);
+    final warningImage = useState(warningImageJPOff);
+    final directionImage = useState(directionImageJPOff);
+
+    //Animation
+    final leftController = useAnimationController(duration: const Duration(seconds: 10));
+    final rightController = useAnimationController(duration: const Duration(seconds: 10));
+    final leftAnimation = useMemoized(() => Tween(begin: 10000.0, end: -10000.0).animate(leftController));
+    final rightAnimation = useMemoized(() => Tween(begin: -10000.0, end: 10000.0).animate(rightController));
+    final leftTrain = useState(trainList[0]);
+    final rightTrain = useState(trainList[0]);
+    final barAngle = useState(1.5);
+    final barShift = useState(0.0);
+    final changeTime = useState(5);
+    final emergencyColor = useState(whiteColor);
+
+    //Premium Plan
     final isPremiumProvider = ref.watch(planProvider).isPremium;
-    final isPremium = useState("premium".getSettingsValueBool(false));
+    // final plan = ref.read(planProvider.notifier);
+    // final isPremium = useState("premium".getSettingsValueBool(false));
 
-    final countDown = useState(0);
-    final waitTime = useState("wait".getSettingsValueInt(waitTime_0));
-    final goTime = useState("go".getSettingsValueInt(goTime_0));
-    final flashTime = useState("flash".getSettingsValueInt(flashTime_0));
-    final yellowTime = useState(yellowTime_0);
-    final arrowTime = useState(arrowTime_0);
+    setNormalState() async {
+      "setNormal".debugPrint();
+      leftTrain.value = trainList[countryNumber.value];
+      rightTrain.value = trainList[countryNumber.value];
+      isLeftOn.value = false;
+      isLeftWait.value = false;
+      isRightOn.value = false;
+      isRightWait.value = false;
+      warningImage.value = countryNumber.value.warningImageOff();
+      barFrontImage.value = countryNumber.value.barFrontOff();
+      barBackImage.value = countryNumber.value.barBackOff();
+      directionImage.value = countryNumber.value.directionImageOff();
+      barAngle.value = countryNumber.value.barAngle(false);
+      barShift.value = countryNumber.value.barShift(false);
+      isPossibleEmergency.value = true;
+    }
 
-    final audioPlayer = useState(AudioPlayer()..setReleaseMode(ReleaseMode.stop));
-    final buttonPlayer = useState(AudioPlayer()..setReleaseMode(ReleaseMode.stop));
-    final audioSound = useState(soundRed[counter.value]);
-    final flutterTts = useState(FlutterTts());
-
-    initSounds() async {
-      final locale = await Devicelocale.currentLocale ?? "en-US";
+    initState() async {
+      final locale = await Devicelocale.currentLocale ?? "ja-JP";
       final countryCode = locale.substring(3, 5);
-      counter.value = countryCode.getDefaultCounter();
-      await flutterTts.value.setLanguage("en-US");
-      await flutterTts.value.setVolume(isSound.value ? musicVolume: 0);
-      await buttonPlayer.value.setVolume(isSound.value ? buttonVolume: 0);
-      await buttonPlayer.value.setSourceAsset(buttonSound);
-      await audioPlayer.value.setVolume(isSound.value ? musicVolume: 0);
-      await audioPlayer.value.setReleaseMode(ReleaseMode.loop);
-      await audioPlayer.value.setSourceAsset(audioSound.value);
-      await audioPlayer.value.release();
-      "Locale: $locale, counter: ${counter.value}".debugPrint();
+      countryNumber.value = countryCode.getDefaultCounter();
+      "Locale: $locale, countryNumber: ${countryNumber.value}".debugPrint();
+      "width: $width, height: $height".debugPrint();
+      setNormalState();
+      // countryNumber.value = 2; //for debug
     }
 
     useEffect(() {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (Platform.isIOS || Platform.isMacOS) initPlugin(context);
-        initSounds();
+        initState();
         initSettings();
-        plan.setCurrentPlan(isPremium.value);
-        "width: $width, height: $height".debugPrint();
-        "waitTIme: ${waitTime.value}, goTime: ${goTime.value}, flashTime: ${flashTime.value}".debugPrint();
-        "isPremiumProvider: $isPremiumProvider, isPremium: ${isPremium.value}".debugPrint();
-        "redSound: play: ${audioSound.value}".debugPrint();
       });
-      return () async => (isSound.value) ? null: await audioPlayer.value.stop();
+      return null;
     }, const []);
 
-    setGreenSound() async {
-      await audioPlayer.value.stop();
-      "redSound: stop".debugPrint();
-      audioSound.value = soundGreen[counter.value];
-      await audioPlayer.value.setSourceAsset(audioSound.value);
-      if (isSound.value) await audioPlayer.value.resume();
-      "greenSound: play: ${soundGreen[counter.value]}".debugPrint();
-    }
-
-    setRedSound() async {
-      await audioPlayer.value.stop();
-      "greenSound: stop".debugPrint();
-      audioSound.value = soundRed[counter.value];
-      await audioPlayer.value.setSourceAsset(audioSound.value);
-      if (isSound.value) await audioPlayer.value.resume();
-      "redSound: play: ${soundRed[counter.value]}".debugPrint();
-    }
-
-    setTimeParameter() async {
-      waitTime.value = "wait".getSettingsValueInt(waitTime_0);
-      goTime.value = "go".getSettingsValueInt(goTime_0);
-      flashTime.value = "flash".getSettingsValueInt(flashTime_0);
-      "waitTime: ${waitTime.value}, goTime: ${goTime.value}, flashTime: ${flashTime.value}".debugPrint();
-      yellowTime.value = (waitTime.value > yellowTime_0 + arrowTime_0) ? yellowTime_0: 2;
-      arrowTime.value = (waitTime.value > yellowTime_0 + arrowTime_0) ? yellowTime_0: 2;
-      "yellowTime: ${yellowTime.value}, arrowTime: ${arrowTime.value}".debugPrint();
-    }
-
-    setAudioVolume() async {
-      await flutterTts.value.setVolume(isSound.value ? musicVolume: 0);
-      await buttonPlayer.value.setVolume(isSound.value ? buttonVolume: 0);
-      await audioPlayer.value.setVolume(isSound.value ? musicVolume: 0);
-    }
-
-    pushButtonEffect() async {
-      if (counter.value == 0 && !isGreen.value) await flutterTts.value.speak("wait");
-      await buttonPlayer.value.resume();
-      "button: $buttonSound".debugPrint();
-      await Vibration.vibrate(duration: vibTime, amplitude: vibAmp);
-    }
-
-    calcCountDown() async {
-      countDown.value = goTime.value + flashTime.value;
-      "countDown: ${countDown.value}".debugPrint();
-      if (isSound.value) await setGreenSound();
-      for (int i = 0; i < goTime.value; i++) {
-        await Future.delayed(const Duration(seconds: 1)).then((_) async {
-          countDown.value = countDown.value - 1;
-          "countDown: ${countDown.value}".debugPrint();
-        });
-      }
-    }
-
-    nextOrBackCounter(bool isNext) {
-      "${(isNext) ? "next": "back"}Counter".debugPrint();
-      counter.value = (counter.value + ((isNext) ? 1: -1)) % signalNumber;
-      "counter: ${counter.value}".debugPrint();
-    }
-
-    //ボタンが押された状態にする
-    setPressedButtonState() {
-      isPressed.value = true;
-      "isPressedState: isPressed: ${isPressed.value}".debugPrint();
-    }
-
-    //黄色点灯状態にする
     setYellowState() {
+      "setYellow".debugPrint();
       isYellow.value = true;
-      isArrow.value = false;
-      isGreen.value = false;
-      "yellowState: isYellow: ${isYellow.value}".debugPrint();
+      warningImage.value = countryNumber.value.warningImageYellow();
     }
 
-    //矢印点灯状態にする
-    setArrowState() {
-      isYellow.value = false;
-      isArrow.value = true;
-      isGreen.value = false;
-      "arrowState: isArrow: ${isArrow.value}".debugPrint();
+    setWarningState() {
+      "setWarning".debugPrint();
+      isYellow.value == false;
+      "isYellow: ${isYellow.value}".debugPrint();
+      warningImage.value = countryNumber.value.warningImageLeft();
+      barFrontImage.value = countryNumber.value.barFrontOff();
+      barBackImage.value = countryNumber.value.barBackOff();
+      barAngle.value = countryNumber.value.barAngle(true);
+      barShift.value = countryNumber.value.barShift(true);
     }
 
-    //緑色点灯状態にする
-    setGreenState() {
-      isYellow.value = false;
-      isArrow.value = false;
-      isGreen.value = true;
-      "greenState: isGreen: ${isGreen.value}".debugPrint();
+    leftWaitOff() async {
+      await leftTrainPlayer.stop();
+      "leftTrainPlayer: ${leftTrainPlayer.state}".debugPrint();
+      directionImage.value = countryNumber.value.offOrRightDirection(isRightWait.value);
+      isLeftOn.value = false;
+      isLeftWait.value = false;
+      "isLeftWait: ${isLeftWait.value}".debugPrint();
+      if (!isRightWait.value) setNormalState();
     }
 
-    //緑色点滅状態にする
-    flashGreenState(int i) {
-      if (i == 0) {
-        isFlash.value = true;
-        "flashState: isGreen: ${isGreen.value}, isFlash: ${isFlash.value}".debugPrint();
+    goLeftTrain() async {
+      if (isLeftWait.value && !isEmergency.value) {
+        isPossibleEmergency.value;
+        "isPossibleEmergency: ${isPossibleEmergency.value}".debugPrint();
+        await leftTrainPlayer.play(AssetSource(soundTrain));
+        await leftTrainPlayer.setReleaseMode(ReleaseMode.release);
+        await leftTrainPlayer.setVolume(trainVolume);
+        "leftTrainPlayer: ${leftTrainPlayer.state}".debugPrint();
+        await leftController.forward(from: 0);
+        Future.delayed(const Duration(seconds: 2), () => leftWaitOff());
       }
-      opaque.value = !opaque.value;
-      "opaque: ${opaque.value}".debugPrint();
-      if (i % 2 == 1) {
-        countDown.value = (countDown.value - deltaFlash / 1000 * 2).toInt();
-        "countDown: ${countDown.value}".debugPrint();
+    }
+
+    leftWaitOn() async {
+      if (!isRightWait.value) setWarningState();
+      directionImage.value = countryNumber.value.bothOrLeftDirection(isRightWait.value);
+      isLeftWait.value = true;
+      "isLeftWait: ${isLeftWait.value}".debugPrint();
+      Future.delayed(const Duration(seconds: waitTime), () => goLeftTrain());
+    }
+
+    pushLeftButton() {
+      if (!isLeftOn.value && !isEmergency.value) {
+        setYellowState();
+        isLeftOn.value = true;
+        Future.delayed(const Duration(seconds: yellowTime), () => leftWaitOn());
       }
     }
 
-    //赤色点灯状態になる
-    setRedState() async {
-      isGreen.value = false;
-      isFlash.value = false;
-      isPressed.value = false;
-      "redState: isGreen: ${isGreen.value}, isFlash: ${isFlash.value}, isPressed: ${isPressed.value}".debugPrint();
-      if (isSound.value) await setRedSound();
-      await setAudioVolume();
+    rightWaitOff() async {
+      await rightTrainPlayer.stop();
+      "rightTrainPlayer: ${rightTrainPlayer.state}".debugPrint();
+      directionImage.value = countryNumber.value.offOrLeftDirection(isLeftWait.value);
+      isRightOn.value = false;
+      isRightWait.value = false;
+      "isRightWait: ${isRightWait.value}".debugPrint();
+      if (!isLeftWait.value) setNormalState();
     }
+
+    goRightTrain() async {
+      if (isRightWait.value && !isEmergency.value) {
+        isPossibleEmergency.value = false;
+        await rightTrainPlayer.play(AssetSource(soundTrain));
+        await rightTrainPlayer.setReleaseMode(ReleaseMode.release);
+        await rightTrainPlayer.setVolume(trainVolume);
+        "rightTrainPlayer: ${rightTrainPlayer.state}".debugPrint();
+        await rightController.forward(from: 0);
+        Future.delayed(const Duration(seconds: 2), () => rightWaitOff());
+      }
+    }
+
+    rightWaitOn() async {
+      if (!isLeftWait.value) setWarningState();
+      directionImage.value = countryNumber.value.bothOrRightDirection(isLeftWait.value);
+      isRightWait.value = true;
+      "isRightWait: ${isRightWait.value}".debugPrint();
+      Future.delayed(const Duration(seconds: waitTime), () => goRightTrain());
+    }
+
+    pushRightButton() {
+      if (!isRightWait.value && !isEmergency.value) {
+        setYellowState();
+        isRightOn.value = true;
+        Future.delayed(const Duration(seconds: yellowTime), () => rightWaitOn());
+      }
+    }
+
+    emergencyOn() async {
+      if (!isEmergency.value && isPossibleEmergency.value) {
+        Vibration.vibrate(duration: vibTime, amplitude: vibAmp);
+        isEmergency.value = true;
+        "isEmergency: ${isEmergency.value}".debugPrint();
+        isPossibleEmergency.value = false;
+        "isPossibleEmergency: ${isPossibleEmergency.value}".debugPrint();
+      }
+    }
+
+    emergencyOff() async {
+      if (isEmergency.value) {
+        isEmergency.value = false;
+        "isEmergency: ${isEmergency.value}".debugPrint();
+        if (isLeftWait.value || isRightWait.value) {
+          await Future.delayed(const Duration(seconds: emergencyWaitTime), () async {
+            if (isLeftWait.value) await goLeftTrain();
+            if (isRightWait.value) await goRightTrain();
+          });
+        } else {
+          if (!isLeftWait.value && !isRightWait.value) {
+            isPossibleEmergency.value = true;
+            "isPossibleEmergency: ${isPossibleEmergency.value}".debugPrint();
+          }
+        }
+      }
+    }
+
+    ///Change Country
+    changeCountry(MapEntry entry) async {
+      changeTime.value = 0;
+      countryNumber.value = entry.value['countryNumber'] as int;
+      'select_${entry.key}: ${countryNumber.value}'.debugPrint();
+      await setNormalState();
+      fabKey.currentState?.close();
+      Future.delayed(const Duration(seconds: 5), () => changeTime.value = 5);
+    }
+
+    /// Left Action
+    useEffect(() {
+
+      Timer? leftWarningTimer;
+      Timer? leftBarTimer;
+
+      void leftWarningToggle() {
+        if (!isLeftWait.value && !isRightWait.value) {
+          warningPlayer.stop();
+          "leftWarningPlayer: ${warningPlayer.state}".debugPrint();
+          return;
+        }
+        if (warningPlayer.state == PlayerState.completed) {
+          warningPlayer.play(AssetSource(countryNumber.value.warningSound()));
+          "leftWarningPlayer: ${warningPlayer.state}".debugPrint();
+        }
+        warningImage.value = countryNumber.value.reverseWarning(warningImage.value);
+        leftWarningTimer = Timer(Duration(milliseconds: countryNumber.value.flashTime()), leftWarningToggle);
+      }
+
+      void leftBarToggle() {
+        if (!isLeftWait.value) return;
+        barFrontImage.value = countryNumber.value.reverseBarFront(barFrontImage.value);
+        barBackImage.value = countryNumber.value.reverseBarBack(barBackImage.value);
+        leftBarTimer = Timer(const Duration(milliseconds: ledDurationTime), leftBarToggle);
+      }
+
+      if (isLeftWait.value) {
+        if (warningPlayer.state != PlayerState.playing) {
+          warningPlayer.play(AssetSource(countryNumber.value.warningSound()));
+          warningPlayer.setReleaseMode(ReleaseMode.release);
+          warningPlayer.setVolume(warningVolume);
+          "leftWarningPlayer: ${warningPlayer.state}".debugPrint();
+        }
+        leftWarningToggle();
+        leftBarToggle();
+      }
+
+      return () {
+        leftWarningTimer?.cancel();
+        leftBarTimer?.cancel();
+        leftTrainPlayer.dispose();
+      };
+    }, [isLeftWait.value]);
+
+    /// Right Action
+    useEffect(() {
+
+      Timer? rightWarningTimer;
+      Timer? rightBarTimer;
+
+      void rightWarningToggle() {
+        if (!isLeftWait.value && !isRightWait.value) {
+          warningPlayer.stop();
+          "rightWarningPlayer: ${warningPlayer.state}".debugPrint();
+          return;
+        }
+        if (!isLeftWait.value) {
+          if (warningPlayer.state == PlayerState.completed) {
+            warningPlayer.play(AssetSource(countryNumber.value.warningSound()));
+            "rightWarningPlayer: ${warningPlayer.state}".debugPrint();
+          }
+          warningImage.value = countryNumber.value.reverseWarning(warningImage.value);
+        }
+        rightWarningTimer = Timer(Duration(milliseconds: countryNumber.value.flashTime()), rightWarningToggle);
+      }
+
+      void rightBarToggle() {
+        if (!isRightWait.value) return;
+        if (!isLeftWait.value) {
+          barFrontImage.value = countryNumber.value.reverseBarFront(barFrontImage.value);
+          barBackImage.value = countryNumber.value.reverseBarBack(barBackImage.value);
+        }
+        rightBarTimer = Timer(const Duration(milliseconds: ledDurationTime), rightBarToggle);
+      }
+
+      if (isRightWait.value) {
+        if (!isLeftWait.value && (warningPlayer.state != PlayerState.playing)) {
+          warningPlayer.play(AssetSource(countryNumber.value.warningSound()));
+          warningPlayer.setReleaseMode(ReleaseMode.release);
+          warningPlayer.setVolume(warningVolume);
+          "rightWarningPlayer: ${warningPlayer.state}".debugPrint();
+        }
+        rightWarningToggle();
+        rightBarToggle();
+      }
+
+      return () {
+        rightWarningTimer?.cancel();
+        rightBarTimer?.cancel();
+        rightTrainPlayer.dispose();
+      };
+    }, [isRightWait.value]);
+
+    /// Emergency Action
+    useEffect(() {
+
+      Timer? emergencyTimer;
+
+      void emergencyToggle() {
+        if (!isEmergency.value) {
+          emergencyPlayer.stop();
+          "emergencyPlayer: ${warningPlayer.state}".debugPrint();
+          return;
+        }
+        if (emergencyPlayer.state == PlayerState.completed) {
+          emergencyPlayer.play(AssetSource(soundEmergency));
+          "emergencyPlayer: ${emergencyPlayer.state}".debugPrint();
+        }
+        emergencyColor.value = (emergencyColor.value == whiteColor) ? yellowColor: whiteColor;
+        emergencyTimer = Timer(const Duration(milliseconds: emergencyFlashTime), emergencyToggle);
+      }
+
+      if (isEmergency.value) {
+        emergencyPlayer.play(AssetSource(soundEmergency));
+        emergencyPlayer.setReleaseMode(ReleaseMode.release);
+        emergencyPlayer.setVolume(emergencyVolume);
+        emergencyToggle();
+      } else {
+        emergencyPlayer.stop;
+        emergencyColor.value = whiteColor;
+      }
+
+      return () {
+        emergencyTimer?.cancel();
+        emergencyPlayer.dispose();
+      };
+    }, [isEmergency.value]);
+
+    // showImagePickerDialog(BuildContext context, int i, bool isLeft) => showDialog(
+    //   context: context,
+    //   builder: (context) => AlertDialog(
+    //     backgroundColor: transpBlackColor,
+    //     title: Text(isLeft ? context.selectLeftTrain(): context.selectRightTrain(),
+    //       textAlign: isLeft ? TextAlign.start: TextAlign.end,
+    //       style: TextStyle(
+    //         color: whiteColor,
+    //         fontWeight: FontWeight.bold,
+    //         fontFamily: "beon",
+    //         fontSize: context.height() * 0.05
+    //       ),
+    //     ),
+    //     content: SizedBox(
+    //       width: double.maxFinite,
+    //       child: GridView.builder(
+    //         shrinkWrap: true,
+    //         itemCount: selectTrainList[i].length,
+    //         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+    //           crossAxisCount: 6,
+    //           crossAxisSpacing: context.height() * 0.05,
+    //           mainAxisSpacing: context.height() * 0.05,
+    //           childAspectRatio: 1,
+    //         ),
+    //         itemBuilder: (context, index) {
+    //           String image = selectTrainList[i][index];
+    //           return GestureDetector(
+    //             onTap: () {
+    //               Navigator.of(context).pop();
+    //               if (isLeft) {
+    //                 leftTrain.value = List.generate(6, (i) => "${image.replaceAll("f-", "")}_${i + 1}");
+    //                 showImagePickerDialog(context, i, false);
+    //               } else {
+    //                 rightTrain.value = List.generate(6, (i) => "${image.replaceAll("f-", "")}_${i + 1}");
+    //               }
+    //             },
+    //             onTapCancel: () {
+    //               Navigator.of(context).pop();
+    //             },
+    //             child: SizedBox(
+    //               width: context.height() * 0.2,
+    //               height: context.height() * 0.2,
+    //               child: Image.asset(image),
+    //             ),
+    //           );
+    //         },
+    //       ),
+    //     ),
+    //   ),
+    // );
 
     return Scaffold(
-      appBar: AppBar(
-        title: titleText(context, context.appTitle()),
-        backgroundColor: signalGrayColor,
-        centerTitle: true,
-        automaticallyImplyLeading: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings, color: whiteColor, size: 32),
-            onPressed: () async => {
-              await audioPlayer.value.stop(),
-              await buttonPlayer.value.stop(),
-              context.pushSettingsPage(),
-            }
-          ),
-        ],
-      ),
-      body: Stack(alignment: Alignment.center,
+      body: Stack(alignment: Alignment.centerLeft,
         children: [
-          backGroundImage(context, height, counter.value),
-          Container(width: width, height: height, color: backGroundColor[counter.value]),
-          Column(
-            children: [
-            const Spacer(flex: 1),
-            (isPedestrian.value) ?
-              pedestrianSignalImage(context, counter.value, countDown.value, goTime.value + flashTime.value, isGreen.value, isFlash.value, opaque.value):
-              trafficSignalImage(context, counter.value, goTime.value + flashTime.value, isGreen.value, isYellow.value, isArrow.value, opaque.value),
-            const Spacer(flex: 1),
-            Stack(alignment: Alignment.topCenter,
-              children: [
-                //Push Button Frame
-                pushButtonFrame(context, counter.value, isGreen.value, isFlash.value, opaque.value, isPressed.value)      ,
-                //Push Button
-                GestureDetector(
-                  child: pushButtonImage(context, counter.value, isGreen.value, isPressed.value),
-                  onTap: () async {
-                    //ボタンを押した時の効果
-                    await pushButtonEffect();
-                    //赤色点灯かつボタンが押されていないときに発動
-                    if (!isGreen.value && !isFlash.value && !isPressed.value) {
-                      //各種パラメータの取得
-                      await setTimeParameter();
-                      await setAudioVolume();
-                      //ボタンが押された状態にする
-                      setPressedButtonState();
-                      //黄色点灯状態にする
-                      await Future.delayed(Duration(seconds: (waitTime.value - yellowTime.value - arrowTime.value)))
-                          .then((_) async => setYellowState());
-                      //矢印点灯状態にする
-                      await Future.delayed(Duration(seconds: yellowTime.value))
-                          .then((_) async => setArrowState());
-                      //緑色点灯状態にする
-                      await Future.delayed(Duration(seconds: arrowTime.value)).then((_) async {
-                        setGreenState();
-                        //countDownの計算
-                        await calcCountDown();
-                        //緑色点滅状態にする
-                        for (int i = 0; i < flashTime.value * 1000 ~/ deltaFlash + 1; i++) {
-                          await Future.delayed(const Duration(milliseconds: deltaFlash))
-                              .then((_) async => flashGreenState(i));
-                        }
-                      });
-                      //赤色点灯状態になる
-                      await Future.delayed(const Duration(seconds: 0))
-                          .then((_) async => setRedState());
-                    }
-                  },
-                ),
-                //Push Button Frame Label
-                jpFrameLabel(context, counter.value, isPressed.value, isGreen.value)
-              ]
-            ),
-            const Spacer(flex: 1),
-            if (!isPremiumProvider) const AdBannerWidget(),
-          ]),
+          backGroundImage(context, countryNumber.value),
+          backFenceImage(context, countryNumber.value),
+          if (countryNumber.value == 0) backBoardImage(context, countryNumber.value),
+          if (countryNumber.value == 0) backGateImage(context, countryNumber.value),
+          backBarImage(context, countryNumber.value, barBackImage.value, barAngle.value, barShift.value, changeTime.value),
+          if (countryNumber.value != 0) backGateImage(context, countryNumber.value),
+          backPoleImage(context, countryNumber.value),
+          if (countryNumber.value == 0) backDirectionImage(context, countryNumber.value, directionImage.value),
+          if (countryNumber.value == 0) backWarningImage(context, warningImage.value),
+          if (isRightWait.value) rightTrainImage(context, rightTrain.value, rightAnimation),
+          if (isLeftWait.value) leftTrainImage(context, leftTrain.value, leftAnimation),
+          frontPoleImage(context, countryNumber.value),
+          frontWaringImage(context, countryNumber.value, warningImage.value),
+          if (countryNumber.value == 0) frontDirectionImage(context, directionImage.value),
+          if (countryNumber.value == 1) frontGateImage(context, countryNumber.value),
+          frontBarImage(context, countryNumber.value, barFrontImage.value, barAngle.value, barShift.value, changeTime.value),
+          if (countryNumber.value != 1) frontGateImage(context, countryNumber.value),
+          if (countryNumber.value == 0) frontBoardImage(context, countryNumber.value),
+          if (countryNumber.value != 2) emergencyButton(context, countryNumber.value, emergencyOn),
+          frontFenceImage(context, countryNumber.value),
+          sideSpacer(context),
+          if (!isPremiumProvider) const AdBannerWidget(),
+          bottomButtons(context, isLeftOn.value, isRightOn.value, emergencyColor.value, emergencyOff, pushLeftButton, pushRightButton),
         ],
       ),
-      floatingActionButton: Container(
-        margin: EdgeInsets.only(bottom: context.admobHeight() + height * floatingButtonSizeRate / 2),
-        child: Column(children: [
-          const Spacer(flex: 3),
-          if (isPremiumProvider) Row(children: [
-            const Spacer(),
-            SizedBox(
-              width: height * floatingButtonSizeRate,
-              height: height * floatingButtonSizeRate,
-              child: FloatingActionButton(
-                backgroundColor: blackColor,
-                heroTag:'mode',
-                child: Icon(Icons.cached, color: whiteColor, size: height * floatingIconSizeRate),
-                onPressed: () async {
-                  isPedestrian.value = !isPedestrian.value;
-                  "changeMode".debugPrint();
-                }
-              )
-            ),
-          ]),
-          const Spacer(flex: 2),
-          Row(children: [
-            Container(
-              margin: const EdgeInsets.only(left: 32),
-              width: height * floatingButtonSizeRate,
-              height: height * floatingButtonSizeRate,
-              child: FloatingActionButton(
-                foregroundColor: whiteColor,
-                backgroundColor: blackColor,
-                heroTag:'back',
-                child: SizedBox(
-                  height: height * floatingImageSizeRate,
-                  child: Image.asset(backArrow),
-                ),
-                //前の信号ボタンを押した時の処理
-                onPressed: () async {
-                  //前の信号に変更
-                  nextOrBackCounter(false);
-                  //音声を変更
-                  if (isSound.value) {
-                    (isGreen.value) ? setGreenSound() : setRedSound();
-                    setAudioVolume();
-                  }
-                }
-              ),
-            ),
-            const Spacer(),
-            SizedBox(
-              width: height * floatingButtonSizeRate,
-              height: height * floatingButtonSizeRate,
-              child: FloatingActionButton(
-                foregroundColor: whiteColor,
-                backgroundColor: blackColor,
-                heroTag:'next',
-                child: SizedBox(
-                  height: height * floatingImageSizeRate,
-                  child: Image.asset(nextArrow),
-                ),
-                //次の信号ボタンを押した時の処理
-                onPressed: () async {
-                  //次の信号に変更
-                  nextOrBackCounter(true);
-                  //音声を変更
-                  if (isSound.value) {
-                    (isGreen.value) ? setGreenSound() : setRedSound();
-                    setAudioVolume();
-                  }
-                }
-              ),
-            ),
-          ]),
-        ]),
-      ),
+      floatingActionButton: ((!isRightWait.value) && (!isLeftWait.value)) ? FabCircularMenuPlus(
+        key: fabKey,
+        alignment: Alignment.topLeft,
+        fabSize: context.height() * 0.12,
+        ringWidth: context.height() * 0.15,
+        ringDiameter: context.height() * 0.8,
+        ringColor: transpBlackColor,
+        fabCloseColor: transpBlackColor,
+        fabOpenColor: transpBlackColor,
+        fabMargin: EdgeInsets.symmetric(
+          horizontal: context.height() * 0.045,
+          vertical: context.height() * 0.09,
+        ),
+        fabOpenIcon: Icon(Icons.public,
+          color: whiteColor,
+          size: context.height() * 0.08,
+        ),
+        fabCloseIcon: Icon(Icons.close,
+          color: whiteColor,
+          size: context.height() * 0.08,
+        ),
+        children: flagList.entries.map((entry) => GestureDetector(
+          child: SizedBox(
+            width: context.height() * 0.15,
+            child: Image.asset(entry.value['image'] as String),
+          ),
+          onTap: () async => changeCountry(entry),
+        )).toList()
+      ): null,
+      floatingActionButtonLocation: FloatingActionButtonLocation.startDocked,
     );
   }
 }

@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'dart:math';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'common_extension.dart';
@@ -29,28 +31,50 @@ Future<void> initPlugin(BuildContext context) async {
   }
 }
 
+///LifecycleEventHandler
+class LifecycleEventHandler extends WidgetsBindingObserver {
+  final AsyncCallback resumeCallBack;
+  final AsyncCallback suspendingCallBack;
+
+  LifecycleEventHandler({required this.resumeCallBack, required this.suspendingCallBack});
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        resumeCallBack();
+        break;
+      case AppLifecycleState.paused:
+        suspendingCallBack();
+        break;
+      default:
+        break;
+    }
+  }
+}
+
 ///App Bar
-PreferredSize myHomeAppBar(BuildContext context, int counter) =>
-    PreferredSize(
-      preferredSize: const Size.fromHeight(appBarHeight),
-      child: AppBar(
-        title: titleText(context, context.appTitle()),
-        backgroundColor: signalGrayColor,
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings, color: whiteColor, size: 32),
-            onPressed: () => context.pushSettingsPage(),
-          ),
-        ],
-      ),
-    );
+// PreferredSize myHomeAppBar(BuildContext context, int counter) =>
+//     PreferredSize(
+//       preferredSize: const Size.fromHeight(appBarHeight),
+//       child: AppBar(
+//         title: titleText(context, context.appTitle()),
+//         backgroundColor: grayColor,
+//         centerTitle: true,
+//         actions: [
+//           IconButton(
+//             icon: const Icon(Icons.settings, color: whiteColor, size: 32),
+//             onPressed: () => context.pushSettingsPage(),
+//           ),
+//         ],
+//       ),
+//     );
 
 Widget upgradeAppBar(BuildContext context, bool isPremium, isPurchase) =>
     Container(
       height: upgradeAppBarHeight + context.topPadding(),
       padding: EdgeInsets.only(top: context.topPadding() - 10),
-      color: signalGrayColor,
+      color: grayColor,
       child: Stack(alignment: Alignment.center,
         children: [
           Row(children: [
@@ -76,212 +100,413 @@ Widget titleText(BuildContext context, String title) =>
         color: whiteColor,
         decoration: TextDecoration.none
       ),
-      textScaleFactor: 1.0,
+      textScaler: const TextScaler.linear(1.0),
     );
+
+///Operation Icon
+Widget operationIcon(BuildContext context, Color color, IconData icon) => Container(
+  width: context.height() * 0.1,
+  height: context.height() * 0.1,
+  alignment: Alignment.center,
+  decoration:  BoxDecoration(
+    color: transpBlackColor,
+    border: Border.all(
+      color: color,
+      width: context.height() * 0.008,
+    ),
+    borderRadius: BorderRadius.circular(context.height() * 0.02),),
+  child: Icon(icon,
+      color: color,
+      size: context.height() * 0.08
+  ),
+);
 
 
 ///Background
 //common
-Widget backGroundImage(BuildContext context, double height, int counter) =>
-    Column(children: [
-      const Spacer(flex: 1),
-      countryFlagImage(height, counter),
-      const Spacer(flex: 1),
-      countryFlagImage(height, counter),
-      const Spacer(flex: 1),
-      SizedBox(height: context.admobHeight())
+Widget backGroundImage(BuildContext context, int countryNumber) =>
+    Container(
+      width: context.width(),
+      height: context.height(),
+      color: blackColor,
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: context.sideMargin()),
+        width: context.height() / 9 * 16,
+        height: context.height(),
+        child: Image.asset(backGroundJP),
+      )
+    );
+
+Widget sideSpacer(BuildContext context) =>
+    Row(children: [
+      Container(
+        color: blackColor,
+        width: context.sideMargin(),
+      ),
+      const Spacer(),
+      Container(
+        color: blackColor,
+        width: context.sideMargin(),
+      ),
     ]);
 
-Widget countryFlagImage(double height, int counter) =>
-    (counter == 4 || counter == 5) ? Container(
-      width: height / 3,
-      height: height / 3,
-      decoration: const BoxDecoration(color: redColor, shape: BoxShape.circle),
-    ): SizedBox(
-      height: height / 3,
-      child: Image.asset(countryFlag[counter]),
-    );
-
-/// Pedestrian Signal Image
-Widget pedestrianSignalImage(BuildContext context, int counter, countDown, greenTime, bool isGreen, isFlash, opaque) =>
-    Container(
-      height: context.height() * signalHeightRate,
-      padding: EdgeInsets.all(context.height() * pedestrianSignalPaddingRate[counter]),
-      child: Stack(alignment: Alignment.center,
-        children: [
-          Image(image: AssetImage(counter.pedestrianSignalImageString(isGreen, isFlash, opaque))),
-          if (counter == 2) countDownNumber(context, counter, countDown, isFlash),
-          if (counter == 4) jpNewCountDown(context, countDown, greenTime),
-        ],
-      ),
-    );
-
-//Countdown Number
-Widget countDownNumber(BuildContext context, int counter, int countDown, bool isFlash) =>
-    Column(mainAxisAlignment: MainAxisAlignment.start,
+Widget frontPoleImage(BuildContext context, int countryNumber) =>
+    Row(mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        SizedBox(height: context.height() * cdNumTopSpaceRate[counter]),
-        Row(mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(width: context.height() * cdNumLeftSpaceRate[counter]),
-            //Countdown number for the 10 place
-            Stack(children: [
-              //Background Number
-              countDownText(context, counter, "8", signalGrayColor),
-              //Count Down Number
-              Container(
-                padding: EdgeInsets.only(left: context.height() * countDown.cdTenLeftPaddingRate(counter, isFlash)),
-                child: countDownText(context, counter, countDown.cdTenNumberString(isFlash), countDown.cdTenColor(cdNumColor[counter], isFlash)),
-              ),
-            ]),
-            //Countdown number for the first place
-            Stack(children: [
-              //Background Number
-              countDownText(context, counter, "8", signalGrayColor),
-              //Count Down Number
-              Container(
-                padding: EdgeInsets.only(left: context.height() * countDown.cdFirstLeftPaddingRate(counter, isFlash)),
-                child: countDownText(context, counter, countDown.cdFirstNumberString(isFlash), countDown.cdFirstColor(cdNumColor[counter], isFlash)),
-              ),
-            ]),
-          ],
+        SizedBox(width: context.sideMargin()),
+        Container(
+          alignment: Alignment.bottomLeft,
+          margin: EdgeInsets.only(
+            left: context.frontPoleLeftMargin(countryNumber),
+            top: context.frontPoleTopMargin(countryNumber),
+          ),
+          height: context.frontPoleImageHeight(countryNumber),
+          child: Image.asset(countryNumber.poleFrontImage()),
         ),
+        const Spacer(),
+        SizedBox(width: context.sideMargin()),
       ],
     );
 
-//Countdown Text
-Text countDownText(BuildContext context, int counter, String text, Color color) =>
-    Text(text,
-      style: TextStyle(
-        color: color,
-        fontFamily: cdNumFont[counter],
-        fontSize: context.height() * cdNumFontSizeRate[counter],
-        fontWeight: FontWeight.bold
-      )
-    );
-
-// Countdown for Jp New Pedestrian Signal
-Widget jpNewCountDown(BuildContext context, int countDown, int greenTime) =>
-    Container(
-      padding: EdgeInsets.only(right: context.height() * countDownRightPaddingRate),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          SizedBox(height: context.height() * countMeterTopSpaceRate),
-          for(int i = 0; i < 8; i++) ... {
-            Row(children: [
-              const Spacer(),
-              SizedBox(
-                width: context.height() * countMeterWidthRate,
-                height: context.height() * countMeterHeightRate,
-                child: Image.asset(countDown.countMeterColor(greenTime)[i] ? jpCountDownOn: jpCountDownOff),
-              ),
-              SizedBox(width: context.height() * countMeterCenterSpaceRate),
-              SizedBox(
-                width: context.height() * countMeterWidthRate,
-                height: context.height() * countMeterHeightRate,
-                child: Image.asset(countDown.countMeterColor(greenTime)[i] ? jpCountDownOn: jpCountDownOff),
-              ),
-              const Spacer(),
-            ]),
-            SizedBox(height: context.height() * countMeterSpaceRate),
-          },
-        ]
-      )
-    );
-
-/// Traffic Signal Image
-Widget trafficSignalImage(BuildContext context, int counter, greenTime, bool isGreen, isYellow, isArrow, opaque) =>
-    SizedBox(
-      height: context.height() * signalHeightRate,
-      child: Container(
-        padding: EdgeInsets.all(context.height() * trafficSignalPaddingRate[counter]),
-        child: Stack(alignment: Alignment.center,
-          children: [
-            if (counter == 1) usOldSignal(context, isGreen, true),
-            if (counter == 1) usOldSignal(context, isGreen, false),
-            Image(image: AssetImage(counter.trafficSignalImageString(isGreen, isYellow, isArrow, opaque))),
-          ],
+Widget frontWaringImage(BuildContext context, int countryNumber, String warningImage) =>
+    Row(mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        SizedBox(width: context.sideMargin()),
+        Container(
+          margin: EdgeInsets.only(
+            bottom: context.warningBottomMargin(countryNumber),
+            left: context.warningLeftMargin(countryNumber)
+          ),
+          height: context.warningImageHeight(countryNumber),
+          child: Image.asset(warningImage),
         ),
-      ),
+        const Spacer(),
+        SizedBox(width: context.sideMargin()),
+      ],
     );
 
-// US Old Traffic Signal
-Widget usOldSignal(BuildContext context, bool isGreen, isGo) =>
-  AnimatedContainer(
-    height: context.height() * stopGoFlagHeightRate,
-    transform: Matrix4.rotationZ(((isGreen && !isGo) || (!isGreen && isGo)) ? 1.57: 0),
-    duration: const Duration(seconds: flagRotationTime),
-    child: Image(image: AssetImage(isGo ? usGoFlag: usStopFlag)),
-  );
-
-///Push Button
-// Push Button Frame
-Widget pushButtonFrame(BuildContext context, int counter, bool isGreen, isFlash, opaque, isPressed) =>
-    Container(
-      height: context.height() * frameHeightRate,
-      padding: EdgeInsets.only(
-        top: context.height() * frameTopPaddingRate[counter],
-        bottom: context.height() * frameBottomPaddingRate[counter]
-      ),
-      child: Image(image: AssetImage(counter.buttonFrameImageString(isGreen, isFlash, opaque, isPressed)))
+Widget frontDirectionImage(BuildContext context, String directionImage) =>
+    Row(mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        SizedBox(width: context.sideMargin()),
+        Container(
+          margin: EdgeInsets.only(
+            top: context.height() * 0.16,
+            left: context.height() * 0.238
+          ),
+          height: context.height() * 0.11,
+          child: Image.asset(directionImage),
+        ),
+        const Spacer(),
+        SizedBox(width: context.sideMargin()),
+      ],
     );
 
-//Push Button Image
-Widget pushButtonImage(BuildContext context, int counter, bool isGreen, isPressed) =>
-    Container(
-      height: context.height() * buttonHeightRate[counter],
-      margin: EdgeInsets.only(top: context.height() * buttonTopMarginRate[counter]),
-      child: Image(image: AssetImage(counter.pushButtonImageString(isGreen, isPressed)))
+Widget backPoleImage(BuildContext context, int countryNumber) =>
+    Row(mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        SizedBox(width: context.sideMargin()),
+        Container(
+          alignment: Alignment.bottomLeft,
+          margin: EdgeInsets.only(
+            left: context.backPoleLeftMargin(countryNumber),
+            top: context.backPoleTopMargin(countryNumber),
+          ),
+          height: context.backPoleImageHeight(countryNumber),
+          child: Image.asset(countryNumber.poleBackImage()),
+        ),
+        const Spacer(),
+        SizedBox(width: context.sideMargin()),
+      ],
     );
 
-// Push Button Japanese Frame label
-Widget jpFrameLabel(BuildContext context, int counter, bool isPressed, isGreen) =>
+Widget backWarningImage(BuildContext context, String warningImage) =>
+    Row(mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        SizedBox(width: context.sideMargin()),
+        Container(
+          margin: EdgeInsets.only(
+            bottom: context.height() * 0.18,
+            left: context.height() * 1.132
+          ),
+          height: context.height() * 0.07,
+          child: Transform(
+            alignment: Alignment.center,
+            transform: Matrix4.rotationY(pi),
+            child: Image.asset(warningImage),
+          ),
+        ),
+        const Spacer(),
+        SizedBox(width: context.sideMargin()),
+      ]
+    );
+
+Widget backDirectionImage(BuildContext context, int countryNumber, String directionImage) =>
+    Row(mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        SizedBox(width: context.sideMargin()),
+        Container(
+          margin: EdgeInsets.only(
+            top: context.height() * 0.096,
+            left: context.height() * 1.193
+          ),
+          height: context.height() * 0.066,
+          child: Image.asset(directionImage)
+        ),
+        const Spacer(),
+        SizedBox(width: context.sideMargin()),
+      ]
+    );
+
+Widget frontGateImage(BuildContext context, int countryNumber) =>
     Column(children: [
-      Container(
-        alignment: Alignment.center,
-        margin: EdgeInsets.only(top: context.height() * labelTopMarginRate[counter]),
-        height: context.height() * labelHeightRate[counter],
-        width: context.height() * labelWidthRate[counter],
-        color: blackColor,
-        child: Text(counter.jpFrameMessage(isPressed, isGreen, true),
-          style: TextStyle(
-            color: (counter == 4) ? whiteColor: redColor,
-            fontSize: context.height() * labelFontSizeRate[counter],
-            fontWeight: FontWeight.bold,
+      const Spacer(),
+      Row(children: [
+        SizedBox(width: context.sideMargin()),
+        if (countryNumber == 0 || countryNumber == 1) const Spacer(),
+        Container(
+          margin: EdgeInsets.only(
+            right: context.frontGateRightMargin(countryNumber),
+            bottom: context.frontGateBottomMargin(countryNumber)
           ),
-          textScaleFactor: 1.0,
+          height: context.frontGateImageHeight(countryNumber),
+          child: Image.asset(countryNumber.gateFrontImage()),
         ),
-      ),
-      Container(
-        alignment: Alignment.center,
-        margin: EdgeInsets.only(top: context.height() * labelMiddleMarginRate[counter]),
-        height: context.height() * labelHeightRate[counter],
-        width: context.height() * labelWidthRate[counter],
-        color: blackColor,
-        child: Text(counter.jpFrameMessage(isPressed, isGreen, false),
-          style: TextStyle(
-            color: (counter == 4) ? whiteColor: redColor,
-            fontSize: context.height() * labelFontSizeRate[counter],
-            fontWeight: FontWeight.bold,
-          ),
-          textScaleFactor: 1.0,
-        ),
-      ),
+        if (countryNumber == 2) const Spacer(),
+        SizedBox(width: context.sideMargin()),
+      ]),
     ]);
+
+Widget backGateImage(BuildContext context, int countryNumber) =>
+    Column(children: [
+      const Spacer(),
+      Row(children: [
+        SizedBox(width: context.sideMargin()),
+        if (countryNumber == 2) const Spacer(),
+        Container(
+          margin: EdgeInsets.only(
+            left: context.backGateLeftMargin(countryNumber),
+            bottom: context.backGateBottomMargin(countryNumber)
+          ),
+          height: context.backGateImageHeight(countryNumber),
+          child: Image.asset(countryNumber.gateBackImage()),
+        ),
+        if (countryNumber == 0 || countryNumber == 1) const Spacer(),
+        SizedBox(width: context.sideMargin()),
+      ]),
+    ]);
+
+Widget frontBarImage(BuildContext context, int countryNumber, String barFrontImage, double angle, double shift, int changeTime) =>
+    Column(children: [
+      const Spacer(),
+      Row(children: [
+        SizedBox(width: context.sideMargin()),
+        const Spacer(),
+        Container(
+          margin: EdgeInsets.only(
+            right: context.frontBarRightMargin(countryNumber),
+            bottom: context.frontBarBottomMargin(countryNumber)
+          ),
+          height: context.frontBarImageHeight(countryNumber),
+          child: AnimatedContainer(
+            duration: Duration(seconds: changeTime),
+            transform: (countryNumber == 2) ?
+              Matrix4.translationValues(-shift * context.height(), 0, 0):
+              Matrix4.rotationZ(angle),
+            transformAlignment: (countryNumber != 2) ? Alignment(
+              countryNumber.frontBarAlignmentX(),
+              countryNumber.frontBarAlignmentY(),
+            ): null,
+            child: Image.asset(barFrontImage),
+          ),
+        ),
+        SizedBox(width: context.sideMargin()),
+      ]),
+    ]);
+
+Widget backBarImage(BuildContext context, int countryNumber, String barBackImage, double angle, double shift, int changeTime) =>
+    Column(children: [
+      const Spacer(),
+      Row(children: [
+        SizedBox(width: context.sideMargin()),
+        Container(
+          margin: EdgeInsets.only(
+            left: context.backBarLeftMargin(countryNumber),
+            bottom: context.backBarBottomMargin(countryNumber)
+          ),
+          height: context.backBarImageHeight(countryNumber),
+          child: AnimatedContainer(
+            duration: Duration(seconds: changeTime),
+            transform: (countryNumber == 2) ?
+              Matrix4.translationValues(shift * 0.575 * context.height(), 0, 0):
+              Matrix4.rotationZ(-angle),
+            transformAlignment: (countryNumber != 2) ? Alignment(
+              countryNumber.backBarAlignmentX(),
+              countryNumber.backBarAlignmentY(),
+            ): null,
+            child: Image.asset(barBackImage),
+          ),
+        ),
+        const Spacer(),
+        SizedBox(width: context.sideMargin()),
+      ]),
+    ]);
+
+/// Emergency Image
+Widget frontBoardImage(BuildContext context, int countryNumber) =>
+    Column(children: [
+      const Spacer(),
+      Row(children: [
+        SizedBox(width: context.sideMargin()),
+        Container(
+          margin: EdgeInsets.only(
+            left: context.height() * 0.085,
+            bottom: context.height() * 0.01
+          ),
+          height: context.height() * 0.42,
+          child: Image.asset(boardFrontImage),
+        ),
+        const Spacer(),
+      ]),
+    ]);
+
+Widget backBoardImage(BuildContext context, int countryNumber) =>
+    Column(children: [
+      const Spacer(),
+      Row(children: [
+        SizedBox(width: context.sideMargin()),
+        Container(
+          margin: EdgeInsets.only(
+            left: context.height() * 1.29,
+            bottom: context.height() * 0.225
+          ),
+          height: context.height() * 0.252,
+          child: Image.asset(boardBackImage),
+        ),
+        const Spacer(),
+      ]),
+    ]);
+
+Widget emergencyButton(BuildContext context, int countryNumber, void emergencyOn()) =>
+    Column(children: [
+      const Spacer(),
+      Row(children: [
+        SizedBox(width: context.sideMargin()),
+        Container(
+          margin: EdgeInsets.only(
+            left: context.emergencyButtonLeftMargin(countryNumber),
+            bottom: context.emergencyButtonBottomMargin(countryNumber),
+          ),
+          height: context.emergencyButtonHeight(countryNumber),
+          child: GestureDetector(
+            onTap: () => emergencyOn(),
+            child:Image.asset(countryNumber.emergencyImage()),
+          )
+        ),
+        const Spacer(),
+      ]),
+    ]);
+
+
+/// Fence Image
+Widget frontFenceImage(BuildContext context, int countryNumber) =>
+    Container(
+      alignment: Alignment.bottomCenter,
+      child: Row(children: List.generate(5, (i) =>
+        (i == 2) ? const Spacer():
+        (i == 0 || i == 4) ? SizedBox(width: context.sideMargin()):
+        SizedBox(
+          height: context.frontFenceImageHeight(countryNumber),
+          child: Image.asset(
+            (i == 1) ? countryNumber.fenceFrontLeftImage(): countryNumber.fenceFrontRightImage()
+          ),
+        )
+      )),
+    );
+
+Widget backFenceImage(BuildContext context, int countryNumber) =>
+    Container(
+      alignment: Alignment.bottomCenter,
+      margin: EdgeInsets.only(bottom: context.backFenceBottomMargin(countryNumber)),
+      child: Row(children: List.generate(5, (i) =>
+        (i == 2) ? const Spacer():
+        (i == 0 || i == 4) ? SizedBox(width: context.sideMargin()):
+        SizedBox(
+          height: context.backFenceImageHeight(countryNumber),
+          child: Image.asset(
+            (i == 1) ? countryNumber.fenceBackLeftImage(): countryNumber.fenceBackRightImage()
+          ),
+        )
+      )),
+    );
+
+/// Train Image
+Widget leftTrainImage(BuildContext context, List<String> leftTrainImage, Animation<double> leftAnimation) =>
+    AnimatedBuilder(
+      animation: leftAnimation,
+      builder: (_, child) => Transform.translate(
+        offset: Offset(leftAnimation.value, context.leftTrainOffset()),
+        child: OverflowBox(
+          maxWidth: double.infinity,
+          child: Row(children: List.generate(leftTrainImage.length, (i) =>
+            SizedBox(
+              height: context.leftTrainHeight(),
+              child: Image.asset(leftTrainImage[i])),
+            ),
+          ),
+        ),
+      ),
+    );
+
+Widget rightTrainImage(BuildContext context, List<String> rightTrainImage, Animation<double> rightAnimation) =>
+    AnimatedBuilder(
+      animation: rightAnimation,
+      builder: (_, child) => Transform.translate(
+        offset: Offset(rightAnimation.value, context.rightTrainOffset()),
+        child: OverflowBox(
+          maxWidth: double.infinity,
+          child: Row(children: List.generate(rightTrainImage.length, (i) =>
+            SizedBox(
+              height: context.rightTrainHeight(),
+              child: Image.asset(rightTrainImage[i])),
+            ),
+          ),
+        ),
+      ),
+    );
+
+//Bottom Buttons
+Widget bottomButtons(BuildContext context, bool isLeftOn, bool isRightOn, Color emergencyColor, void emergencyOff(), void pushLeftButton(), void pushRightButton()) =>
+    Container(
+      alignment: Alignment.bottomCenter,
+      margin: EdgeInsets.only(bottom: context.buttonSpace()),
+      child: Row(mainAxisAlignment: MainAxisAlignment.end,
+        children: List.generate(7, (i) =>
+          (i == 2) ? const Spacer():
+          (i == 4) ? SizedBox(width: context.buttonSpace()):
+          (i == 0 || i == 6) ? SizedBox(width: context.buttonSideMargin()):
+          GestureDetector(
+            onTap: () async => (i == 1) ? emergencyOff(): (i == 3) ? pushLeftButton(): pushRightButton(),
+            child: operationIcon(context,
+              (i == 1) ? emergencyColor: (i == 3) ? isLeftOn.operationColor(): isRightOn.operationColor(),
+              (i == 1) ? Icons.emergency: (i == 3) ? Icons.arrow_back: Icons.arrow_forward
+            )
+          ),
+        ),
+      ),
+    );
+
+
 
 ///Settings
 AppBar settingsAppBar(BuildContext context, String title, bool isPurchase) =>
     AppBar(
-      title: titleText(context, title),
-      centerTitle: true,
       automaticallyImplyLeading: false,
-      backgroundColor: signalGrayColor,
-      foregroundColor: whiteColor,
+      backgroundColor: transpColor,
+      foregroundColor: blackColor,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios),
-        onPressed: () async => (isPurchase) ? null: context.pushHomePage(),
+        onPressed: () async => context.pushHomePage(),
       ),
     );
 
@@ -329,7 +554,7 @@ BoxDecoration settingsTileDecoration(bool isTop, isBottom) =>
 ///Upgrade
 Text premiumTitle(BuildContext context) =>
     Text(context.premiumPlan(),
-      style: upgradeTextStyle(context, premiumTitleFontSizeRate, signalGrayColor),
+      style: upgradeTextStyle(context, premiumTitleFontSizeRate, grayColor),
     );
 
 Widget upgradePrice(BuildContext context, String price, bool isPremium) =>
@@ -347,11 +572,11 @@ Widget upgradeButtonImage(BuildContext context, bool isRestore) =>
         padding: EdgeInsets.all(context.height() * upgradeButtonPaddingRate),
         decoration: BoxDecoration(
           color: isRestore ? greenColor: yellowColor,
-          border: Border.all(color: signalGrayColor, width: upgradeButtonBorderWidth),
+          border: Border.all(color: grayColor, width: upgradeButtonBorderWidth),
           borderRadius: BorderRadius.circular(upgradeButtonBorderRadius),
         ),
         child: Text(isRestore ? context.toRestore(): context.toUpgrade(),
-          style: upgradeTextStyle(context, upgradeButtonFontSizeRate, isRestore ? whiteColor: signalGrayColor),
+          style: upgradeTextStyle(context, upgradeButtonFontSizeRate, isRestore ? whiteColor: grayColor),
         )
       )
     );
@@ -359,7 +584,7 @@ Widget upgradeButtonImage(BuildContext context, bool isRestore) =>
 DataTable upgradeDataTable(BuildContext context) =>
     DataTable(
       headingRowHeight: context.height() * upgradeTableHeadingHeightRate,
-      headingRowColor: MaterialStateColor.resolveWith((states) => signalGrayColor),
+      headingRowColor: WidgetStateColor.resolveWith((states) => grayColor),
       headingTextStyle: const TextStyle(color: whiteColor),
       dividerThickness: upgradeTableDividerWidth,
       dataRowMaxHeight: context.height() * upgradeTableHeightRate,
@@ -389,10 +614,10 @@ DataColumn dataColumnLabel(BuildContext context, String text) =>
 
 DataRow tableDataRow(BuildContext context, String title, Color color, bool isPremium) =>
     DataRow(
-      color: MaterialStateColor.resolveWith((states) => color),
+      color: WidgetStateColor.resolveWith((states) => color),
       cells: [
         DataCell(Text(title,
-          style: upgradeTextStyle(context, upgradeTableFontSizeRate, signalGrayColor),
+          style: upgradeTextStyle(context, upgradeTableFontSizeRate, grayColor),
           textAlign: TextAlign.left,
         )),
         isPremium ?

@@ -64,6 +64,6 @@ class DefaultFirebaseOptions {
     projectId: 'push-button-app',
     storageBucket: 'push-button-app.appspot.com',
     iosClientId: '46902441590-aid6gu1kcdhdt4d9v31407r31vsqpnh3.apps.googleusercontent.com',
-    iosBundleId: 'nakajimamasao.appstudio.signalbutton',
+    iosBundleId: 'nakajimamasao.appstudio.railwaycrossing',
   );
 }
