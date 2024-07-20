@@ -19,11 +19,152 @@ extension ContextExt on BuildContext {
   double width() => MediaQuery.of(this).size.width;
   double height() => MediaQuery.of(this).size.height;
   double topPadding() => MediaQuery.of(this).padding.top;
+  double sideMargin() => (width() / 16 > height() / 9) ? (width() - height() * 16 / 9) / 2: 0;
+
+  //Pole
+  double frontPoleImageHeight(int countryNumber) => height() * (
+      (countryNumber == 0) ? 0.95:
+      (countryNumber == 1) ? 0.80:
+      0.80
+  );
+  double frontPoleLeftMargin(int countryNumber) => height() * (
+      (countryNumber == 0) ? 0.165:
+      (countryNumber == 1) ? 0.165:
+      1.28
+  );
+  double frontPoleTopMargin(int countryNumber) => height() * (
+      (countryNumber == 0) ? 0.00:
+      (countryNumber == 1) ? 0.16:
+      0.10
+  );
+  double backPoleImageHeight(int countryNumber) => height() * (
+      (countryNumber == 0) ? 0.57:
+      (countryNumber == 1) ? 0.48:
+      0.48
+  );
+  double backPoleLeftMargin(int countryNumber) => height() * (
+      (countryNumber == 0) ? 1.15:
+      (countryNumber == 1) ? 1.165:
+      0.48
+  );
+  double backPoleTopMargin(int countryNumber) => height() * (
+      (countryNumber == 0) ? 0.00:
+      (countryNumber == 1) ? 0.09:
+      0.08
+  );
+  //Warning
+  double warningImageHeight(int countryNumber) => height() * (
+      (countryNumber == 0) ? 0.12:
+      (countryNumber == 1) ? 0.23:
+      0.27
+  );
+  double warningLeftMargin(int countryNumber) => height() * (
+      (countryNumber == 0) ? 0.131:
+      (countryNumber == 1) ? 0.131:
+      1.267
+  );
+  double warningBottomMargin(int countryNumber) => height() * (
+      (countryNumber == 0) ? 0.30:
+      (countryNumber == 1) ? 0.48:
+      0.072
+  );
+  //Emergency Button
+  double emergencyButtonHeight(int countryNumber) => height() * ((countryNumber == 0) ? 0.13: 0.10);
+  double emergencyButtonLeftMargin(int countryNumber) => height() * ((countryNumber == 0) ? 0.085: 0.27);
+  double emergencyButtonBottomMargin(int countryNumber) => height() * ((countryNumber == 0) ? 0.20: 0.225);
+  //Gate
+  double gateWidth(int countryNumber) => width() * (
+      (countryNumber == 0) ? 1:
+      (countryNumber == 1) ? 1:
+      2
+  );
+  double frontGateImageHeight(int countryNumber) => height() * (
+      (countryNumber == 0) ? 0.288:
+      (countryNumber == 1) ? 0.288:
+      0.31
+  );
+  double frontGateRightMargin(int countryNumber) => height() * (
+      (countryNumber == 0) ? 0.220:
+      (countryNumber == 1) ? 0.145:
+      0.456
+  );
+  double frontGateBottomMargin(int countryNumber) => height() * (
+      (countryNumber == 0) ? 0.02:
+      (countryNumber == 1) ? 0.02:
+      0.005
+  );
+  double backGateImageHeight(int countryNumber) => height() * (
+      (countryNumber == 0) ? 0.173:
+      (countryNumber == 1) ? 0.173:
+      0.182
+  );
+  double backGateLeftMargin(int countryNumber) => height() * (
+      (countryNumber == 0) ? 0.500:
+      (countryNumber == 1) ? 0.455:
+      0
+  );
+  double backGateBottomMargin(int countryNumber) => height() * (
+      (countryNumber == 0) ? 0.215:
+      (countryNumber == 1) ? 0.215:
+      0.23
+  );
+  //Bar
+  double frontBarImageHeight(int countryNumber) => height() * (
+      (countryNumber == 0) ? 0.145:
+      (countryNumber == 1) ? 0.145:
+      0.22
+  );
+  double frontBarRightMargin(int countryNumber) => height() * (
+      (countryNumber == 0) ? 0.085:
+      (countryNumber == 1) ? 0.092:
+      0.379
+  );
+  double frontBarBottomMargin(int countryNumber) => height() * (
+      (countryNumber == 0) ? 0.15:
+      (countryNumber == 1) ? 0.15:
+      0.033
+  );
+  double backBarImageHeight(int countryNumber) => height() * (
+      (countryNumber == 0) ? 0.084:
+      (countryNumber == 1) ? 0.084:
+      0.13
+  );
+  double backBarLeftMargin(int countryNumber) => height() * (
+      (countryNumber == 0) ? 0.424:
+      (countryNumber == 1) ? 0.428:
+      0.585
+  );
+  double backBarBottomMargin(int countryNumber) => height() * (
+      (countryNumber == 0) ? 0.298:
+      (countryNumber == 1) ? 0.298:
+      0.2455
+  );
+  //Fence
+  double frontFenceImageHeight(int countryNumber) => height() * (
+      (countryNumber == 0) ? 0.19:
+      (countryNumber == 1) ? 0.19:
+      0.228
+  );
+  double backFenceImageHeight(int countryNumber) => height() * (
+      (countryNumber == 0) ? 0.111:
+      (countryNumber == 1) ? 0.111:
+      0.137
+  );
+  double backFenceBottomMargin(int countryNumber) => height() * 0.235;
+  //Train
+  double leftTrainOffset()  => - height() * 0.050;
+  double rightTrainOffset() => - height() * 0.025;
+  double leftTrainHeight()  => height() * 0.9;
+  double rightTrainHeight() => height() * 0.7;
+  //Button
+  double buttonSpace() => height() * 0.05;
+  double buttonSideMargin() => sideMargin() + buttonSpace();
+
   //Settings
   double settingsSidePadding() => width() < 600 ? 10: width() / 2 - 290;
   //Admob
-  double admobHeight() => (height() < 750) ? 50: (height() < 1000) ? 50 + (height() - 750) / 5: 100;
-  double admobWidth() => width() - 100;
+  double admobHeight() => (height() < 320) ? 50: (820 < height()) ? 100: 0.1 * height() + 18;
+  double admobWidth() => 320;
 
   ///Localization
   String appTitle() => AppLocalizations.of(this)!.appTitle;
@@ -61,6 +202,9 @@ extension ContextExt on BuildContext {
     failPurchaseMessage(isRestore);
   String loading() => AppLocalizations.of(this)!.loading;
   String loadingError() => AppLocalizations.of(this)!.loadingError;
+  String selectLeftTrain() => AppLocalizations.of(this)!.selectLeftTrain;
+  String selectRightTrain() => AppLocalizations.of(this)!.selectRightTrain;
+
   String pushButton() => AppLocalizations.of(this)!.pushButton;
   String pedestrianSignal() => AppLocalizations.of(this)!.pedestrianSignal;
   String carSignal() => AppLocalizations.of(this)!.carSignal;
@@ -84,7 +228,7 @@ extension ContextExt on BuildContext {
       (isReadError) ? readError(): loading();
 
   void pushHomePage() =>
-      Navigator.pushReplacement(this, MaterialPageRoute(builder: (BuildContext context) =>  const MyHomePage()));
+      Navigator.pushReplacement(this, MaterialPageRoute(builder: (BuildContext context) =>  MyHomePage()));
   void pushSettingsPage() =>
       Navigator.push(this, MaterialPageRoute(builder: (context) => const MySettingsPage()));
   void pushUpgradePage() =>
@@ -111,9 +255,10 @@ extension StringExt on String {
 
   //this is countryCode
   int getDefaultCounter() =>
-      (this == "GB") ? 3:
-      (this == "JP") ? 5:
-      (this == "AU") ? 6:
+      (this == "JP") ? 0:
+      (this == "GB") ? 1:
+      (this == "CN") ? 2:
+      (this == "US") ? 3:
       0;
 
   //Settings
@@ -124,62 +269,79 @@ extension StringExt on String {
   Icon? settingsPremiumTrailingIcon() =>
       (this != "") ? const Icon(Icons.arrow_forward_ios): null;
 
-
-
 }
 
 
 extension IntExt on int {
 
-  //this is countDown
-  List<bool> countMeterColor(int greenTime) =>
-      (this / greenTime > 0.875) ? [true, true, true, true, true, true, true, true]:
-      (this / greenTime > 0.750) ? [false, true, true, true, true, true, true, true]:
-      (this / greenTime > 0.625) ? [false, false, true, true, true, true, true, true]:
-      (this / greenTime > 0.500) ? [false, false, false, true, true, true, true, true]:
-      (this / greenTime > 0.375) ? [false, false, false, false, true, true, true, true]:
-      (this / greenTime > 0.250) ? [false, false, false, false, false, true, true, true]:
-      (this / greenTime > 0.125) ? [false, false, false, false, false, false, true, true]:
-      (this / greenTime > 0) ? [false, false, false, false, false, false, false, true]:
-      [false, false, false, false, false, false, false, false];
-  double isOne() => (this == 1) ? this * 1.0: 0;
-  int cdTenNumber(bool isFlash) => (this > 9 && isFlash) ? this ~/ 10: 8;
-  int cdFirstNumber(bool isFlash) => (isFlash) ? this % 10: 8;
-  String cdTenNumberString(bool isFlash) => "${cdTenNumber(isFlash)}";
-  String cdFirstNumberString(bool isFlash) => "${cdFirstNumber(isFlash)}";
-  Color cdTenColor(Color color, bool isFlash,) => (this > 9 && isFlash) ? color: signalGrayColor;
-  Color cdFirstColor(Color color, bool isFlash) => (isFlash) ? color: signalGrayColor;
+  //this is countryNumber
 
-  //Size
-  double cdTenLeftPaddingRate(int counter, bool isFlash) => cdTenNumber(isFlash).isOne() * cdNumPaddingRate[counter];
-  double cdFirstLeftPaddingRate(int counter, bool isFlash) => cdFirstNumber(isFlash).isOne() * cdNumPaddingRate[counter];
+  ///Image
+  //Assets
+  String crossingAssets() =>
+      (this == 1) ?  crossingUKAssets:
+      (this == 2) ?  crossingCNAssets:
+      (this == 3) ?  crossingUSAssets:
+      crossingJPAssets;
+  //Pole Image
+  String poleFrontImage() => "${crossingAssets()}pole_front.png";
+  String poleBackImage() => "${crossingAssets()}pole_back.png";
+  //Bar Image
+  String barFrontOff() => "${crossingAssets()}bar_front_off.png";
+  String barFrontOn() => "${crossingAssets()}bar_front_on.png";
+  String barBackOff() => "${crossingAssets()}bar_back_off.png";
+  String barBackOn() => "${crossingAssets()}bar_back_on.png";
+  String reverseBarFront(String barFront) => (barFront == barFrontOff()) ? barFrontOn(): barFrontOff();
+  String reverseBarBack(String barBack) => (barBack == barBackOff()) ? barBackOn(): barBackOff();
+  double barAngle(bool isWait) => (this == 2 || isWait) ? 0.0: 1.5;
+  double barShift(bool isWait) => (this == 2 && !isWait) ? 1.0: 0.0;
+  //Warning Image
+  String warningImageOff() => "${crossingAssets()}warning_off.png";
+  String warningImageLeft() => "${crossingAssets()}warning_left.png";
+  String warningImageRight() => "${crossingAssets()}warning_right.png";
+  String warningImageYellow() => "${crossingAssets()}warning_yellow.png";
+  String reverseWarning(String warningImage) => (warningImage == warningImageLeft()) ?  warningImageRight(): warningImageLeft();
+  //Direction Image
+  String directionImageOff() => "${crossingAssets()}direction_off.png";
+  String directionImageLeft() => "${crossingAssets()}direction_left.png";
+  String directionImageRight() => "${crossingAssets()}direction_right.png";
+  String directionImageBoth() => "${crossingAssets()}direction_both.png";
+  String bothOrRightDirection(bool isLeftWait) => isLeftWait ? directionImageBoth() : directionImageRight();
+  String bothOrLeftDirection(bool isRightWait) => isRightWait ? directionImageBoth() : directionImageLeft();
+  String offOrLeftDirection(bool isLeftWait) => isLeftWait ? directionImageLeft() : directionImageOff();
+  String offOrRightDirection(bool isRightWait) => isRightWait ? directionImageRight() : directionImageOff();
+  //Emergency Image
+  String emergencyImage() => "${crossingAssets()}emergency.png";
+  //Gate Image
+  String gateFrontImage() => "${crossingAssets()}gate_front.png";
+  String gateBackImage() => "${crossingAssets()}gate_back.png";
+  //Fence Image
+  String fenceFrontLeftImage() => "${crossingAssets()}fence_front_left.png";
+  String fenceFrontRightImage() => "${crossingAssets()}fence_front_right.png";
+  String fenceBackLeftImage() => "${crossingAssets()}fence_back_left.png";
+  String fenceBackRightImage() => "${crossingAssets()}fence_back_right.png";
 
-  //this is counter
-  String trafficSignalImageString(bool isGreen, isYellow, isArrow, opaque) =>
-      (isYellow) ? trafficSignalYellowString[this]:
-      (isArrow) ? trafficSignalArrowString[this]:
-      (!isGreen) ? trafficSignalGreenString[this]:
-      trafficSignalRedString[this];
+  ///Sound
+  String soundAssets() =>
+      (this == 1) ?  soundUKAssets:
+      (this == 2) ?  soundCNAssets:
+      (this == 3) ?  soundUSAssets:
+      soundJPAssets;
+  String warningSound() => "${soundAssets()}warning.mp3";
 
-  String pedestrianSignalImageString(bool isGreen, isFlash, opaque) =>
-      (isGreen && isFlash && opaque) ? pedestrianSignalOffString[this]:
-      (isGreen && isFlash) ? pedestrianSignalFlashString[this]:
-      (isGreen) ? pedestrianSignalGreenString[this]:
-      pedestrianSignalRedString[this];
+  ///Time
+  int flashTime() => (this == 0) ? 1000: 500;
 
-  String buttonFrameImageString(bool isGreen, isFlash, opaque, isPressed) =>
-      (!isGreen && isPressed) ? buttonFrameWaitString[this]:
-      (!isGreen) ? buttonFrameRedString[this]:
-      (isFlash && opaque) ? buttonFrameOffString[this]:
-      buttonFrameGreenString[this];
+  ///Bar Position
+  double frontBarAlignmentX() => (this == 0) ? 0.6947: 0.7637;
+  double frontBarAlignmentY() => (this == 0) ? -0.4122: -0.4122;
+  double backBarAlignmentX() => (this == 0) ? -0.6947: -0.7637;
+  double backBarAlignmentY() => (this == 0) ? -0.4122: -0.4122;
 
-  String pushButtonImageString(bool isGreen, isPressed) =>
-      (!isGreen && isPressed) ? pushButtonOnString[this]:
-      pushButtonOffString[this];
+}
 
-  String jpFrameMessage(bool isPressed, isGreen, bool isUpper) =>
-      (!isGreen && isPressed && isUpper) ? "おまちください":
-      (!isGreen && !isPressed && this == 5 && !isUpper) ? "おしてください":
-      (!isGreen && !isPressed && this == 4 && !isUpper) ? "ふれてください":
-      "";
+extension BoolExt on bool {
+
+  Color operationColor() => this ? redColor: whiteColor;
+
 }

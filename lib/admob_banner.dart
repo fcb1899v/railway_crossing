@@ -61,10 +61,13 @@ class AdBannerWidget extends HookWidget {
       };
     }, []);
 
-    return SizedBox(
-      width: context.admobWidth(),
-      height: context.admobHeight(),
-      child: (adLoaded.value) ? AdWidget(ad: bannerAd.value!): null,
+    return Container(
+      alignment: Alignment.topRight,
+      child: SizedBox(
+        width: context.admobWidth(),
+        height: context.admobHeight(),
+        child: (adLoaded.value) ? AdWidget(ad: bannerAd.value!): null,
+      ),
     );
   }
 }

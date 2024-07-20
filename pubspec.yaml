@@ -1,7 +1,7 @@
-name: signalbutton
-description: push button signal simulator
+name: railway_crossing
+description: railway crossing simulator
 publish_to: 'none'
-version: 1.2.0+19
+version: 0.0.1+1
 
 environment:
   sdk: '>=2.18.0 <4.0.0'
@@ -11,73 +11,83 @@ dependencies:
   flutter:
     sdk: flutter
   # Firebase Analytics
-  firebase_core: ^2.20.0
-  firebase_analytics: ^10.6.2
+  firebase_core: ^3.0.0
+  firebase_analytics: ^11.0.1
   # App Icon
-  cupertino_icons: ^1.0.6
+  cupertino_icons: ^1.0.8
   flutter_launcher_icons: ^0.13.1
   # Audio Player
-  audioplayers: ^5.2.0
+  audioplayers: ^6.0.0
   # Vibration
-  vibration: ^1.8.3
-  # Text to Speech
-  flutter_tts: ^3.8.3
+  vibration: ^1.9.0
   # Settings
-  flutter_settings_screens: ^0.3.3-null-safety+2
+  flutter_settings_screens: ^0.3.4
   settings_ui: ^2.0.2
   # SharedPreference
-  shared_preferences: ^2.2.2
+  shared_preferences: ^2.2.3
+  # Floating Button
+  flutter_speed_dial: ^7.0.0
+  circular_menu: ^4.0.0
+  fab_circular_menu_plus: ^0.0.2
   # Admob
-  google_mobile_ads: ^3.1.0
-  app_tracking_transparency: ^2.0.4
+  google_mobile_ads: ^5.1.0
+  app_tracking_transparency: ^2.0.5
   # Device locale
-  devicelocale: ^0.7.0
+  devicelocale: ^0.7.1
   # Localize
   flutter_localizations:
     sdk: flutter
-  intl: ^0.18.0
+  intl: ^0.19.0
   #env
   flutter_dotenv: ^5.1.0
   # Connectivity
-  connectivity_plus: ^5.0.1
+  connectivity_plus: ^6.0.3
   #Revenue Cat
-  purchases_flutter: ^5.8.0
+  purchases_flutter: ^6.29.4
   #MVVM
-  hooks_riverpod: ^2.4.4
-  flutter_hooks: ^0.20.3
+  hooks_riverpod: ^2.5.1
+  flutter_hooks: ^0.20.5
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
+  flutter_lints: ^4.0.0
   # App Splash
-  flutter_native_splash: ^2.3.4
+  flutter_native_splash: ^2.4.0
 
 flutter_icons:
-  image_path: "assets/images/icon.png"
+  image_path: "assets/images/appIcon.png"
   android: true
   ios: true
-  adaptive_icon_background: "#373635"
-  adaptive_icon_foreground: "assets/images/appIcon.png"
+  remove_alpha_ios: true
+  adaptive_icon_background: "#ffffff"
+  adaptive_icon_foreground: "assets/images/icon.png"
 
 flutter_native_splash:
-  image: "assets/images/human.png"
-  color: "373635"
+  image: "assets/images/icon.png"
+  color: "#ffffff"
+  android_12:
+    image: "assets/images/icon.png"
+    icon_background_color: "#ffffff"
+  ios: true
+  web: false
 
 flutter:
   generate: true
   uses-material-design: true
   assets:
     - assets/images/
-    - assets/images/pedestrian/us/
-    - assets/images/pedestrian/jp/
-    - assets/images/pedestrian/uk/
-    - assets/images/pedestrian/au/
-    - assets/images/traffic/us/
-    - assets/images/traffic/jp/
-    - assets/images/traffic/uk/
-    - assets/images/traffic/au/
+    - assets/images/flag/
+    - assets/images/crossing/jp/
+    - assets/images/crossing/uk/
+    - assets/images/crossing/cn/
+    - assets/images/train/jp/
+    - assets/images/train/uk/
+    - assets/images/train/cn/
     - assets/audios/
+    - assets/audios/jp/
+    - assets/audios/uk/
+    - assets/audios/cn/
     - assets/.env
 
   fonts:

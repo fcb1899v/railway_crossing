@@ -1,6 +1,6 @@
 {
-  "appTitle": "LETS SIGNAL", "@appTitle": {"description": ""},
-  "thisApp": "This app is a realistic traffic light simulator.", "@thisApp": {"description": ""},
+  "appTitle": "LETS CROSSING", "@appTitle": {"description": ""},
+  "thisApp": "This app is a realistic railway crossing simulator.", "@thisApp": {"description": ""},
   "settingsTitle": "Settings", "@settingsTitle": {"description": ""},
   "premiumPlan": "Premium Plan", "@premiumPlan": {"description": ""},
   "plan": "Plan", "@plan": {"description": ""},
@@ -24,6 +24,9 @@
   "networkErrorMessage": "Please connect to internet.", "@networkErrorMessage": {"description": ""},
   "loading": "Loading...", "@loading": {"description": ""},
   "loadingError": "Loading error", "@loadingError": {"description": ""},
+  "selectLeftTrain": "Select the train going to the left", "@selectLeftTrain": {"description": "select the train going to the left"},
+  "selectRightTrain": "Select the train going to the right", "@selectRightTrain": {"description": "select the train going to the right"},
+
   "pushButton": "Push\nButton", "@pushButton": {"description": ""},
   "pedestrianSignal": "Signal for\nPedestrians", "@pedestrianSignal": {"description": ""},
   "carSignal": "Signal for\nCars", "@carSignal": {"description": ""},

@@ -25,6 +25,9 @@
   "purchaseInvalidMessage": "お支払いが保留中の商品です。\nストアをご確認ください。",
   "purchaseNotAllowedMessage": "購入できませんでした。\nお支払い方法をご確認ください。",
   "networkErrorMessage": "インターネットに接続してください。",
+  "selectLeftTrain": "左方向の電車を選択",
+  "selectRightTrain": "右方向の電車を選択",
+
   "pushButton": "押しボタン",
   "pedestrianSignal": "歩行者用信号",
   "carSignal": "車用信号",
