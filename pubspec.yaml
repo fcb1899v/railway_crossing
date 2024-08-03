@@ -1,5 +1,5 @@
-name: railway_crossing
-description: railway crossing simulator
+name: railroad_crossing
+description: railroad crossing simulator
 publish_to: 'none'
 version: 0.0.1+1
 
@@ -81,13 +81,16 @@ flutter:
     - assets/images/crossing/jp/
     - assets/images/crossing/uk/
     - assets/images/crossing/cn/
+    - assets/images/crossing/us/
     - assets/images/train/jp/
     - assets/images/train/uk/
     - assets/images/train/cn/
+    - assets/images/train/us/
     - assets/audios/
     - assets/audios/jp/
     - assets/audios/uk/
     - assets/audios/cn/
+    - assets/audios/us/
     - assets/.env
 
   fonts:

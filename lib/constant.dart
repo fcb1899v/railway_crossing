@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:railroad_crossing/common_extension.dart';
 
 ///Signal Number
 const int totalCountryNumber = 7;
 
 ///App Name
 const String appTitle = "LETS CROSSING";
-const String appTitleImage = "assets/images/letsSignal.png";
-const double appBarHeight = 56;
+
+///Position
+double trainBeginPosition(bool isFast) => 16000.0 / (2.0 - isFast.boolToDouble());
+double trainEndPosition(bool isFast) => -16000.0 / (2.0 - isFast.boolToDouble());
 
 ///Time
 const int waitTime = 10;             //seconds
 const int yellowTime = 5;            //seconds
+const int barUpDownTime = 5;         //seconds
 const int ledDurationTime = 200;     //milliSeconds
 const int emergencyWaitTime = 15;    //seconds
 const int emergencyFlashTime = 500;  //milliSeconds
@@ -107,6 +111,14 @@ const trainList = [
     "${trainCNAssets}cr400af_5.png",
     "${trainCNAssets}cr400af_6.png",
   ],
+  [
+    "${trainUSAssets}avelia_liberty_1.png",
+    "${trainUSAssets}avelia_liberty_2.png",
+    "${trainUSAssets}avelia_liberty_3.png",
+    "${trainUSAssets}avelia_liberty_4.png",
+    "${trainUSAssets}avelia_liberty_5.png",
+    "${trainUSAssets}avelia_liberty_6.png",
+  ],
 ];
 //Country Flag
 const String flagImageJP = "assets/images/flag/jp.png";
@@ -116,74 +128,6 @@ const String flagImageUS = "assets/images/flag/us.png";
 final flagList = {
   'jp': {'image': flagImageJP, 'countryNumber': 0},
   'uk': {'image': flagImageUK, 'countryNumber': 1},
-  'cn': {'image': flagImageCN, 'countryNumber': 2}
-  // 'us': {'image': flagImageUS, 'countryNumber': 3},
+  'cn': {'image': flagImageCN, 'countryNumber': 2},
+  'us': {'image': flagImageUS, 'countryNumber': 3},
 };
-
-///Button Frame
-const double frameHeightRate = 0.40;
-const List<double> frameTopPaddingRate = [0, 0, 0, 0, 0.01, 0.02, 0];
-const List<double> frameBottomPaddingRate = [0, 0.08, 0, 0, 0.01, 0.02, 0];
-const List<double> labelTopMarginRate = [0, 0, 0, 0, 0.085, 0.10, 0];
-const List<double> labelMiddleMarginRate = [0, 0, 0, 0, 0.14, 0.135, 0];
-const List<double> labelHeightRate = [0, 0, 0, 0, 0.045, 0.045, 0];
-const List<double> labelWidthRate = [0, 0, 0, 0, 0.2, 0.2, 0];
-const List<double> labelFontSizeRate = [0, 0, 0, 0, 0.025, 0.025, 0];
-
-///Push Button
-const List<double> buttonHeightRate = [0.13, 0.11, 0.05, 0.04, 0.115, 0.08, 0.15];
-const List<double> buttonTopMarginRate = [0.225, 0.29, 0.328, 0.325, 0.143, 0.17, 0.22];
-
-///Pedestrian Signal
-const double signalHeightRate = 0.35;
-const List<double> pedestrianSignalPaddingRate = [0.03, 0.06, 0.03, 0.015, 0.015, 0.015, 0.015];
-const List<double> trafficSignalPaddingRate = [0.01, 0, 0.01, 0.01, 0.04, 0.04, 0.01];
-
-//Countdown Number
-const List<double> cdNumTopSpaceRate = [0.07, 0, 0.189, 0, 0, 0, 0];
-const List<double> cdNumLeftSpaceRate = [0.14, 0, 0.157, 0, 0, 0, 0];
-const List<double> cdNumPaddingRate = [0.03, 0, 0.018, 0, 0, 0, 0];
-const List<double> cdNumFontSizeRate = [0.115, 0, 0.055, 0, 0, 0, 0];
-const List<Color> cdNumColor = [orangeColor, transpColor, yellowColor, transpColor, transpColor, transpColor, transpColor];
-const List<String> cdNumFont = ["dotFont", "", "freeTfb", "", "", "", ""];
-
-//Countdown Meter
-const double countMeterTopSpaceRate =  0.035;
-const double countMeterCenterSpaceRate =  0.08;
-const double countDownRightPaddingRate = 0.003;
-const double countMeterWidthRate =  0.012;
-const double countMeterHeightRate =  0.01;
-const double countMeterSpaceRate =  0.0024;
-
-//stop/go flag
-const double stopGoFlagHeightRate = 0.18;
-const int flagRotationTime = 1;
-
-/// Floating Action Button
-const double floatingButtonSizeRate = 0.07;
-const double floatingImageSizeRate = 0.02;
-const double floatingIconSizeRate = 0.03;
-
-///Upgrade
-const String premiumProduct = "signal_upgrade_premium";
-const double upgradeAppBarHeight = 45;
-const double premiumTitleFontSizeRate = 0.035;
-const double premiumPriceFontSizeRate = 0.08;
-const double premiumPricePaddingRate = 0.025;
-const double upgradeButtonFontSizeRate = 0.025;
-const double upgradeTableFontSizeRate = 0.018;
-const double upgradeTableIconSizeRate = 0.03;
-const double upgradeTableHeadingHeightRate = 0.03;
-const double upgradeTableHeightRate = 0.06;
-const double upgradeTableDividerWidth = 0;
-const double upgradeButtonPaddingRate = 0.006;
-const double upgradeButtonBottomMarginRate = 0.035;
-const double upgradeButtonElevation = 10;
-const double upgradeButtonBorderWidth = 1.5;
-const double upgradeButtonBorderRadius = 5;
-const double upgradeMarginWidthRate = 0.05;
-const double upgradeCircularProgressMarginBottomRate = 0.4;
-
-///Settings
-const double settingsTilePaddingSize = 20;
-const double settingsTileRadiusSize = 15;

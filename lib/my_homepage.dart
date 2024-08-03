@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:devicelocale/devicelocale.dart';
 import 'package:fab_circular_menu_plus/fab_circular_menu_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:vibration/vibration.dart';
@@ -11,7 +13,6 @@ import 'common_extension.dart';
 import 'common_widget.dart';
 import 'constant.dart';
 import 'main.dart';
-import 'plan_provider.dart';
 import 'admob_banner.dart';
 
 class MyHomePage extends HookConsumerWidget {
@@ -30,6 +31,8 @@ class MyHomePage extends HookConsumerWidget {
     //State
     final isLeftOn = useState(false);
     final isRightOn = useState(false);
+    final isLeftFast = useState(true);
+    final isRightFast = useState(true);
     final isLeftWait = useState(false);
     final isRightWait = useState(false);
     final isYellow = useState(false);
@@ -45,25 +48,27 @@ class MyHomePage extends HookConsumerWidget {
     //Image
     final barFrontImage = useState(barFrontImageJPOff);
     final barBackImage = useState(barBackImageJPOff);
-    final warningImage = useState(warningImageJPOff);
+    final warningFrontImage = useState(warningImageJPOff);
+    final warningBackImage = useState(warningImageJPOff);
     final directionImage = useState(directionImageJPOff);
 
     //Animation
-    final leftController = useAnimationController(duration: const Duration(seconds: 10));
-    final rightController = useAnimationController(duration: const Duration(seconds: 10));
-    final leftAnimation = useMemoized(() => Tween(begin: 10000.0, end: -10000.0).animate(leftController));
-    final rightAnimation = useMemoized(() => Tween(begin: -10000.0, end: 10000.0).animate(rightController));
+    final leftController = useAnimationController(duration: const Duration(seconds: 16));
+    final rightController = useAnimationController(duration: const Duration(seconds: 16));
+    final leftAnimation = useState(Tween(
+      begin: trainBeginPosition(isLeftFast.value),
+      end: trainEndPosition(isLeftFast.value),
+    ).animate(leftController));
+    final rightAnimation = useState(Tween(
+      begin: trainEndPosition(isRightFast.value),
+      end: trainBeginPosition(isRightFast.value),
+    ).animate(rightController));
     final leftTrain = useState(trainList[0]);
     final rightTrain = useState(trainList[0]);
-    final barAngle = useState(1.5);
+    final barAngle = useState(0.0);
     final barShift = useState(0.0);
-    final changeTime = useState(5);
+    final changeTime = useState(0);
     final emergencyColor = useState(whiteColor);
-
-    //Premium Plan
-    final isPremiumProvider = ref.watch(planProvider).isPremium;
-    // final plan = ref.read(planProvider.notifier);
-    // final isPremium = useState("premium".getSettingsValueBool(false));
 
     setNormalState() async {
       "setNormal".debugPrint();
@@ -73,13 +78,16 @@ class MyHomePage extends HookConsumerWidget {
       isLeftWait.value = false;
       isRightOn.value = false;
       isRightWait.value = false;
-      warningImage.value = countryNumber.value.warningImageOff();
+      isYellow.value = false;
+      warningFrontImage.value = countryNumber.value.warningFrontImageOff();
+      warningBackImage.value = countryNumber.value.warningBackImageOff();
       barFrontImage.value = countryNumber.value.barFrontOff();
       barBackImage.value = countryNumber.value.barBackOff();
       directionImage.value = countryNumber.value.directionImageOff();
       barAngle.value = countryNumber.value.barAngle(false);
       barShift.value = countryNumber.value.barShift(false);
       isPossibleEmergency.value = true;
+      await warningPlayer.stop();
     }
 
     initState() async {
@@ -88,13 +96,19 @@ class MyHomePage extends HookConsumerWidget {
       countryNumber.value = countryCode.getDefaultCounter();
       "Locale: $locale, countryNumber: ${countryNumber.value}".debugPrint();
       "width: $width, height: $height".debugPrint();
+      // countryNumber.value = 1; //for debug
       setNormalState();
-      // countryNumber.value = 2; //for debug
     }
 
     useEffect(() {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (Platform.isIOS || Platform.isMacOS) initPlugin(context);
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        ///App Tracking Transparency
+        if (Platform.isIOS || Platform.isMacOS) {
+          final status = await AppTrackingTransparency.trackingAuthorizationStatus;
+          if (status == TrackingStatus.notDetermined && context.mounted) {
+            await AppTrackingTransparency.requestTrackingAuthorization();
+          }
+        }
         initState();
         initSettings();
       });
@@ -104,14 +118,18 @@ class MyHomePage extends HookConsumerWidget {
     setYellowState() {
       "setYellow".debugPrint();
       isYellow.value = true;
-      warningImage.value = countryNumber.value.warningImageYellow();
+      "isYellow: ${isYellow.value}".debugPrint();
+      warningFrontImage.value = countryNumber.value.warningFrontImageYellow();
+      warningBackImage.value = countryNumber.value.warningBackImageYellow();
+      changeTime.value = barUpDownTime;
     }
 
     setWarningState() {
       "setWarning".debugPrint();
-      isYellow.value == false;
+      isYellow.value = false;
       "isYellow: ${isYellow.value}".debugPrint();
-      warningImage.value = countryNumber.value.warningImageLeft();
+      warningFrontImage.value = countryNumber.value.warningFrontImageLeft();
+      warningBackImage.value = countryNumber.value.warningBackImageLeft();
       barFrontImage.value = countryNumber.value.barFrontOff();
       barBackImage.value = countryNumber.value.barBackOff();
       barAngle.value = countryNumber.value.barAngle(true);
@@ -125,19 +143,27 @@ class MyHomePage extends HookConsumerWidget {
       isLeftOn.value = false;
       isLeftWait.value = false;
       "isLeftWait: ${isLeftWait.value}".debugPrint();
-      if (!isRightWait.value) setNormalState();
+      "isRightWait: ${isRightWait.value}".debugPrint();
+      if (!isRightWait.value) await setNormalState();
     }
 
     goLeftTrain() async {
       if (isLeftWait.value && !isEmergency.value) {
-        isPossibleEmergency.value;
+        isPossibleEmergency.value = false;
         "isPossibleEmergency: ${isPossibleEmergency.value}".debugPrint();
         await leftTrainPlayer.play(AssetSource(soundTrain));
         await leftTrainPlayer.setReleaseMode(ReleaseMode.release);
         await leftTrainPlayer.setVolume(trainVolume);
         "leftTrainPlayer: ${leftTrainPlayer.state}".debugPrint();
+        leftAnimation.value = Tween(
+          begin: trainBeginPosition(isLeftFast.value),
+          end: trainEndPosition(isLeftFast.value),
+        ).animate(leftController);
         await leftController.forward(from: 0);
-        Future.delayed(const Duration(seconds: 2), () => leftWaitOff());
+        Future.delayed(const Duration(seconds: 2), () {
+          "leftWaitOff".debugPrint();
+          leftWaitOff();
+        });
       }
     }
 
@@ -146,14 +172,25 @@ class MyHomePage extends HookConsumerWidget {
       directionImage.value = countryNumber.value.bothOrLeftDirection(isRightWait.value);
       isLeftWait.value = true;
       "isLeftWait: ${isLeftWait.value}".debugPrint();
-      Future.delayed(const Duration(seconds: waitTime), () => goLeftTrain());
+      Future.delayed(const Duration(seconds: waitTime), () {
+        "goLeftTrain".debugPrint();
+        goLeftTrain();
+      });
     }
 
     pushLeftButton() {
       if (!isLeftOn.value && !isEmergency.value) {
-        setYellowState();
         isLeftOn.value = true;
-        Future.delayed(const Duration(seconds: yellowTime), () => leftWaitOn());
+        if (!isRightOn.value) {
+          setYellowState();
+          Future.delayed(const Duration(seconds: yellowTime), () {
+            "leftWaitOn".debugPrint();
+            leftWaitOn();
+          });
+        } else {
+          "leftWaitOn".debugPrint();
+          leftWaitOn();
+        }
       }
     }
 
@@ -163,8 +200,9 @@ class MyHomePage extends HookConsumerWidget {
       directionImage.value = countryNumber.value.offOrLeftDirection(isLeftWait.value);
       isRightOn.value = false;
       isRightWait.value = false;
+      "isLeftWait: ${isLeftWait.value}".debugPrint();
       "isRightWait: ${isRightWait.value}".debugPrint();
-      if (!isLeftWait.value) setNormalState();
+      if (!isLeftWait.value) await setNormalState();
     }
 
     goRightTrain() async {
@@ -174,8 +212,15 @@ class MyHomePage extends HookConsumerWidget {
         await rightTrainPlayer.setReleaseMode(ReleaseMode.release);
         await rightTrainPlayer.setVolume(trainVolume);
         "rightTrainPlayer: ${rightTrainPlayer.state}".debugPrint();
+        rightAnimation.value = Tween(
+          begin: trainEndPosition(isRightFast.value),
+          end: trainBeginPosition(isRightFast.value),
+        ).animate(rightController);
         await rightController.forward(from: 0);
-        Future.delayed(const Duration(seconds: 2), () => rightWaitOff());
+        Future.delayed(const Duration(seconds: 2), () {
+          "rightWaitOff".debugPrint();
+          rightWaitOff();
+        });
       }
     }
 
@@ -184,14 +229,39 @@ class MyHomePage extends HookConsumerWidget {
       directionImage.value = countryNumber.value.bothOrRightDirection(isLeftWait.value);
       isRightWait.value = true;
       "isRightWait: ${isRightWait.value}".debugPrint();
-      Future.delayed(const Duration(seconds: waitTime), () => goRightTrain());
+      Future.delayed(const Duration(seconds: waitTime), () {
+        "goRightTrain".debugPrint();
+        goRightTrain();
+      });
     }
 
     pushRightButton() {
       if (!isRightWait.value && !isEmergency.value) {
-        setYellowState();
         isRightOn.value = true;
-        Future.delayed(const Duration(seconds: yellowTime), () => rightWaitOn());
+        if (!isLeftWait.value) {
+          setYellowState();
+          Future.delayed(const Duration(seconds: yellowTime), () {
+            "rightWaitOn".debugPrint();
+            rightWaitOn();
+          });
+        } else {
+          "rightWaitOn".debugPrint();
+          rightWaitOn();
+        }
+      }
+    }
+
+    pushLeftSpeedButton() {
+      if (!isLeftOn.value) {
+        isLeftFast.value = !isLeftFast.value;
+        "isLeftFast: ${isLeftFast.value}".debugPrint();
+      }
+    }
+
+    pushRightSpeedButton() {
+      if (!isRightOn.value) {
+        isRightFast.value = !isRightFast.value;
+        "isRightFast: ${isRightFast.value}".debugPrint();
       }
     }
 
@@ -228,9 +298,9 @@ class MyHomePage extends HookConsumerWidget {
       changeTime.value = 0;
       countryNumber.value = entry.value['countryNumber'] as int;
       'select_${entry.key}: ${countryNumber.value}'.debugPrint();
-      await setNormalState();
       fabKey.currentState?.close();
-      Future.delayed(const Duration(seconds: 5), () => changeTime.value = 5);
+      await setNormalState();
+      await Future.delayed(const Duration(seconds: barUpDownTime), () => changeTime.value = barUpDownTime);
     }
 
     /// Left Action
@@ -242,14 +312,15 @@ class MyHomePage extends HookConsumerWidget {
       void leftWarningToggle() {
         if (!isLeftWait.value && !isRightWait.value) {
           warningPlayer.stop();
-          "leftWarningPlayer: ${warningPlayer.state}".debugPrint();
+          "warningPlayer: ${warningPlayer.state}".debugPrint();
           return;
         }
         if (warningPlayer.state == PlayerState.completed) {
           warningPlayer.play(AssetSource(countryNumber.value.warningSound()));
-          "leftWarningPlayer: ${warningPlayer.state}".debugPrint();
+          "warningPlayer: ${warningPlayer.state}".debugPrint();
         }
-        warningImage.value = countryNumber.value.reverseWarning(warningImage.value);
+        warningFrontImage.value = countryNumber.value.reverseWarningFront(warningFrontImage.value);
+        warningBackImage.value = countryNumber.value.reverseWarningBack(warningBackImage.value);
         leftWarningTimer = Timer(Duration(milliseconds: countryNumber.value.flashTime()), leftWarningToggle);
       }
 
@@ -265,7 +336,7 @@ class MyHomePage extends HookConsumerWidget {
           warningPlayer.play(AssetSource(countryNumber.value.warningSound()));
           warningPlayer.setReleaseMode(ReleaseMode.release);
           warningPlayer.setVolume(warningVolume);
-          "leftWarningPlayer: ${warningPlayer.state}".debugPrint();
+          "warningPlayer: ${warningPlayer.state}".debugPrint();
         }
         leftWarningToggle();
         leftBarToggle();
@@ -274,7 +345,6 @@ class MyHomePage extends HookConsumerWidget {
       return () {
         leftWarningTimer?.cancel();
         leftBarTimer?.cancel();
-        leftTrainPlayer.dispose();
       };
     }, [isLeftWait.value]);
 
@@ -287,15 +357,16 @@ class MyHomePage extends HookConsumerWidget {
       void rightWarningToggle() {
         if (!isLeftWait.value && !isRightWait.value) {
           warningPlayer.stop();
-          "rightWarningPlayer: ${warningPlayer.state}".debugPrint();
+          "warningPlayer: ${warningPlayer.state}".debugPrint();
           return;
         }
         if (!isLeftWait.value) {
           if (warningPlayer.state == PlayerState.completed) {
             warningPlayer.play(AssetSource(countryNumber.value.warningSound()));
-            "rightWarningPlayer: ${warningPlayer.state}".debugPrint();
+            "warningPlayer: ${warningPlayer.state}".debugPrint();
           }
-          warningImage.value = countryNumber.value.reverseWarning(warningImage.value);
+          warningFrontImage.value = countryNumber.value.reverseWarningFront(warningFrontImage.value);
+          warningBackImage.value = countryNumber.value.reverseWarningBack(warningBackImage.value);
         }
         rightWarningTimer = Timer(Duration(milliseconds: countryNumber.value.flashTime()), rightWarningToggle);
       }
@@ -314,7 +385,7 @@ class MyHomePage extends HookConsumerWidget {
           warningPlayer.play(AssetSource(countryNumber.value.warningSound()));
           warningPlayer.setReleaseMode(ReleaseMode.release);
           warningPlayer.setVolume(warningVolume);
-          "rightWarningPlayer: ${warningPlayer.state}".debugPrint();
+          "warningPlayer: ${warningPlayer.state}".debugPrint();
         }
         rightWarningToggle();
         rightBarToggle();
@@ -323,7 +394,6 @@ class MyHomePage extends HookConsumerWidget {
       return () {
         rightWarningTimer?.cancel();
         rightBarTimer?.cancel();
-        rightTrainPlayer.dispose();
       };
     }, [isRightWait.value]);
 
@@ -361,6 +431,66 @@ class MyHomePage extends HookConsumerWidget {
         emergencyPlayer.dispose();
       };
     }, [isEmergency.value]);
+
+
+    Widget bottomButtons() => Container(
+      alignment: Alignment.bottomCenter,
+      margin: EdgeInsets.only(bottom: context.buttonSpace()),
+      child: (countryNumber.value == 0 || countryNumber.value == 1) ? Row(mainAxisAlignment: MainAxisAlignment.end,
+        children: List.generate(8, (i) =>
+          (i == 0) ? SizedBox(width: context.sideMargin()):
+          (i == 1) ? emergencyOffButton(context, emergencyColor.value, emergencyOff):
+          (i == 2) ? const Spacer():
+          (i == 3) ? leftButton(context, isLeftOn.value, pushLeftButton):
+          (i == 4) ? leftSpeedButton(context, isLeftOn.value, isLeftFast.value, pushLeftSpeedButton):
+          (i == 5) ? rightSpeedButton(context, isRightOn.value, isRightFast.value, pushRightSpeedButton):
+          (i == 6) ? rightButton(context, isRightOn.value, pushRightButton):
+          SizedBox(width: context.buttonSideMargin())
+        ),
+      ): Row(mainAxisAlignment: MainAxisAlignment.end,
+        children: List.generate(7, (i) =>
+          (i == 0) ? SizedBox(width: context.sideMargin()):
+          (i == 1) ? const Spacer():
+          (i == 2) ? leftButton(context, isLeftOn.value, pushLeftButton):
+          (i == 3) ? leftSpeedButton(context, isLeftOn.value, isLeftFast.value, pushLeftSpeedButton):
+          (i == 4) ? rightSpeedButton(context, isRightOn.value, isRightFast.value, pushRightSpeedButton):
+          (i == 5) ? rightButton(context, isRightOn.value, pushRightButton):
+          SizedBox(width: context.buttonSideMargin())
+        ),
+      ),
+    );
+
+    Widget selectCountryButton() => Container(
+      child: FabCircularMenuPlus(
+        key: fabKey,
+        alignment: countryNumber.value.floatingActionAlignment(),
+        fabSize: context.height() * 0.12,
+        ringWidth: context.height() * 0.15,
+        ringDiameter: context.height() * 0.8,
+        ringColor: transpBlackColor,
+        fabCloseColor: transpBlackColor,
+        fabOpenColor: transpBlackColor,
+        fabMargin: EdgeInsets.symmetric(
+          horizontal: context.height() * 0.045,
+          vertical: context.height() * 0.09,
+        ),
+        fabOpenIcon: Icon(Icons.public,
+          color: whiteColor,
+          size: context.height() * 0.08,
+        ),
+        fabCloseIcon: Icon(Icons.close,
+          color: whiteColor,
+          size: context.height() * 0.08,
+        ),
+        children: flagList.entries.map((entry) => GestureDetector(
+          child: SizedBox(
+            width: context.height() * 0.15,
+            child: Image.asset(entry.value['image'] as String),
+          ),
+          onTap: () async => changeCountry(entry),
+        )).toList()
+      )
+    );
 
     // showImagePickerDialog(BuildContext context, int i, bool isLeft) => showDialog(
     //   context: context,
@@ -418,59 +548,33 @@ class MyHomePage extends HookConsumerWidget {
         children: [
           backGroundImage(context, countryNumber.value),
           backFenceImage(context, countryNumber.value),
-          if (countryNumber.value == 0) backBoardImage(context, countryNumber.value),
-          if (countryNumber.value == 0) backGateImage(context, countryNumber.value),
-          backBarImage(context, countryNumber.value, barBackImage.value, barAngle.value, barShift.value, changeTime.value),
+          if (countryNumber.value == 0) backEmergencyImage(context, countryNumber.value),
+          backGateImage(context, countryNumber.value),
+          if (countryNumber.value != 3) backBarImage(context, countryNumber.value, barBackImage.value, barAngle.value, barShift.value, changeTime.value),
           if (countryNumber.value != 0) backGateImage(context, countryNumber.value),
           backPoleImage(context, countryNumber.value),
-          if (countryNumber.value == 0) backDirectionImage(context, countryNumber.value, directionImage.value),
-          if (countryNumber.value == 0) backWarningImage(context, warningImage.value),
-          if (isRightWait.value) rightTrainImage(context, rightTrain.value, rightAnimation),
-          if (isLeftWait.value) leftTrainImage(context, leftTrain.value, leftAnimation),
+          if (countryNumber.value == 3) backBarImage(context, countryNumber.value, barBackImage.value, barAngle.value, barShift.value, changeTime.value),
+          backDirectionImage(context, countryNumber.value, directionImage.value),
+          backWarningImage(context, countryNumber.value, warningBackImage.value),
+          if (isRightWait.value) rightTrainImage(context, rightTrain.value, rightAnimation.value),
+          if (isLeftWait.value) leftTrainImage(context, leftTrain.value, leftAnimation.value),
           frontPoleImage(context, countryNumber.value),
-          frontWaringImage(context, countryNumber.value, warningImage.value),
-          if (countryNumber.value == 0) frontDirectionImage(context, directionImage.value),
           if (countryNumber.value == 1) frontGateImage(context, countryNumber.value),
           frontBarImage(context, countryNumber.value, barFrontImage.value, barAngle.value, barShift.value, changeTime.value),
           if (countryNumber.value != 1) frontGateImage(context, countryNumber.value),
-          if (countryNumber.value == 0) frontBoardImage(context, countryNumber.value),
-          if (countryNumber.value != 2) emergencyButton(context, countryNumber.value, emergencyOn),
+          frontEmergencyImage(context, countryNumber.value),
+          emergencyButton(context, countryNumber.value, emergencyOn),
+          frontDirectionImage(context, countryNumber.value, directionImage.value),
+          frontWaringImage(context, countryNumber.value, warningFrontImage.value),
           frontFenceImage(context, countryNumber.value),
+          trafficSignImage(context, countryNumber.value),
           sideSpacer(context),
-          if (!isPremiumProvider) const AdBannerWidget(),
-          bottomButtons(context, isLeftOn.value, isRightOn.value, emergencyColor.value, emergencyOff, pushLeftButton, pushRightButton),
+          Container(alignment: countryNumber.value.adAlignment(), child: const AdBannerWidget()),
+          bottomButtons(),
         ],
       ),
-      floatingActionButton: ((!isRightWait.value) && (!isLeftWait.value)) ? FabCircularMenuPlus(
-        key: fabKey,
-        alignment: Alignment.topLeft,
-        fabSize: context.height() * 0.12,
-        ringWidth: context.height() * 0.15,
-        ringDiameter: context.height() * 0.8,
-        ringColor: transpBlackColor,
-        fabCloseColor: transpBlackColor,
-        fabOpenColor: transpBlackColor,
-        fabMargin: EdgeInsets.symmetric(
-          horizontal: context.height() * 0.045,
-          vertical: context.height() * 0.09,
-        ),
-        fabOpenIcon: Icon(Icons.public,
-          color: whiteColor,
-          size: context.height() * 0.08,
-        ),
-        fabCloseIcon: Icon(Icons.close,
-          color: whiteColor,
-          size: context.height() * 0.08,
-        ),
-        children: flagList.entries.map((entry) => GestureDetector(
-          child: SizedBox(
-            width: context.height() * 0.15,
-            child: Image.asset(entry.value['image'] as String),
-          ),
-          onTap: () async => changeCountry(entry),
-        )).toList()
-      ): null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.startDocked,
+      floatingActionButton: ((!isYellow.value) && (!isRightWait.value) && (!isLeftWait.value)) ? selectCountryButton(): null,
+      floatingActionButtonLocation: countryNumber.value.floatingActionLocation(),
     );
   }
 }
