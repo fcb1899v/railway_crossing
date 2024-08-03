@@ -1,35 +1,8 @@
-import 'dart:io';
-import 'dart:math';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'common_extension.dart';
 import 'constant.dart';
-
-///App Tracking Transparency
-Future<void> initPlugin(BuildContext context) async {
-  final status = await AppTrackingTransparency.trackingAuthorizationStatus;
-  if (status == TrackingStatus.notDetermined && context.mounted) {
-      await showCupertinoDialog(context: context,
-        builder: (context) {
-          return CupertinoAlertDialog(
-            title: Text(context.appTitle()),
-            content: Text(context.thisApp()),
-            actions: [
-              CupertinoDialogAction(
-                child: const Text('OK', style: TextStyle(color: Colors.blue)),
-                onPressed: () => Navigator.pop(context),
-              )
-            ],
-          );
-        }
-      );
-    // }
-    await Future.delayed(const Duration(milliseconds: 200));
-    await AppTrackingTransparency.requestTrackingAuthorization();
-  }
-}
 
 ///LifecycleEventHandler
 class LifecycleEventHandler extends WidgetsBindingObserver {
@@ -53,77 +26,7 @@ class LifecycleEventHandler extends WidgetsBindingObserver {
   }
 }
 
-///App Bar
-// PreferredSize myHomeAppBar(BuildContext context, int counter) =>
-//     PreferredSize(
-//       preferredSize: const Size.fromHeight(appBarHeight),
-//       child: AppBar(
-//         title: titleText(context, context.appTitle()),
-//         backgroundColor: grayColor,
-//         centerTitle: true,
-//         actions: [
-//           IconButton(
-//             icon: const Icon(Icons.settings, color: whiteColor, size: 32),
-//             onPressed: () => context.pushSettingsPage(),
-//           ),
-//         ],
-//       ),
-//     );
-
-Widget upgradeAppBar(BuildContext context, bool isPremium, isPurchase) =>
-    Container(
-      height: upgradeAppBarHeight + context.topPadding(),
-      padding: EdgeInsets.only(top: context.topPadding() - 10),
-      color: grayColor,
-      child: Stack(alignment: Alignment.center,
-        children: [
-          Row(children: [
-            const SizedBox(width: 15),
-            if (!isPurchase) IconButton(
-              icon: const Icon(Icons.arrow_back_ios),
-              color: whiteColor,
-              onPressed: () => Navigator.of(context).pop(),
-            ),
-            const Spacer(),
-          ]),
-          titleText(context, (isPremium) ? context.restore(): context.upgrade()),
-        ],
-      ),
-    );
-
-Widget titleText(BuildContext context, String title) =>
-    Text(title,
-      style: const TextStyle(
-        fontFamily: "beon",
-        fontSize: 24,
-        fontWeight: FontWeight.bold,
-        color: whiteColor,
-        decoration: TextDecoration.none
-      ),
-      textScaler: const TextScaler.linear(1.0),
-    );
-
-///Operation Icon
-Widget operationIcon(BuildContext context, Color color, IconData icon) => Container(
-  width: context.height() * 0.1,
-  height: context.height() * 0.1,
-  alignment: Alignment.center,
-  decoration:  BoxDecoration(
-    color: transpBlackColor,
-    border: Border.all(
-      color: color,
-      width: context.height() * 0.008,
-    ),
-    borderRadius: BorderRadius.circular(context.height() * 0.02),),
-  child: Icon(icon,
-      color: color,
-      size: context.height() * 0.08
-  ),
-);
-
-
 ///Background
-//common
 Widget backGroundImage(BuildContext context, int countryNumber) =>
     Container(
       width: context.width(),
@@ -150,275 +53,186 @@ Widget sideSpacer(BuildContext context) =>
       ),
     ]);
 
+///Pole
 Widget frontPoleImage(BuildContext context, int countryNumber) =>
-    Row(mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        SizedBox(width: context.sideMargin()),
-        Container(
-          alignment: Alignment.bottomLeft,
-          margin: EdgeInsets.only(
-            left: context.frontPoleLeftMargin(countryNumber),
-            top: context.frontPoleTopMargin(countryNumber),
-          ),
-          height: context.frontPoleImageHeight(countryNumber),
-          child: Image.asset(countryNumber.poleFrontImage()),
-        ),
-        const Spacer(),
-        SizedBox(width: context.sideMargin()),
-      ],
-    );
-
-Widget frontWaringImage(BuildContext context, int countryNumber, String warningImage) =>
-    Row(mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        SizedBox(width: context.sideMargin()),
-        Container(
-          margin: EdgeInsets.only(
-            bottom: context.warningBottomMargin(countryNumber),
-            left: context.warningLeftMargin(countryNumber)
-          ),
-          height: context.warningImageHeight(countryNumber),
-          child: Image.asset(warningImage),
-        ),
-        const Spacer(),
-        SizedBox(width: context.sideMargin()),
-      ],
-    );
-
-Widget frontDirectionImage(BuildContext context, String directionImage) =>
-    Row(mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        SizedBox(width: context.sideMargin()),
-        Container(
-          margin: EdgeInsets.only(
-            top: context.height() * 0.16,
-            left: context.height() * 0.238
-          ),
-          height: context.height() * 0.11,
-          child: Image.asset(directionImage),
-        ),
-        const Spacer(),
-        SizedBox(width: context.sideMargin()),
-      ],
+    Container(
+      margin: EdgeInsets.only(
+        top: context.frontPoleTopMargin(countryNumber),
+        left: context.frontPoleLeftMargin(countryNumber),
+      ),
+      height: context.frontPoleImageHeight(countryNumber),
+      child: Image.asset(countryNumber.poleFrontImage()),
     );
 
 Widget backPoleImage(BuildContext context, int countryNumber) =>
-    Row(mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        SizedBox(width: context.sideMargin()),
-        Container(
-          alignment: Alignment.bottomLeft,
-          margin: EdgeInsets.only(
-            left: context.backPoleLeftMargin(countryNumber),
-            top: context.backPoleTopMargin(countryNumber),
-          ),
-          height: context.backPoleImageHeight(countryNumber),
-          child: Image.asset(countryNumber.poleBackImage()),
-        ),
-        const Spacer(),
-        SizedBox(width: context.sideMargin()),
-      ],
+    Container(
+      margin: EdgeInsets.only(
+        top: context.backPoleTopMargin(countryNumber),
+        left: context.backPoleLeftMargin(countryNumber),
+      ),
+      height: context.backPoleImageHeight(countryNumber),
+      child: Image.asset(countryNumber.poleBackImage()),
     );
 
-Widget backWarningImage(BuildContext context, String warningImage) =>
-    Row(mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        SizedBox(width: context.sideMargin()),
-        Container(
-          margin: EdgeInsets.only(
-            bottom: context.height() * 0.18,
-            left: context.height() * 1.132
-          ),
-          height: context.height() * 0.07,
-          child: Transform(
-            alignment: Alignment.center,
-            transform: Matrix4.rotationY(pi),
-            child: Image.asset(warningImage),
-          ),
-        ),
-        const Spacer(),
-        SizedBox(width: context.sideMargin()),
-      ]
+///Warning Lamp
+Widget frontWaringImage(BuildContext context, int countryNumber, String warningFrontImage) =>
+    Container(
+      margin: EdgeInsets.only(
+        left: context.frontWarningLeftMargin(countryNumber),
+        bottom: context.frontWarningBottomMargin(countryNumber),
+      ),
+      height: context.frontWarningImageHeight(countryNumber),
+      child: Image.asset(warningFrontImage),
+    );
+
+Widget backWarningImage(BuildContext context, int countryNumber, String warningBackImage) =>
+    Container(
+      margin: EdgeInsets.only(
+        bottom: context.backWarningBottomMargin(countryNumber),
+        left: context.backWarningLeftMargin(countryNumber)
+      ),
+      height: context.backWarningImageHeight(countryNumber),
+      child: (countryNumber == 0 || countryNumber == 3)  ? Image.asset(warningBackImage): null,
+    );
+
+///Direction
+Widget frontDirectionImage(BuildContext context, int countryNumber, String directionImage) =>
+    Container(
+      margin: EdgeInsets.only(
+        top: context.frontDirectionTopMargin(),
+        left: context.frontDirectionLeftMargin(),
+      ),
+      height: context.frontDirectionHeight(),
+      child: (countryNumber == 0) ? Image.asset(directionImage): null,
     );
 
 Widget backDirectionImage(BuildContext context, int countryNumber, String directionImage) =>
-    Row(mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        SizedBox(width: context.sideMargin()),
-        Container(
-          margin: EdgeInsets.only(
-            top: context.height() * 0.096,
-            left: context.height() * 1.193
-          ),
-          height: context.height() * 0.066,
-          child: Image.asset(directionImage)
-        ),
-        const Spacer(),
-        SizedBox(width: context.sideMargin()),
-      ]
+    Container(
+      margin: EdgeInsets.only(
+        top: context.backDirectionTopMargin(),
+        left: context.backDirectionLeftMargin(),
+      ),
+      height: context.backDirectionHeight(),
+      child: (countryNumber == 0) ? Image.asset(directionImage): null
     );
 
+///Gate
 Widget frontGateImage(BuildContext context, int countryNumber) =>
-    Column(children: [
-      const Spacer(),
-      Row(children: [
-        SizedBox(width: context.sideMargin()),
-        if (countryNumber == 0 || countryNumber == 1) const Spacer(),
-        Container(
-          margin: EdgeInsets.only(
-            right: context.frontGateRightMargin(countryNumber),
-            bottom: context.frontGateBottomMargin(countryNumber)
-          ),
-          height: context.frontGateImageHeight(countryNumber),
-          child: Image.asset(countryNumber.gateFrontImage()),
-        ),
-        if (countryNumber == 2) const Spacer(),
-        SizedBox(width: context.sideMargin()),
-      ]),
-    ]);
+    Container(
+      margin: EdgeInsets.only(
+        top: context.frontGateTopMargin(countryNumber),
+        left: context.frontGateLeftMargin(countryNumber),
+      ),
+      height: context.frontGateImageHeight(countryNumber),
+      child: (countryNumber != 3) ? Image.asset(countryNumber.gateFrontImage()): null,
+    );
 
 Widget backGateImage(BuildContext context, int countryNumber) =>
-    Column(children: [
-      const Spacer(),
-      Row(children: [
-        SizedBox(width: context.sideMargin()),
-        if (countryNumber == 2) const Spacer(),
-        Container(
-          margin: EdgeInsets.only(
-            left: context.backGateLeftMargin(countryNumber),
-            bottom: context.backGateBottomMargin(countryNumber)
-          ),
-          height: context.backGateImageHeight(countryNumber),
-          child: Image.asset(countryNumber.gateBackImage()),
-        ),
-        if (countryNumber == 0 || countryNumber == 1) const Spacer(),
-        SizedBox(width: context.sideMargin()),
-      ]),
-    ]);
+    Container(
+      margin: EdgeInsets.only(
+        top: context.backGateTopMargin(countryNumber),
+        left: context.backGateLeftMargin(countryNumber),
+      ),
+      height: context.backGateImageHeight(countryNumber),
+      child: (countryNumber != 3) ? Image.asset(countryNumber.gateBackImage()): null,
+    );
 
+///Bar
 Widget frontBarImage(BuildContext context, int countryNumber, String barFrontImage, double angle, double shift, int changeTime) =>
-    Column(children: [
-      const Spacer(),
-      Row(children: [
-        SizedBox(width: context.sideMargin()),
-        const Spacer(),
-        Container(
-          margin: EdgeInsets.only(
-            right: context.frontBarRightMargin(countryNumber),
-            bottom: context.frontBarBottomMargin(countryNumber)
-          ),
-          height: context.frontBarImageHeight(countryNumber),
-          child: AnimatedContainer(
-            duration: Duration(seconds: changeTime),
-            transform: (countryNumber == 2) ?
-              Matrix4.translationValues(-shift * context.height(), 0, 0):
-              Matrix4.rotationZ(angle),
-            transformAlignment: (countryNumber != 2) ? Alignment(
-              countryNumber.frontBarAlignmentX(),
-              countryNumber.frontBarAlignmentY(),
-            ): null,
-            child: Image.asset(barFrontImage),
-          ),
-        ),
-        SizedBox(width: context.sideMargin()),
-      ]),
-    ]);
+    Container(
+      margin: EdgeInsets.only(
+        left: context.frontBarLeftMargin(countryNumber),
+        top: context.frontBarTopMargin(countryNumber)
+      ),
+      height: context.frontBarImageHeight(countryNumber),
+      child: AnimatedContainer(
+        duration: Duration(seconds: changeTime),
+        transform: (countryNumber == 2) ?
+        Matrix4.translationValues(-shift * context.height(), 0, 0):
+        Matrix4.rotationZ(angle),
+        transformAlignment: (countryNumber != 2) ? Alignment(
+          countryNumber.frontBarAlignmentX(),
+          countryNumber.frontBarAlignmentY(),
+        ): null,
+        child: Image.asset(barFrontImage),
+      ),
+    );
 
 Widget backBarImage(BuildContext context, int countryNumber, String barBackImage, double angle, double shift, int changeTime) =>
-    Column(children: [
-      const Spacer(),
-      Row(children: [
-        SizedBox(width: context.sideMargin()),
-        Container(
-          margin: EdgeInsets.only(
-            left: context.backBarLeftMargin(countryNumber),
-            bottom: context.backBarBottomMargin(countryNumber)
-          ),
-          height: context.backBarImageHeight(countryNumber),
-          child: AnimatedContainer(
-            duration: Duration(seconds: changeTime),
-            transform: (countryNumber == 2) ?
-              Matrix4.translationValues(shift * 0.575 * context.height(), 0, 0):
-              Matrix4.rotationZ(-angle),
-            transformAlignment: (countryNumber != 2) ? Alignment(
-              countryNumber.backBarAlignmentX(),
-              countryNumber.backBarAlignmentY(),
-            ): null,
-            child: Image.asset(barBackImage),
-          ),
-        ),
-        const Spacer(),
-        SizedBox(width: context.sideMargin()),
-      ]),
-    ]);
+    Container(
+      margin: EdgeInsets.only(
+        top: context.backBarTopMargin(countryNumber),
+        left: context.backBarLeftMargin(countryNumber),
+      ),
+      height: context.backBarImageHeight(countryNumber),
+      child: AnimatedContainer(
+        duration: Duration(seconds: changeTime),
+        transform: (countryNumber == 2) ?
+          Matrix4.translationValues(context.backBarShift(shift), 0, 0):
+          Matrix4.rotationZ(-angle),
+        transformAlignment: (countryNumber != 2) ? Alignment(
+          countryNumber.backBarAlignmentX(),
+          countryNumber.backBarAlignmentY(),
+        ): null,
+        child: Image.asset(barBackImage),
+      ),
+    );
 
-/// Emergency Image
-Widget frontBoardImage(BuildContext context, int countryNumber) =>
-    Column(children: [
-      const Spacer(),
-      Row(children: [
-        SizedBox(width: context.sideMargin()),
-        Container(
-          margin: EdgeInsets.only(
-            left: context.height() * 0.085,
-            bottom: context.height() * 0.01
-          ),
-          height: context.height() * 0.42,
-          child: Image.asset(boardFrontImage),
-        ),
-        const Spacer(),
-      ]),
-    ]);
+/// Emergency
+Widget frontEmergencyImage(BuildContext context, int countryNumber) =>
+    Container(
+      margin: EdgeInsets.only(
+        top: context.frontEmergencyTopMargin(),
+        left: context.frontEmergencyLeftMargin(),
+      ),
+      height: context.frontEmergencyHeight(),
+      child: (countryNumber == 0) ? Image.asset(boardFrontImage): null,
+    );
 
-Widget backBoardImage(BuildContext context, int countryNumber) =>
-    Column(children: [
-      const Spacer(),
-      Row(children: [
-        SizedBox(width: context.sideMargin()),
-        Container(
-          margin: EdgeInsets.only(
-            left: context.height() * 1.29,
-            bottom: context.height() * 0.225
-          ),
-          height: context.height() * 0.252,
-          child: Image.asset(boardBackImage),
-        ),
-        const Spacer(),
-      ]),
-    ]);
+Widget backEmergencyImage(BuildContext context, int countryNumber) =>
+    Container(
+      margin: EdgeInsets.only(
+        top: context.backEmergencyTopMargin(),
+        left: context.backEmergencyLeftMargin(),
+      ),
+      height: context.backEmergencyHeight(),
+      child: Image.asset(boardBackImage),
+    );
 
 Widget emergencyButton(BuildContext context, int countryNumber, void emergencyOn()) =>
-    Column(children: [
-      const Spacer(),
-      Row(children: [
-        SizedBox(width: context.sideMargin()),
-        Container(
-          margin: EdgeInsets.only(
-            left: context.emergencyButtonLeftMargin(countryNumber),
-            bottom: context.emergencyButtonBottomMargin(countryNumber),
-          ),
-          height: context.emergencyButtonHeight(countryNumber),
-          child: GestureDetector(
-            onTap: () => emergencyOn(),
-            child:Image.asset(countryNumber.emergencyImage()),
-          )
-        ),
-        const Spacer(),
-      ]),
-    ]);
+    Container(
+      margin: EdgeInsets.only(
+        top: context.emergencyButtonTopMargin(countryNumber),
+        left: context.emergencyButtonLeftMargin(countryNumber),
+      ),
+      height: context.emergencyButtonHeight(countryNumber),
+      child: GestureDetector(
+        onTap: () => emergencyOn(),
+        child: (countryNumber == 0 || countryNumber == 1) ? Image.asset(countryNumber.emergencyImage()): null,
+      )
+    );
 
+///Traffic Sign
+Widget trafficSignImage(BuildContext context, int countryNumber) =>
+    Container(
+      margin: EdgeInsets.only(
+        top: context.trafficSignTopMargin(countryNumber),
+        left: context.trafficSignLeftMargin(countryNumber),
+      ),
+      height: context.trafficSignHeight(countryNumber),
+      child:Image.asset(countryNumber.signImage()),
+    );
 
 /// Fence Image
 Widget frontFenceImage(BuildContext context, int countryNumber) =>
     Container(
       alignment: Alignment.bottomCenter,
-      child: Row(children: List.generate(5, (i) =>
-        (i == 2) ? const Spacer():
-        (i == 0 || i == 4) ? SizedBox(width: context.sideMargin()):
-        SizedBox(
+      margin: EdgeInsets.symmetric(horizontal: context.sideMargin()),
+      child: Row(children: List.generate(3, (i) =>
+        (i == 1) ? const Spacer(): SizedBox(
           height: context.frontFenceImageHeight(countryNumber),
           child: Image.asset(
-            (i == 1) ? countryNumber.fenceFrontLeftImage(): countryNumber.fenceFrontRightImage()
+            (i == 0) ? countryNumber.fenceFrontLeftImage(): countryNumber.fenceFrontRightImage()
           ),
         )
       )),
@@ -427,18 +241,21 @@ Widget frontFenceImage(BuildContext context, int countryNumber) =>
 Widget backFenceImage(BuildContext context, int countryNumber) =>
     Container(
       alignment: Alignment.bottomCenter,
-      margin: EdgeInsets.only(bottom: context.backFenceBottomMargin(countryNumber)),
-      child: Row(children: List.generate(5, (i) =>
-        (i == 2) ? const Spacer():
-        (i == 0 || i == 4) ? SizedBox(width: context.sideMargin()):
-        SizedBox(
+      margin: EdgeInsets.only(
+        bottom: context.backFenceBottomMargin(countryNumber),
+        left: context.sideMargin(),
+        right: context.sideMargin(),
+      ),
+      child: Row(children: List.generate(3, (i) =>
+        (i == 1) ? const Spacer(): SizedBox(
           height: context.backFenceImageHeight(countryNumber),
           child: Image.asset(
-            (i == 1) ? countryNumber.fenceBackLeftImage(): countryNumber.fenceBackRightImage()
-          ),
+            (i == 0) ? countryNumber.fenceBackLeftImage(): countryNumber.fenceBackRightImage()
+          )
         )
       )),
     );
+
 
 /// Train Image
 Widget leftTrainImage(BuildContext context, List<String> leftTrainImage, Animation<double> leftAnimation) =>
@@ -475,176 +292,54 @@ Widget rightTrainImage(BuildContext context, List<String> rightTrainImage, Anima
       ),
     );
 
-//Bottom Buttons
-Widget bottomButtons(BuildContext context, bool isLeftOn, bool isRightOn, Color emergencyColor, void emergencyOff(), void pushLeftButton(), void pushRightButton()) =>
-    Container(
-      alignment: Alignment.bottomCenter,
-      margin: EdgeInsets.only(bottom: context.buttonSpace()),
-      child: Row(mainAxisAlignment: MainAxisAlignment.end,
-        children: List.generate(7, (i) =>
-          (i == 2) ? const Spacer():
-          (i == 4) ? SizedBox(width: context.buttonSpace()):
-          (i == 0 || i == 6) ? SizedBox(width: context.buttonSideMargin()):
-          GestureDetector(
-            onTap: () async => (i == 1) ? emergencyOff(): (i == 3) ? pushLeftButton(): pushRightButton(),
-            child: operationIcon(context,
-              (i == 1) ? emergencyColor: (i == 3) ? isLeftOn.operationColor(): isRightOn.operationColor(),
-              (i == 1) ? Icons.emergency: (i == 3) ? Icons.arrow_back: Icons.arrow_forward
-            )
-          ),
-        ),
-      ),
+///Bottom Buttons
+///Operation Icon
+Widget operationIcon(BuildContext context, Color color, IconData icon) => Container(
+  width: context.operationButtonSize(),
+  height: context.operationButtonSize(),
+  margin: EdgeInsets.only(left: context.buttonSpace()),
+  alignment: Alignment.center,
+  decoration: BoxDecoration(
+    color: transpBlackColor,
+    border: Border.all(
+      color: color,
+      width: context.operationButtonBorderWidth(),
+    ),
+    borderRadius: BorderRadius.circular(context.operationButtonBorderRadius())
+  ),
+  child: Icon(icon,
+    color: color,
+    size: context.operationButtonIconSize(),
+  ),
+);
+
+Widget emergencyOffButton(BuildContext context, Color emergencyColor, void emergencyOff()) =>
+    GestureDetector(
+      onTap: () async => emergencyOff(),
+      child: operationIcon(context, emergencyColor, Icons.emergency),
     );
 
-
-
-///Settings
-AppBar settingsAppBar(BuildContext context, String title, bool isPurchase) =>
-    AppBar(
-      automaticallyImplyLeading: false,
-      backgroundColor: transpColor,
-      foregroundColor: blackColor,
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios),
-        onPressed: () async => context.pushHomePage(),
-      ),
+Widget leftButton(BuildContext context, bool isLeftOn, void pushLeftButton()) =>
+    GestureDetector(
+      onTap: () async => pushLeftButton(),
+      child: operationIcon(context, isLeftOn.operationColor(), Icons.arrow_back)
     );
 
-Widget settingsTitle(BuildContext context, String title, int time) =>
-    Row(children: [
-      const Icon(Icons.watch_later_outlined, color: grayColor),
-      const SizedBox(width: 10),
-      Text(title, style: const TextStyle(color: blackColor)),
-      const Spacer(),
-      Text("$time${context.timeUnit()} ", style: const TextStyle(color: blackColor)),
-    ]);
-
-sliderTheme(BuildContext context, Color activeColor) =>
-    SliderTheme.of(context).copyWith(
-      trackHeight: 6,
-      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
-      thumbColor: activeColor,
-      valueIndicatorColor: activeColor,
-      overlayColor: activeColor.withAlpha(80),
-      activeTrackColor: activeColor,
-      inactiveTrackColor: transpGrayColor,
-      activeTickMarkColor: activeColor,
-      inactiveTickMarkColor: grayColor,
+Widget rightButton(BuildContext context, bool isRightOn, void pushRightButton()) =>
+    GestureDetector(
+      onTap: () async => pushRightButton(),
+      child: operationIcon(context, isRightOn.operationColor(), Icons.arrow_forward),
     );
 
-EdgeInsets settingsTitlePadding(bool isBottom) =>
-    EdgeInsets.only(
-      top: settingsTilePaddingSize,
-      bottom: isBottom ? settingsTilePaddingSize / 2: 0,
-      left: settingsTilePaddingSize,
-      right: settingsTilePaddingSize,
+Widget leftSpeedButton(BuildContext context, bool isLeftOn, bool isLeftFast, void pushLeftSpeedButton()) =>
+    GestureDetector(
+        onTap: () async => pushLeftSpeedButton(),
+        child: operationIcon(context, isLeftOn.operationColor(), isLeftFast ? CupertinoIcons.chevron_left_2:  CupertinoIcons.chevron_left)
     );
 
-BoxDecoration settingsTileDecoration(bool isTop, isBottom) =>
-    BoxDecoration(
-      color: (Platform.isIOS || Platform.isMacOS) ? whiteColor: transpColor,
-      borderRadius: BorderRadius.only(
-        topLeft: Radius.circular(isTop ? settingsTileRadiusSize: 0),
-        topRight: Radius.circular(isTop ? settingsTileRadiusSize: 0),
-        bottomLeft: Radius.circular(isBottom ? settingsTileRadiusSize: 0),
-        bottomRight: Radius.circular(isBottom ? settingsTileRadiusSize: 0),
-      ),
+Widget rightSpeedButton(BuildContext context, bool isRightOn, bool isRightFast, void pushRightSpeedButton()) =>
+    GestureDetector(
+      onTap: () async => pushRightSpeedButton(),
+      child: operationIcon(context, isRightOn.operationColor(), isRightFast ? CupertinoIcons.chevron_right_2: CupertinoIcons.chevron_right),
     );
 
-///Upgrade
-Text premiumTitle(BuildContext context) =>
-    Text(context.premiumPlan(),
-      style: upgradeTextStyle(context, premiumTitleFontSizeRate, grayColor),
-    );
-
-Widget upgradePrice(BuildContext context, String price, bool isPremium) =>
-    Container(
-      padding: EdgeInsets.all(context.height() * premiumPricePaddingRate),
-      child: (!isPremium) ? Text(price,
-        style: upgradeTextStyle(context, premiumPriceFontSizeRate, yellowColor),
-      ): null,
-    );
-
-Widget upgradeButtonImage(BuildContext context, bool isRestore) =>
-    Material(
-      elevation: upgradeButtonElevation,
-      child: Container(
-        padding: EdgeInsets.all(context.height() * upgradeButtonPaddingRate),
-        decoration: BoxDecoration(
-          color: isRestore ? greenColor: yellowColor,
-          border: Border.all(color: grayColor, width: upgradeButtonBorderWidth),
-          borderRadius: BorderRadius.circular(upgradeButtonBorderRadius),
-        ),
-        child: Text(isRestore ? context.toRestore(): context.toUpgrade(),
-          style: upgradeTextStyle(context, upgradeButtonFontSizeRate, isRestore ? whiteColor: grayColor),
-        )
-      )
-    );
-
-DataTable upgradeDataTable(BuildContext context) =>
-    DataTable(
-      headingRowHeight: context.height() * upgradeTableHeadingHeightRate,
-      headingRowColor: WidgetStateColor.resolveWith((states) => grayColor),
-      headingTextStyle: const TextStyle(color: whiteColor),
-      dividerThickness: upgradeTableDividerWidth,
-      dataRowMaxHeight: context.height() * upgradeTableHeightRate,
-      dataRowMinHeight: context.height() * upgradeTableHeightRate,
-      columns: [
-        dataColumnLabel(context, context.plan()),
-        dataColumnLabel(context, context.free()),
-        dataColumnLabel(context, context.premium()),
-      ],
-      rows: [
-        tableDataRow(context, context.pushButton(), whiteColor, false),
-        tableDataRow(context, context.pedestrianSignal(), transpGrayColor, false),
-        tableDataRow(context, context.carSignal(), whiteColor, true),
-        tableDataRow(context, context.noAds(), transpGrayColor, true),
-      ],
-    );
-
-DataColumn dataColumnLabel(BuildContext context, String text) =>
-    DataColumn(
-      label: Expanded(
-        child: Text(text,
-          style: upgradeTextStyle(context, upgradeTableFontSizeRate, whiteColor),
-          textAlign: TextAlign.center,
-        ),
-      ),
-    );
-
-DataRow tableDataRow(BuildContext context, String title, Color color, bool isPremium) =>
-    DataRow(
-      color: WidgetStateColor.resolveWith((states) => color),
-      cells: [
-        DataCell(Text(title,
-          style: upgradeTextStyle(context, upgradeTableFontSizeRate, grayColor),
-          textAlign: TextAlign.left,
-        )),
-        isPremium ?
-          iconDataCell(context, Icons.not_interested, redColor):
-          iconDataCell(context, Icons.check_circle, greenColor),
-        iconDataCell(context, Icons.check_circle, greenColor),
-      ]
-    );
-
-TextStyle upgradeTextStyle(BuildContext context, double fontSizeRate, Color color) =>
-    TextStyle(
-        fontSize: context.height() * fontSizeRate,
-        fontWeight: FontWeight.bold,
-        fontFamily: "beon",
-        color: color,
-        decoration: TextDecoration.none
-    );
-
-DataCell iconDataCell(BuildContext context, IconData icon, Color color) =>
-    DataCell(Center(child:
-      Icon(icon, color: color, size: context.height() * upgradeTableIconSizeRate))
-    );
-
-Widget circularProgressIndicator(BuildContext context) =>
-    Column(mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const CircularProgressIndicator(color: greenColor),
-        SizedBox(height: context.height() * upgradeCircularProgressMarginBottomRate),
-      ]
-    );

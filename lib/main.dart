@@ -11,8 +11,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'constant.dart';
 import 'firebase_options.dart';
 import 'my_homepage.dart';
-import 'settings.dart';
-import 'upgrade.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,11 +36,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(colorScheme: const ColorScheme.light(primary: greenColor)),
       debugShowCheckedModeBanner: false,
       home: MyHomePage(),
-      routes: {
-        '/h' : (_) => MyHomePage(),
-        '/s' : (_) => const MySettingsPage(),
-        '/u' : (_) => const MyUpgradePage(),
-      },
+      routes: {'/h' : (_) => MyHomePage()},
       navigatorObservers: <NavigatorObserver>[
         FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
         RouteObserver<ModalRoute>()
