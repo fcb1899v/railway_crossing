@@ -15,8 +15,8 @@ extension ContextExt on BuildContext {
   String lang() => locale().languageCode;
 
   ///Localization
-  String selectLeftTrain() => AppLocalizations.of(this)!.selectLeftTrain;
-  String selectRightTrain() => AppLocalizations.of(this)!.selectRightTrain;
+  String appTitle() => AppLocalizations.of(this)!.appTitle;
+  String thisApp() => AppLocalizations.of(this)!.thisApp;
 
   ///Size
   double width() => MediaQuery.of(this).size.width;
