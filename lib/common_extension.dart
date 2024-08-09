@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-import 'package:flutter_settings_screens/flutter_settings_screens.dart';
 import 'my_homepage.dart';
 import 'constant.dart';
 
@@ -19,10 +18,13 @@ extension ContextExt on BuildContext {
   String thisApp() => AppLocalizations.of(this)!.thisApp;
 
   ///Size
-  double width() => MediaQuery.of(this).size.width;
-  double height() => MediaQuery.of(this).size.height;
-  double topPadding() => MediaQuery.of(this).padding.top;
-  double sideMargin() => (width() / 16 > height() / 9) ? (width() - height() * 16 / 9) / 2: 0;
+  double mediaWidth() => MediaQuery.of(this).size.width;
+  double mediaHeight() => MediaQuery.of(this).size.height;
+
+  double width() => mediaWidth();
+  double height() => (mediaWidth() / 16 > mediaHeight() / 9) ? mediaHeight(): mediaWidth() * 9 /16;
+  double sideMargin() => (mediaWidth() / 16 > mediaHeight() / 9) ? (mediaWidth() - mediaHeight() * 16 / 9) / 2: 0;
+  double upDownMargin() => (mediaWidth() / 16 > mediaHeight() / 9) ? 0: (mediaHeight() - mediaWidth() * 9 / 16) / 2;
 
   ///Admob
   double admobHeight() => (height() < 320) ? 50: (820 < height()) ? 100: 0.1 * height() + 18;
@@ -273,7 +275,7 @@ extension ContextExt on BuildContext {
       (countryNumber == 1) ? 0.111:
       0.137
   );
-  double backFenceBottomMargin(int countryNumber) => height() * 0.235;
+  double backFenceBottomMargin(int countryNumber) => upDownMargin() + height() * 0.235;
 
   ///Train
   double leftTrainOffset()  => - height() * 0.050;
@@ -298,16 +300,6 @@ extension StringExt on String {
     }
   }
 
-  //this is key
-  int getSettingsValueInt(int defaultValue) =>
-    Settings.getValue<int>("key_$this", defaultValue: defaultValue) ?? defaultValue;
-
-  bool getSettingsValueBool(bool defaultValue) =>
-      Settings.getValue<bool>("key_$this", defaultValue: defaultValue) ?? defaultValue;
-
-  String getSettingsValueString(String defaultValue) =>
-      Settings.getValue<String>("key_$this", defaultValue: defaultValue) ?? defaultValue;
-
   //this is countryCode
   int getDefaultCounter() =>
       (this == "JP") ? 0:
@@ -321,6 +313,7 @@ extension StringExt on String {
 extension IntExt on int {
 
   //this is countryNumber
+  int nextCountry() => (this < totalCountryNumber - 1) ? this + 1: 0;
 
   ///Image
   //Assets
@@ -376,13 +369,15 @@ extension IntExt on int {
   String fenceBackLeftImage() => "${crossingAssets()}fence_back_left.png";
   String fenceBackRightImage() => "${crossingAssets()}fence_back_right.png";
 
+  String numberToCountry() =>
+      (this == 1) ?  "uk":
+      (this == 2) ?  "cn":
+      (this == 3) ?  "us":
+      "jp";
+
   ///Sound
-  String soundAssets() =>
-      (this == 1) ?  soundUKAssets:
-      (this == 2) ?  soundCNAssets:
-      (this == 3) ?  soundUSAssets:
-      soundJPAssets;
-  String warningSound() => "${soundAssets()}warning.mp3";
+  String soundAssets() => "audios/${numberToCountry()}/";
+  String warningSound() => "${soundAssets()}warning_${numberToCountry()}.mp3";
 
   ///Time
   int flashTime() => (this == 0) ? 1000: 500;

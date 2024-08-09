@@ -5,7 +5,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter_settings_screens/flutter_settings_screens.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'constant.dart';
@@ -14,15 +13,14 @@ import 'my_homepage.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeLeft]); //縦向き指定
-  MobileAds.instance.initialize();
+  await MobileAds.instance.initialize();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await dotenv.load(fileName: 'assets/.env');
-  initSettings().then((_) =>
-    runApp(const ProviderScope(
-      child: MyApp())
-    ),
-  );
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.landscapeLeft,
+    DeviceOrientation.landscapeRight,
+  ]); //横向き指定
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -32,7 +30,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      title: 'LETS SIGNAL',
+      title: 'LETS CROSSING',
       theme: ThemeData(colorScheme: const ColorScheme.light(primary: greenColor)),
       debugShowCheckedModeBanner: false,
       home: MyHomePage(),
@@ -44,8 +42,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
-Future<void> initSettings() async {
-  await Settings.init(cacheProvider: SharePreferenceCache(),);
-}
-

@@ -53,6 +53,19 @@ Widget sideSpacer(BuildContext context) =>
       ),
     ]);
 
+Widget upDownSpacer(BuildContext context) =>
+    Column(children: [
+      Container(
+        color: blackColor,
+        height: context.upDownMargin(),
+      ),
+      const Spacer(),
+      Container(
+        color: blackColor,
+        height: context.upDownMargin(),
+      ),
+    ]);
+
 ///Pole
 Widget frontPoleImage(BuildContext context, int countryNumber) =>
     Container(
@@ -227,7 +240,11 @@ Widget trafficSignImage(BuildContext context, int countryNumber) =>
 Widget frontFenceImage(BuildContext context, int countryNumber) =>
     Container(
       alignment: Alignment.bottomCenter,
-      margin: EdgeInsets.symmetric(horizontal: context.sideMargin()),
+      margin: EdgeInsets.only(
+        bottom: context.upDownMargin(),
+        left: context.sideMargin(),
+        right: context.sideMargin(),
+      ),
       child: Row(children: List.generate(3, (i) =>
         (i == 1) ? const Spacer(): SizedBox(
           height: context.frontFenceImageHeight(countryNumber),
