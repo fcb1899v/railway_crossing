@@ -22,7 +22,7 @@ class AdBannerWidget extends HookWidget {
         (!kDebugMode && Platform.isIOS) ? dotenv.get("IOS_BANNER_UNIT_ID"):
         (!kDebugMode && Platform.isAndroid) ? dotenv.get("ANDROID_BANNER_UNIT_ID"):
         (Platform.isIOS) ? dotenv.get("IOS_BANNER_TEST_ID"):
-        dotenv.get("ANDROID_BANNER_UNIT_ID");
+        dotenv.get("ANDROID_BANNER_TEST_ID");
 
     Future<void> loadAdBanner() async {
       final adBanner = BannerAd(
@@ -49,6 +49,7 @@ class AdBannerWidget extends HookWidget {
     }
 
     useEffect(() {
+      "bannerUnitId: ${bannerUnitId()}".debugPrint();
       ConsentInformation.instance.requestConsentInfoUpdate(ConsentRequestParameters(
         // consentDebugSettings: ConsentDebugSettings(
         //   debugGeography: DebugGeography.debugGeographyEea,
@@ -64,11 +65,15 @@ class AdBannerWidget extends HookWidget {
             } else {
               await loadAdBanner();
             }
-          }, (formError) {});
+          }, (formError) {
+            "formError: $formError".debugPrint();
+          });
         } else {
           await loadAdBanner();
         }
-      }, (FormError error) {});
+      }, (FormError error) {
+        "error: ${error.message}: $error".debugPrint();
+      });
       "bannerAd: ${bannerAd.value}".debugPrint();
       return () => bannerAd.value?.dispose();      // unmount時に広告を破棄する
     }, []);

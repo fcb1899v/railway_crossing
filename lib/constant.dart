@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:railroad_crossing/common_extension.dart';
 
 ///Signal Number
-const int totalCountryNumber = 7;
+const int totalCountryNumber = 4;
+
 
 ///App Name
 const String appTitle = "LETS CROSSING";
@@ -44,10 +45,6 @@ const Color transpRedColor = Color.fromRGBO(200, 77, 62, 0.7);          //#C84D3
 
 /// Sound
 //Asset
-const String soundJPAssets = "audios/jp/";
-const String soundUKAssets = "audios/uk/";
-const String soundUSAssets = "audios/us/";
-const String soundCNAssets = "audios/cn/";
 const String soundTrain = "audios/train.mp3";
 const String soundEmergency = "audios/emergency.mp3";
 const double warningVolume = 0.6;

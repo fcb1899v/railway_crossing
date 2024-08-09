@@ -11,7 +11,6 @@ import 'package:vibration/vibration.dart';
 import 'common_extension.dart';
 import 'common_widget.dart';
 import 'constant.dart';
-import 'main.dart';
 import 'admob_banner.dart';
 
 class MyHomePage extends HookConsumerWidget {
@@ -22,9 +21,11 @@ class MyHomePage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
 
-    final width = context.width();
-    final height = context.height();
-
+    const isDebug = false;
+    const isShowAd = true;
+    const debugCountryNumber = 1;
+    const debugIsLeft = true;
+    const debugLeftPosition = 0.0; //0: 5500.0 1:4400.0, 2:4000.0, 3:3400.0
     final countryNumber = useState(0);
 
     //State
@@ -94,8 +95,8 @@ class MyHomePage extends HookConsumerWidget {
       final countryCode = locale.substring(3, 5);
       countryNumber.value = countryCode.getDefaultCounter();
       "Locale: $locale, countryNumber: ${countryNumber.value}".debugPrint();
-      "width: $width, height: $height".debugPrint();
-      // countryNumber.value = 1; //for debug
+      "width: ${context.width()}, height: ${context.height()}".debugPrint();
+      if (isDebug) countryNumber.value = debugCountryNumber; //for debug
       setNormalState();
     }
 
@@ -109,7 +110,6 @@ class MyHomePage extends HookConsumerWidget {
           }
         }
         initState();
-        initSettings();
       });
       return null;
     }, const []);
@@ -155,8 +155,8 @@ class MyHomePage extends HookConsumerWidget {
         await leftTrainPlayer.setVolume(trainVolume);
         "leftTrainPlayer: ${leftTrainPlayer.state}".debugPrint();
         leftAnimation.value = Tween(
-          begin: trainBeginPosition(isLeftFast.value),
-          end: trainEndPosition(isLeftFast.value),
+          begin: (isDebug) ? debugLeftPosition: trainBeginPosition(isLeftFast.value),
+          end: (isDebug) ? debugLeftPosition: trainEndPosition(isLeftFast.value),
         ).animate(leftController);
         await leftController.forward(from: 0);
         Future.delayed(const Duration(seconds: 2), () {
@@ -431,6 +431,26 @@ class MyHomePage extends HookConsumerWidget {
       };
     }, [isEmergency.value]);
 
+    Widget debugCountryButton(int num) => GestureDetector(
+        onTap: () { countryNumber.value = countryNumber.value.nextCountry(); },
+        child: Row(children: [
+          const Spacer(),
+          Container(
+            color: redColor,
+            width: context.width() * 0.08,
+            height: context.width(),
+          ),
+        ])
+    );
+
+    Widget debugTrainButton(bool isLeft) => GestureDetector(
+      onTap: isLeft ? pushLeftButton(): pushRightButton(),
+      child: Container(
+        color: greenColor,
+        width: context.width() * 0.08,
+        height: context.width(),
+      )
+    );
 
     Widget bottomButtons() => Container(
       alignment: Alignment.bottomCenter,
@@ -459,36 +479,34 @@ class MyHomePage extends HookConsumerWidget {
       ),
     );
 
-    Widget selectCountryButton() => Container(
-      child: FabCircularMenuPlus(
-        key: fabKey,
-        alignment: countryNumber.value.floatingActionAlignment(),
-        fabSize: context.height() * 0.12,
-        ringWidth: context.height() * 0.15,
-        ringDiameter: context.height() * 0.8,
-        ringColor: transpBlackColor,
-        fabCloseColor: transpBlackColor,
-        fabOpenColor: transpBlackColor,
-        fabMargin: EdgeInsets.symmetric(
-          horizontal: context.height() * 0.045,
-          vertical: context.height() * 0.09,
+    FabCircularMenuPlus selectCountryButton() => FabCircularMenuPlus(
+      key: fabKey,
+      alignment: countryNumber.value.floatingActionAlignment(),
+      fabSize: context.height() * 0.12,
+      ringWidth: context.height() * 0.15,
+      ringDiameter: context.height() * 0.8,
+      ringColor: transpBlackColor,
+      fabCloseColor: transpBlackColor,
+      fabOpenColor: transpBlackColor,
+      fabMargin: EdgeInsets.symmetric(
+        horizontal: context.height() * 0.045,
+        vertical: context.height() * 0.09,
+      ),
+      fabOpenIcon: Icon(Icons.public,
+        color: whiteColor,
+        size: context.height() * 0.08,
+      ),
+      fabCloseIcon: Icon(Icons.close,
+        color: whiteColor,
+        size: context.height() * 0.08,
+      ),
+      children: flagList.entries.map((entry) => GestureDetector(
+        child: SizedBox(
+          width: context.height() * 0.15,
+          child: Image.asset(entry.value['image'] as String),
         ),
-        fabOpenIcon: Icon(Icons.public,
-          color: whiteColor,
-          size: context.height() * 0.08,
-        ),
-        fabCloseIcon: Icon(Icons.close,
-          color: whiteColor,
-          size: context.height() * 0.08,
-        ),
-        children: flagList.entries.map((entry) => GestureDetector(
-          child: SizedBox(
-            width: context.height() * 0.15,
-            child: Image.asset(entry.value['image'] as String),
-          ),
-          onTap: () async => changeCountry(entry),
-        )).toList()
-      )
+        onTap: () async => changeCountry(entry),
+      )).toList()
     );
 
     // showImagePickerDialog(BuildContext context, int i, bool isLeft) => showDialog(
@@ -567,13 +585,16 @@ class MyHomePage extends HookConsumerWidget {
           frontWaringImage(context, countryNumber.value, warningFrontImage.value),
           frontFenceImage(context, countryNumber.value),
           trafficSignImage(context, countryNumber.value),
+          upDownSpacer(context),
           sideSpacer(context),
-          Container(alignment: countryNumber.value.adAlignment(), child: const AdBannerWidget()),
-          bottomButtons(),
+          if (!isDebug && isShowAd) Container(alignment: countryNumber.value.adAlignment(), child: const AdBannerWidget()),
+          if (!isDebug) bottomButtons(),
+          if (isDebug) debugCountryButton(debugCountryNumber),
+          if (isDebug) debugTrainButton(debugIsLeft),
         ],
       ),
-      floatingActionButton: ((!isYellow.value) && (!isRightWait.value) && (!isLeftWait.value)) ? selectCountryButton(): null,
-      floatingActionButtonLocation: countryNumber.value.floatingActionLocation(),
+      floatingActionButton: (!isDebug && (!isYellow.value) && (!isRightWait.value) && (!isLeftWait.value)) ? selectCountryButton(): null,
+      floatingActionButtonLocation: (!isDebug) ? countryNumber.value.floatingActionLocation(): null,
     );
   }
 }
