@@ -19,9 +19,9 @@ class AdBannerWidget extends HookWidget {
 
     // バナー広告ID
     String bannerUnitId() =>
-        (!kDebugMode && Platform.isIOS) ? dotenv.get("IOS_BANNER_UNIT_ID"):
-        (!kDebugMode && Platform.isAndroid) ? dotenv.get("ANDROID_BANNER_UNIT_ID"):
-        (Platform.isIOS) ? dotenv.get("IOS_BANNER_TEST_ID"):
+        (!kDebugMode && (Platform.isIOS || Platform.isMacOS)) ? dotenv.get("IOS_BANNER_UNIT_ID"):
+        (Platform.isIOS || Platform.isMacOS) ? dotenv.get("IOS_BANNER_TEST_ID"):
+        (!kDebugMode) ? dotenv.get("ANDROID_BANNER_UNIT_ID"):
         dotenv.get("ANDROID_BANNER_TEST_ID");
 
     Future<void> loadAdBanner() async {
@@ -49,7 +49,6 @@ class AdBannerWidget extends HookWidget {
     }
 
     useEffect(() {
-      "bannerUnitId: ${bannerUnitId()}".debugPrint();
       ConsentInformation.instance.requestConsentInfoUpdate(ConsentRequestParameters(
         // consentDebugSettings: ConsentDebugSettings(
         //   debugGeography: DebugGeography.debugGeographyEea,
@@ -78,10 +77,43 @@ class AdBannerWidget extends HookWidget {
       return () => bannerAd.value?.dispose();      // unmount時に広告を破棄する
     }, []);
 
-    return SizedBox(
+    return Container(
+      margin: EdgeInsets.only(top: context.admobTopMargin()),
       width: context.admobWidth(),
       height: context.admobHeight(),
-      child: (adLoaded.value) ? AdWidget(ad: bannerAd.value!): null,
+      child: Transform.rotate(
+        angle: context.admobRotationAngle(),
+        child: (adLoaded.value) ? AdWidget(ad: bannerAd.value!): null,
+      ),
     );
   }
 }
+
+adLeftBanner(BuildContext context) => Transform.translate(
+  offset: Offset(-context.admobOffset(), 0),
+  child: Container(
+    alignment: Alignment.topLeft,
+    child: const AdBannerWidget()
+  ),
+);
+
+adCenterBanner(BuildContext context) => Container(
+  margin: EdgeInsets.symmetric(horizontal: (context.mediaWidth() - context.admobWidth())/2),
+  alignment: Alignment.topCenter,
+  child: const AdBannerWidget()
+);
+
+adRightBanner(BuildContext context) => Transform.translate(
+  offset: Offset(context.admobOffset(), 0),
+  child: Container(
+    alignment: Alignment.topRight,
+    child: const AdBannerWidget()
+  ),
+);
+
+adMobBanner(BuildContext context) =>
+  (context.isAdmobEnoughSideSpace()) ? Row(children: [
+    adLeftBanner(context),
+    const Spacer(),
+    adRightBanner(context),
+  ]): adCenterBanner(context);
