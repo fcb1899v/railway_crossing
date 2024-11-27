@@ -1,12 +1,22 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:app_tracking_transparency/app_tracking_transparency.dart';
+import 'dart:convert';
+import 'package:flutter/services.dart';
+import 'package:googleapis_auth/auth_io.dart';
+import 'package:http/http.dart' as http;
 import 'package:audioplayers/audioplayers.dart';
-import 'package:devicelocale/devicelocale.dart';
 import 'package:fab_circular_menu_plus/fab_circular_menu_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:railroad_crossing/main.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:vibration/vibration.dart';
 import 'common_extension.dart';
 import 'common_widget.dart';
@@ -21,13 +31,6 @@ class MyHomePage extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
 
-    const isDebug = false;
-    const isShowAd = true;
-    const debugCountryNumber = 1;
-    const debugIsLeft = true;
-    const debugLeftPosition = 0.0; //0: 5500.0 1:4400.0, 2:4000.0, 3:3400.0
-    final countryNumber = useState(0);
-
     //State
     final isLeftOn = useState(false);
     final isRightOn = useState(false);
@@ -38,42 +41,110 @@ class MyHomePage extends HookConsumerWidget {
     final isYellow = useState(false);
     final isEmergency = useState(false);
     final isPossibleEmergency = useState(true);
+    final isMenuOpen = useState(false);
+    final isMyPurchase = useState(false);
+    final isPurchasing = useState(false);
+    final isShowAd = useState(true);
+    final counter = useState(0);
+
+    //Purchase
+    final currentPlan = useState(freeID);
+    final activePlan = useState([]);
+    final tickets = useState(0);
+    final expirationDate = useState(20240101000000);
+    final lastClaimedDate = useState(20240101);
+    final currentDate = useState(20240101000000);
+    final priceList = useState(["-", "-", "-", "-"]);
+    final isLoadedSubscriptionInfo = useState(false);
+
+    //Photo
+    final vertexAIToken = useState("");
+    final photoIndex = useState(0);
+    final photoPermission = useState(PermissionStatus.denied);
+    final photoImage = useState<List<Uint8List>?>(null);
+    final isShowPhoto = useState(false);
+    final isSavePhoto = useState(false);
+    final isPossiblePhoto = useState(false);
+    final isLoadingPhoto = useState(false);
 
     //Audio
     final warningPlayer = AudioPlayer();
     final leftTrainPlayer = AudioPlayer();
     final rightTrainPlayer = AudioPlayer();
     final emergencyPlayer = AudioPlayer();
+    final cameraPlayer = AudioPlayer();
 
     //Image
-    final barFrontImage = useState(barFrontImageJPOff);
-    final barBackImage = useState(barBackImageJPOff);
-    final warningFrontImage = useState(warningImageJPOff);
-    final warningBackImage = useState(warningImageJPOff);
-    final directionImage = useState(directionImageJPOff);
+    final countryNumber = useState(0);
+    final barFrontImage = useState("");
+    final barBackImage = useState("");
+    final warningFrontImage = useState("");
+    final warningBackImage = useState("");
+    final directionImage = useState("");
 
     //Animation
-    final leftController = useAnimationController(duration: const Duration(seconds: 16));
-    final rightController = useAnimationController(duration: const Duration(seconds: 16));
+    final leftController = useAnimationController(duration: const Duration(seconds: trainTime));
+    final rightController = useAnimationController(duration: const Duration(seconds: trainTime));
     final leftAnimation = useState(Tween(
-      begin: trainBeginPosition(isLeftFast.value),
-      end: trainEndPosition(isLeftFast.value),
+      begin: context.trainBeginPosition(isLeftFast.value),
+      end: context.trainEndPosition(isLeftFast.value),
     ).animate(leftController));
     final rightAnimation = useState(Tween(
-      begin: trainEndPosition(isRightFast.value),
-      end: trainBeginPosition(isRightFast.value),
+      begin: context.trainEndPosition(isRightFast.value),
+      end: context.trainBeginPosition(isRightFast.value),
     ).animate(rightController));
-    final leftTrain = useState(trainList[0]);
-    final rightTrain = useState(trainList[0]);
+    final leftTrain = useState(0.trainImage());
+    final rightTrain = useState(0.trainImage());
     final barAngle = useState(0.0);
     final barShift = useState(0.0);
     final changeTime = useState(0);
     final emergencyColor = useState(whiteColor);
 
+    initState() async {
+      "width: ${context.mediaWidth()}, height: ${context.mediaHeight()}".debugPrint();
+      "sideMargin: ${context.sideMargin()}, upDownMargin: ${context.upDownMargin()}".debugPrint();
+      currentDate.value = await getServerDateTime(currentDate.value);
+      countryNumber.value = await getDefaultCountryNumber();
+      "currentDate: ${currentDate.value}, countryNumber: ${countryNumber.value}".debugPrint();
+    }
+
+    permitPhotoAccess() async {
+      final sdkInt = await getAndroidSDKVersion();
+      photoPermission.value = (Platform.isIOS || Platform.isMacOS || sdkInt > 32) ?
+        await Permission.photos.status: await Permission.storage.status;
+      "Photo permission: ${photoPermission.value}".debugPrint();
+      if (photoPermission.value != PermissionStatus.granted) {
+        try {
+          photoPermission.value = (Platform.isIOS || Platform.isMacOS || sdkInt > 32) ?
+            await Permission.photos.request(): await Permission.storage.request();
+          "Photo permission request: ${photoPermission.value}".debugPrint();
+          if (photoPermission.value != PermissionStatus.granted && context.mounted) {
+            showSnackBar(context, context.photoAccessPermission(), true);
+          }
+        } on PlatformException catch (e) {
+          "Photo permission error: $e".debugPrint();
+          if (context.mounted) showSnackBar(context, context.photoAccessPermission(), true);
+          await openAppSettings();
+        }
+      }
+    }
+
+    loadVertexAIToken() async {
+      final jsonString = await DefaultAssetBundle.of(context).loadString('assets/letscrossing-app-804542f853dd.json');
+      final serviceAccountKey =  jsonDecode(jsonString);
+      final accountCredentials = ServiceAccountCredentials.fromJson(serviceAccountKey);
+      final authClient = await clientViaServiceAccount(
+        accountCredentials,
+        ['https://www.googleapis.com/auth/cloud-platform'],
+      );
+      vertexAIToken.value = authClient.credentials.accessToken.data;
+      vertexAIToken.value.debugPrint();
+    }
+
     setNormalState() async {
       "setNormal".debugPrint();
-      leftTrain.value = trainList[countryNumber.value];
-      rightTrain.value = trainList[countryNumber.value];
+      leftTrain.value = countryNumber.value.trainImage();
+      rightTrain.value = countryNumber.value.trainImage();
       isLeftOn.value = false;
       isLeftWait.value = false;
       isRightOn.value = false;
@@ -87,29 +158,110 @@ class MyHomePage extends HookConsumerWidget {
       barAngle.value = countryNumber.value.barAngle(false);
       barShift.value = countryNumber.value.barShift(false);
       isPossibleEmergency.value = true;
+      isPossiblePhoto.value = false;
+      isLoadingPhoto.value = false;
       await warningPlayer.stop();
     }
 
-    initState() async {
-      final locale = await Devicelocale.currentLocale ?? "ja-JP";
-      final countryCode = locale.substring(3, 5);
-      countryNumber.value = countryCode.getDefaultCounter();
-      "Locale: $locale, countryNumber: ${countryNumber.value}".debugPrint();
-      "width: ${context.width()}, height: ${context.height()}".debugPrint();
-      if (isDebug) countryNumber.value = debugCountryNumber; //for debug
-      setNormalState();
+    // Update subscription Information
+    debugPrintCurrentDescription(){
+      "currentPlan: ${currentPlan.value}, activePlan: ${activePlan.value}".debugPrint();
+      "tickets: ${tickets.value}, isShowAd: ${isShowAd.value}".debugPrint();
+      "currentDate: ${currentDate.value}, expirationDate: ${expirationDate.value}, lastClaimDate: ${lastClaimedDate.value}".debugPrint();
     }
 
-    useEffect(() {
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        ///App Tracking Transparency
-        if (Platform.isIOS || Platform.isMacOS) {
-          final status = await AppTrackingTransparency.trackingAuthorizationStatus;
-          if (status == TrackingStatus.notDetermined && context.mounted) {
-            await AppTrackingTransparency.requestTrackingAuthorization();
+    Future<void> loadSubscriptionData(SharedPreferences prefs) async {
+      final customerInfo = await Purchases.getCustomerInfo();
+      currentPlan.value = prefs.getString("plan") ?? defaultPlan;
+      activePlan.value = customerInfo.activeSubscriptions;
+      tickets.value = prefs.getInt("tickets") ?? defaultTickets;
+      isShowAd.value = (currentPlan.value != premiumID && defaultIsShowAd);
+      expirationDate.value = prefs.getInt('expiration') ?? 20240101000000;
+      lastClaimedDate.value = prefs.getInt('lastClaim') ?? 20240101;
+      debugPrintCurrentDescription();
+    }
+
+    Future<void> loadPriceList(SharedPreferences prefs) async {
+      priceList.value = prefs.getStringList("price") ?? ["-", "-", "-", "-"];
+      if (priceList.value != ["-", "-", "-", "-"]) {
+        "Get Price List".debugPrint();
+        final offerings = await Purchases.getOfferings();
+        offerings.all.forEach((key, offering) {
+          for (var package in offering.availablePackages) {
+            final storeProduct = package.storeProduct;
+            final price = storeProduct.priceString;
+            priceList.value[storeProduct.identifier.planNumber()] = price;
+          }
+        });
+        prefs.setStringList("price", priceList.value);
+      }
+      "Price List: ${priceList.value}".debugPrint();
+    }
+
+    Future<void> setPlan({required String planString, required int ticketsInt, required int expirationInt}) async {
+      "setPlan: $planString".debugPrint();
+      final customerInfo = await Purchases.getCustomerInfo();
+      currentPlan.value = planString;
+      activePlan.value = planString == freeID ? []: customerInfo.activeSubscriptions;
+      tickets.value = ticketsInt;
+      expirationDate.value = expirationInt;
+      isShowAd.value = (currentPlan.value != premiumID);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString("plan", planString);
+      await prefs.setInt("tickets", ticketsInt);
+      await prefs.setInt('expiration', expirationInt);
+      await prefs.setBool('granted', true);
+      await prefs.setBool('downgrade', false);
+      debugPrintCurrentDescription();
+    }
+
+    Future<void> loadSubscriptionInfo() async {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await loadPriceList(prefs);
+        await loadSubscriptionData(prefs);
+        if (currentPlan.value != freeID && activePlan.value.isNotEmpty && currentDate.value > expirationDate.value) {
+          final customerInfo = await Purchases.getCustomerInfo();
+          await setPlan(
+            planString: customerInfo.updatedPlan(),
+            ticketsInt: customerInfo.addTicket(),
+            expirationInt: customerInfo.subscriptionExpirationDate(),
+          );
+          "Grant tickets: ${customerInfo.planID()}".debugPrint();
+        } else if (currentPlan.value != freeID && activePlan.value.isEmpty && currentDate.value > expirationDate.value) {
+          "Cancel plan".debugPrint();
+          if (!isDebugMode) {
+            await setPlan(
+              planString: freeID,
+              ticketsInt: 0,
+              expirationInt: 20240101000000,
+            );
           }
         }
-        initState();
+        isLoadedSubscriptionInfo.value = true;
+        "isLoadedSubscriptionInfo: ${isLoadedSubscriptionInfo.value}".debugPrint();
+      } on PlatformException catch (e) {
+        "Failed to load subscription information: $e".debugPrint();
+        isLoadedSubscriptionInfo.value = false;
+        "isLoadedSubscriptionInfo: ${isLoadedSubscriptionInfo.value}".debugPrint();
+        counter.value += 1;
+        if (!isLoadedSubscriptionInfo.value && counter.value < 10) {
+          Future.delayed(const Duration(seconds: 10), () {
+            loadSubscriptionInfo();
+            if (context.mounted && counter.value == 9) showSnackBar(context, context.checkNetwork(), true);
+          });
+        }
+      }
+    }
+
+    // Initialize app
+    useEffect(() {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await initATTPlugin();
+        await permitPhotoAccess();
+        await initState();
+        await loadSubscriptionInfo();
+        await setNormalState();
       });
       return null;
     }, const []);
@@ -141,23 +293,21 @@ class MyHomePage extends HookConsumerWidget {
       directionImage.value = countryNumber.value.offOrRightDirection(isRightWait.value);
       isLeftOn.value = false;
       isLeftWait.value = false;
-      "isLeftWait: ${isLeftWait.value}".debugPrint();
-      "isRightWait: ${isRightWait.value}".debugPrint();
+      "isLeftOn: ${isLeftOn.value}, isRightOn: ${isRightOn.value}".debugPrint();
+      "isLeftWait: ${isLeftWait.value}, isRightWait: ${isRightWait.value}".debugPrint();
       if (!isRightWait.value) await setNormalState();
     }
 
     goLeftTrain() async {
       if (isLeftWait.value && !isEmergency.value) {
         isPossibleEmergency.value = false;
+        isPossiblePhoto.value = true;
         "isPossibleEmergency: ${isPossibleEmergency.value}".debugPrint();
         await leftTrainPlayer.play(AssetSource(soundTrain));
         await leftTrainPlayer.setReleaseMode(ReleaseMode.release);
         await leftTrainPlayer.setVolume(trainVolume);
         "leftTrainPlayer: ${leftTrainPlayer.state}".debugPrint();
-        leftAnimation.value = Tween(
-          begin: (isDebug) ? debugLeftPosition: trainBeginPosition(isLeftFast.value),
-          end: (isDebug) ? debugLeftPosition: trainEndPosition(isLeftFast.value),
-        ).animate(leftController);
+        if (context.mounted) leftAnimation.value = context.leftAnimation(leftController, isLeftFast.value);
         await leftController.forward(from: 0);
         Future.delayed(const Duration(seconds: 2), () {
           "leftWaitOff".debugPrint();
@@ -178,7 +328,8 @@ class MyHomePage extends HookConsumerWidget {
     }
 
     pushLeftButton() {
-      if (!isLeftOn.value && !isEmergency.value) {
+      isMenuOpen.value = false;
+      if (!isLeftOn.value && !isEmergency.value && !isLoadingPhoto.value) {
         isLeftOn.value = true;
         if (!isRightOn.value) {
           setYellowState();
@@ -199,22 +350,20 @@ class MyHomePage extends HookConsumerWidget {
       directionImage.value = countryNumber.value.offOrLeftDirection(isLeftWait.value);
       isRightOn.value = false;
       isRightWait.value = false;
-      "isLeftWait: ${isLeftWait.value}".debugPrint();
-      "isRightWait: ${isRightWait.value}".debugPrint();
+      "isLeftOn: ${isLeftOn.value}, isRightOn: ${isRightOn.value}".debugPrint();
+      "isLeftWait: ${isLeftWait.value}, isRightWait: ${isRightWait.value}".debugPrint();
       if (!isLeftWait.value) await setNormalState();
     }
 
     goRightTrain() async {
       if (isRightWait.value && !isEmergency.value) {
         isPossibleEmergency.value = false;
+        isPossiblePhoto.value = true;
         await rightTrainPlayer.play(AssetSource(soundTrain));
         await rightTrainPlayer.setReleaseMode(ReleaseMode.release);
         await rightTrainPlayer.setVolume(trainVolume);
         "rightTrainPlayer: ${rightTrainPlayer.state}".debugPrint();
-        rightAnimation.value = Tween(
-          begin: trainEndPosition(isRightFast.value),
-          end: trainBeginPosition(isRightFast.value),
-        ).animate(rightController);
+        if (context.mounted) rightAnimation.value = context.rightAnimation(rightController, isRightFast.value);
         await rightController.forward(from: 0);
         Future.delayed(const Duration(seconds: 2), () {
           "rightWaitOff".debugPrint();
@@ -235,7 +384,8 @@ class MyHomePage extends HookConsumerWidget {
     }
 
     pushRightButton() {
-      if (!isRightWait.value && !isEmergency.value) {
+      isMenuOpen.value = false;
+      if (!isRightWait.value && !isEmergency.value && !isLoadingPhoto.value) {
         isRightOn.value = true;
         if (!isLeftWait.value) {
           setYellowState();
@@ -251,6 +401,7 @@ class MyHomePage extends HookConsumerWidget {
     }
 
     pushLeftSpeedButton() {
+      isMenuOpen.value = false;
       if (!isLeftOn.value) {
         isLeftFast.value = !isLeftFast.value;
         "isLeftFast: ${isLeftFast.value}".debugPrint();
@@ -258,6 +409,7 @@ class MyHomePage extends HookConsumerWidget {
     }
 
     pushRightSpeedButton() {
+      isMenuOpen.value = false;
       if (!isRightOn.value) {
         isRightFast.value = !isRightFast.value;
         "isRightFast: ${isRightFast.value}".debugPrint();
@@ -265,7 +417,8 @@ class MyHomePage extends HookConsumerWidget {
     }
 
     emergencyOn() async {
-      if (!isEmergency.value && isPossibleEmergency.value) {
+      isMenuOpen.value = false;
+      if (!isEmergency.value && isPossibleEmergency.value && countryNumber.value < 2) {
         Vibration.vibrate(duration: vibTime, amplitude: vibAmp);
         isEmergency.value = true;
         "isEmergency: ${isEmergency.value}".debugPrint();
@@ -294,12 +447,13 @@ class MyHomePage extends HookConsumerWidget {
 
     ///Change Country
     changeCountry(MapEntry entry) async {
-      changeTime.value = 0;
-      countryNumber.value = entry.value['countryNumber'] as int;
-      'select_${entry.key}: ${countryNumber.value}'.debugPrint();
-      fabKey.currentState?.close();
-      await setNormalState();
-      await Future.delayed(const Duration(seconds: barUpDownTime), () => changeTime.value = barUpDownTime);
+      if (!isLoadingPhoto.value) {
+        changeTime.value = 0;
+        countryNumber.value = entry.value['countryNumber'] as int;
+        'select_${entry.key}: ${countryNumber.value}'.debugPrint();
+        fabKey.currentState?.close();
+        await setNormalState();
+      }
     }
 
     /// Left Action
@@ -431,142 +585,445 @@ class MyHomePage extends HookConsumerWidget {
       };
     }, [isEmergency.value]);
 
-    Widget debugCountryButton(int num) => GestureDetector(
-        onTap: () { countryNumber.value = countryNumber.value.nextCountry(); },
-        child: Row(children: [
-          const Spacer(),
-          Container(
-            color: redColor,
-            width: context.width() * 0.08,
-            height: context.width(),
-          ),
-        ])
-    );
-
-    Widget debugTrainButton(bool isLeft) => GestureDetector(
-      onTap: isLeft ? pushLeftButton(): pushRightButton(),
-      child: Container(
-        color: greenColor,
-        width: context.width() * 0.08,
-        height: context.width(),
-      )
-    );
-
     Widget bottomButtons() => Container(
       alignment: Alignment.bottomCenter,
-      margin: EdgeInsets.only(bottom: context.buttonSpace()),
-      child: (countryNumber.value == 0 || countryNumber.value == 1) ? Row(mainAxisAlignment: MainAxisAlignment.end,
-        children: List.generate(8, (i) =>
-          (i == 0) ? SizedBox(width: context.sideMargin()):
-          (i == 1) ? emergencyOffButton(context, emergencyColor.value, emergencyOff):
-          (i == 2) ? const Spacer():
-          (i == 3) ? leftButton(context, isLeftOn.value, pushLeftButton):
-          (i == 4) ? leftSpeedButton(context, isLeftOn.value, isLeftFast.value, pushLeftSpeedButton):
-          (i == 5) ? rightSpeedButton(context, isRightOn.value, isRightFast.value, pushRightSpeedButton):
-          (i == 6) ? rightButton(context, isRightOn.value, pushRightButton):
-          SizedBox(width: context.buttonSideMargin())
-        ),
-      ): Row(mainAxisAlignment: MainAxisAlignment.end,
-        children: List.generate(7, (i) =>
-          (i == 0) ? SizedBox(width: context.sideMargin()):
-          (i == 1) ? const Spacer():
-          (i == 2) ? leftButton(context, isLeftOn.value, pushLeftButton):
-          (i == 3) ? leftSpeedButton(context, isLeftOn.value, isLeftFast.value, pushLeftSpeedButton):
-          (i == 4) ? rightSpeedButton(context, isRightOn.value, isRightFast.value, pushRightSpeedButton):
-          (i == 5) ? rightButton(context, isRightOn.value, pushRightButton):
-          SizedBox(width: context.buttonSideMargin())
-        ),
+      margin: EdgeInsets.only(
+        left: context.buttonSideMargin(),
+        right: context.buttonSideMargin() + context.buttonSpace(),
+        bottom: context.buttonUpDownMargin()
       ),
+      child: Row(children: List.generate(6, (i) =>
+        (i == 1) ? const Spacer():
+        (i == 2) ? leftButton(context, isLeftOn.value, pushLeftButton):
+        (i == 3) ? leftSpeedButton(context, isLeftOn.value, isLeftFast.value, pushLeftSpeedButton):
+        (i == 4) ? rightSpeedButton(context, isRightOn.value, isRightFast.value, pushRightSpeedButton):
+        (i == 5) ? rightButton(context, isRightOn.value, pushRightButton):
+        (countryNumber.value == 0 || countryNumber.value == 1) ? emergencyOffButton(context, emergencyColor.value, emergencyOff):
+        SizedBox(width: context.buttonSpace())
+      ))
     );
 
     FabCircularMenuPlus selectCountryButton() => FabCircularMenuPlus(
       key: fabKey,
-      alignment: countryNumber.value.floatingActionAlignment(),
-      fabSize: context.height() * 0.12,
-      ringWidth: context.height() * 0.15,
-      ringDiameter: context.height() * 0.8,
+      alignment: Alignment.topRight,
+      fabSize: context.fabSize(),
+      ringWidth: context.ringWidth(),
+      ringDiameter: context.ringDiameter(),
       ringColor: transpBlackColor,
       fabCloseColor: transpBlackColor,
       fabOpenColor: transpBlackColor,
       fabMargin: EdgeInsets.symmetric(
-        horizontal: context.height() * 0.045,
-        vertical: context.height() * 0.09,
+        horizontal: context.fabSideMargin(),
+        vertical: context.fabTopMargin(),
       ),
       fabOpenIcon: Icon(Icons.public,
         color: whiteColor,
-        size: context.height() * 0.08,
+        size: context.fabIconSize(),
       ),
       fabCloseIcon: Icon(Icons.close,
         color: whiteColor,
-        size: context.height() * 0.08,
+        size: context.fabIconSize(),
       ),
+      onDisplayChange: (isOpen) {
+        if (isOpen) isMenuOpen.value = false;
+      },
       children: flagList.entries.map((entry) => GestureDetector(
         child: SizedBox(
-          width: context.height() * 0.15,
+          width: context.fabChildIconSize(),
           child: Image.asset(entry.value['image'] as String),
         ),
-        onTap: () async => changeCountry(entry),
-      )).toList()
+        onTap: () async => await changeCountry(entry),
+      )).toList(),
     );
 
-    // showImagePickerDialog(BuildContext context, int i, bool isLeft) => showDialog(
-    //   context: context,
-    //   builder: (context) => AlertDialog(
-    //     backgroundColor: transpBlackColor,
-    //     title: Text(isLeft ? context.selectLeftTrain(): context.selectRightTrain(),
-    //       textAlign: isLeft ? TextAlign.start: TextAlign.end,
-    //       style: TextStyle(
-    //         color: whiteColor,
-    //         fontWeight: FontWeight.bold,
-    //         fontFamily: "beon",
-    //         fontSize: context.height() * 0.05
-    //       ),
-    //     ),
-    //     content: SizedBox(
-    //       width: double.maxFinite,
-    //       child: GridView.builder(
-    //         shrinkWrap: true,
-    //         itemCount: selectTrainList[i].length,
-    //         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-    //           crossAxisCount: 6,
-    //           crossAxisSpacing: context.height() * 0.05,
-    //           mainAxisSpacing: context.height() * 0.05,
-    //           childAspectRatio: 1,
-    //         ),
-    //         itemBuilder: (context, index) {
-    //           String image = selectTrainList[i][index];
-    //           return GestureDetector(
-    //             onTap: () {
-    //               Navigator.of(context).pop();
-    //               if (isLeft) {
-    //                 leftTrain.value = List.generate(6, (i) => "${image.replaceAll("f-", "")}_${i + 1}");
-    //                 showImagePickerDialog(context, i, false);
-    //               } else {
-    //                 rightTrain.value = List.generate(6, (i) => "${image.replaceAll("f-", "")}_${i + 1}");
-    //               }
-    //             },
-    //             onTapCancel: () {
-    //               Navigator.of(context).pop();
-    //             },
-    //             child: SizedBox(
-    //               width: context.height() * 0.2,
-    //               height: context.height() * 0.2,
-    //               child: Image.asset(image),
-    //             ),
-    //           );
-    //         },
-    //       ),
-    //     ),
-    //   ),
-    // );
+    openMenu() async {
+      if (!isMenuOpen.value) {
+        fabKey.currentState?.close();
+        currentDate.value = await getServerDateTime(currentDate.value);
+      }
+      isMenuOpen.value = !isMenuOpen.value;
+    }
+
+    sharePhoto() async {
+      try {
+        final directory = await getTemporaryDirectory();
+        final filePath = '${directory.path}/shared_image.png';
+        final file = File(filePath);
+        await file.writeAsBytes(photoImage.value![photoIndex.value]);
+        await Share.shareXFiles([XFile(filePath)], text: '');
+        isSavePhoto.value = false;
+      } catch (e) {
+        'Error sharing image: $e'.debugPrint();
+      }
+    }
+
+    savePhoto() async {
+      try {
+        final result = await ImageGallerySaver.saveImage(photoImage.value![photoIndex.value]);
+        "result: $result".debugPrint();
+        if (context.mounted) {
+          (result['isSuccess'] ? context.photoSaved(): context.photoSavingFailed()).debugPrint();
+          showSnackBar(context, result['isSuccess'] ? context.photoSaved(): context.photoSavingFailed(), !result['isSuccess']);
+        }
+        if (!result['isSuccess']) throw Exception('Fail to save image');
+        isSavePhoto.value = true;
+      } catch (e) {
+        if (context.mounted) '${context.photoCaptureFailed()}: $e'.debugPrint();
+        if (context.mounted) showSnackBar(context, context.photoCaptureFailed(), true);
+        isLoadingPhoto.value = false;
+      }
+    }
+
+    showPhotoImage() =>
+      Container(
+        width: context.width(),
+        height: context.height(),
+        margin: EdgeInsets.symmetric(horizontal: context.sideMargin()),
+        color: transpBlackColor,
+        child: Stack(alignment: Alignment.center,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    isShowPhoto.value = false;
+                    isSavePhoto.value = false;
+                  },
+                  child: circleIconImage(context, Icons.arrow_back_rounded)
+                ),
+                Image.memory(photoImage.value![photoIndex.value], fit: BoxFit.cover),
+                GestureDetector(
+                  onTap: () => isSavePhoto.value ? sharePhoto(): savePhoto(),
+                  child: circleIconImage(context, isSavePhoto.value ? Icons.share: Icons.save_alt_rounded)
+                ),
+              ]
+            ),
+            Row(children: [
+              if (!isSavePhoto.value && photoImage.value!.length > 1) GestureDetector(
+                onTap: () {
+                  photoIndex.value = (photoIndex.value - 1) % generatePhotoNumber;
+                  "${photoIndex.value}".debugPrint();
+                },
+                child: circleIconImage(context, Icons.arrow_back_ios_rounded)
+              ),
+              Spacer(),
+              if (!isSavePhoto.value && photoImage.value!.length > 1) GestureDetector(
+                onTap: () {
+                  photoIndex.value = (photoIndex.value + 1) % generatePhotoNumber;
+                  "${photoIndex.value}".debugPrint();
+                },
+                child: circleIconImage(context, Icons.arrow_forward_ios_rounded)
+              ),
+            ]),
+          ]
+        )
+      );
+
+    getFreePhoto() async {
+      final byteData = await rootBundle.load(countryNumber.value.countryFreePhoto(currentDate.value));
+      photoImage.value = [byteData.buffer.asUint8List()];
+      final prefs = await SharedPreferences.getInstance();
+      lastClaimedDate.value = currentDate.value.currentDay();
+      prefs.setInt('lastClaim', lastClaimedDate.value);
+      "lastClaimedDate: ${lastClaimedDate.value}".debugPrint();
+      isLoadingPhoto.value = false;
+      isShowPhoto.value = true;
+    }
+
+    ///Generate Dall-E-3 photo
+    getGenerateDallEPhoto() async {
+      try {
+        final prompt = countryNumber.value.dallEPrompt();
+        "prompt: $prompt".debugPrint();
+        final response = await prompt.dallEResponse();
+        "responseStatusCode: ${response.statusCode}".debugPrint();
+        if (response.statusCode == 200) {
+          final responseJsonData = jsonDecode(utf8.decode(response.bodyBytes).toString());
+          final responseImageList = List.generate(responseJsonData['data'].length, (i) async {
+            final url = await http.get(Uri.parse(responseJsonData['data'][i]['url']));
+            return url.bodyBytes;
+          });
+          photoImage.value = await Future.wait(responseImageList);
+          tickets.value -= 1;
+          final prefs = await SharedPreferences.getInstance();
+          prefs.setInt('tickets', tickets.value);
+          "tickets: $tickets".debugPrint();
+          isLoadingPhoto.value = false;
+          isShowPhoto.value = true;
+        } else {
+          final errorResponse = jsonDecode(response.body);
+          'code: ${errorResponse['error']['code']}'.debugPrint();
+          'message: ${errorResponse['error']['message']}'.debugPrint();
+          throw Exception('StatusCode is not 200.');
+        }
+      } catch (e) {
+        if (context.mounted) context.photoCaptureFailed().debugPrint();
+        if (context.mounted) showSnackBar(context, context.photoCaptureFailed(), true);
+        'Failed to generate Dall-E 3 image: $e'.debugPrint();
+        isLoadingPhoto.value = false;
+      }
+    }
+
+    ///Generate Dall-E-3 photo
+    getGenerateVertexAIPhoto() async {
+      try {
+        await loadVertexAIToken();
+        final prompt = countryNumber.value.vertexAIPrompt();
+        "prompt: $prompt".debugPrint();
+        final response = await prompt.vertexAIResponse(vertexAIToken.value);
+        "responseStatusCode: ${response.statusCode}".debugPrint();
+        if (response.statusCode == 200) {
+          final jsonResponse = jsonDecode(response.body);
+          photoImage.value = List.generate(jsonResponse["predictions"].length, (i) =>
+            base64Decode(jsonResponse["predictions"][i]["bytesBase64Encoded"])
+          );
+          tickets.value -= 1;
+          final prefs = await SharedPreferences.getInstance();
+          prefs.setInt('tickets', tickets.value);
+          "tickets: ${tickets.value}".debugPrint();
+          isLoadingPhoto.value = false;
+          "isLoadingPhoto: ${isLoadingPhoto.value}".debugPrint();
+          isShowPhoto.value = true;
+          "isShowPhoto: ${isShowPhoto.value}".debugPrint();
+        } else {
+          final errorResponse = jsonDecode(response.body);
+          'code: ${errorResponse['error']['code']}'.debugPrint();
+          'message: ${errorResponse['error']['message']}'.debugPrint();
+          throw Exception('StatusCode is not 200.');
+        }
+      } catch (e) {
+        if (context.mounted) context.photoCaptureFailed().debugPrint();
+        'Failed to generate Vertex AI image: $e'.debugPrint();
+        "getGenerateDallEPhoto".debugPrint();
+        getGenerateDallEPhoto();
+      }
+    }
+
+    cameraAction() async {
+      isMenuOpen.value = false;
+      "isMenuOpen: ${isMenuOpen.value}".debugPrint();
+      await permitPhotoAccess();
+      "photoPermission: ${photoPermission.value}".debugPrint();
+      await cameraPlayer.play(AssetSource(cameraSound));
+      await cameraPlayer.setVolume(cameraVolume);
+      if (photoPermission.value == PermissionStatus.granted && !isLoadingPhoto.value) {
+        isLoadingPhoto.value = true;
+        "isLoadingPhoto: ${isLoadingPhoto.value}".debugPrint();
+        if (!lastClaimedDate.value.isToday(currentDate.value)) {
+          "getFreePhoto".debugPrint();
+          await getFreePhoto();
+        } else if (tickets.value > 0) {
+          "getGenerateVertexAIPhoto".debugPrint();
+          await getGenerateVertexAIPhoto();
+        }
+      }
+    }
+
+    ///Revenue cat Subscription
+    //Buy subscription plan
+    buySubscriptionPlan(String planID) async {
+      if (!isPurchasing.value) {
+        isPurchasing.value = true;
+        "isPurchasing: ${isPurchasing.value}".debugPrint();
+        if (currentPlan.value != planID && tickets.value <= currentPlan.value.upgradeLimitTicketNumber()) {
+          try {
+            "Buy: $planID: ${activePlan.value.contains(planID)}".debugPrint();
+            if (!activePlan.value.contains(planID)) {
+              final offerings = await Purchases.getOfferings();
+              final offering = offerings.getOffering(planID.offeringID());
+              final purchaseResult = await Purchases.purchasePackage(offering!.monthly!);
+              "activePlan: ${purchaseResult.activeSubscriptions}".debugPrint();
+              if (purchaseResult.isSubscriptionActive(planID)) {
+                await setPlan(
+                  planString: planID,
+                  ticketsInt: planID.updatedTickets(tickets.value, true),
+                  expirationInt: purchaseResult.subscriptionExpirationDate()
+                );
+                if (context.mounted) context.pushHomePage();
+              } else {
+                if (context.mounted) await purchaseErrorDialog(context, isRestore: false, isCancel: false);
+              }
+            } else{
+              if (context.mounted) await purchaseFinishedDialog(context, isRestore: false, isCancel: false);
+            }
+          } on PlatformException catch (e) {
+            if (context.mounted) await purchaseExceptionDialog(context, e, isRestore: false, isCancel: false);
+          }
+        } else {
+          if (context.mounted) context.pushHomePage();
+          await showSnackBar(context, context.useTickets("${currentPlan.value.upgradeLimitTicketNumber()}"), true);
+        }
+      }
+    }
+
+    upgradePlan() async {
+      if (context.mounted) context.popPage();
+      if (!isPurchasing.value) {
+        isPurchasing.value = true;
+        "isPurchasing: ${isPurchasing.value}".debugPrint();
+        if (currentPlan.value != premiumID && tickets.value <= currentPlan.value.upgradeLimitTicketNumber()) {
+          try {
+            "Upgrade: $premiumID: ${activePlan.value.contains(premiumID)}".debugPrint();
+            if (!activePlan.value.contains(premiumID)) {
+              final offerings = await Purchases.getOfferings();
+              final offering = offerings.getOffering(premiumID.offeringID());
+              final purchaseResult = await Purchases.purchasePackage(
+                  offering!.monthly!,
+                  googleProductChangeInfo: GoogleProductChangeInfo(standardID)
+              );
+              "activePlan: ${purchaseResult.activeSubscriptions}".debugPrint();
+              if (purchaseResult.isSubscriptionActive(premiumID)) {
+                await setPlan(
+                  planString: premiumID,
+                  ticketsInt: premiumID.updatedTickets(tickets.value, true),
+                  expirationInt: purchaseResult.subscriptionExpirationDate()
+                );
+                if (context.mounted) context.pushHomePage();
+              } else {
+                if (context.mounted) await purchaseErrorDialog(context, isRestore: false, isCancel: false);
+              }
+            } else{
+              if (context.mounted) await purchaseFinishedDialog(context, isRestore: false, isCancel: false);
+            }
+          } on PlatformException catch (e) {
+            if (context.mounted) await purchaseExceptionDialog(context, e, isRestore: false, isCancel: false);
+          }
+        } else {
+          if (context.mounted) context.pushHomePage();
+          await showSnackBar(context, context.useTickets("${currentPlan.value.upgradeLimitTicketNumber()}"), true);
+        }
+      }
+    }
+
+    //Buy onetime passes
+    buyOnetime() async {
+      if (context.mounted && currentPlan.value == premiumID) context.popPage();
+      if (!isPurchasing.value) {
+        isPurchasing.value = true;
+        "isPurchasing: ${isPurchasing.value}".debugPrint();
+        if (tickets.value <= currentPlan.value.onetimeLimitTicketNumber()) {
+          try {
+            "buyOnetime".debugPrint();
+            final offerings = await Purchases.getOfferings();
+            final offering = offerings.getOffering(premiumOffering);
+            final purchaseResult = await Purchases.purchasePackage(offering!.lifetime!);
+            "${purchaseResult.allPurchasedProductIdentifiers}".debugPrint();
+            if (purchaseResult.allPurchasedProductIdentifiers.isNotEmpty) {
+              await setPlan(
+                planString: currentPlan.value,
+                ticketsInt: currentPlan.value.addTickets(tickets.value),
+                expirationInt: expirationDate.value
+              );
+              if (context.mounted) context.pushHomePage();
+            } else {
+              if (context.mounted) await purchaseErrorDialog(context, isRestore: false, isCancel: false);
+            }
+          } on PlatformException catch (e) {
+            if (context.mounted) await purchaseExceptionDialog(context, e, isRestore: false, isCancel: false);
+          }
+        } else {
+          if (context.mounted) context.pushHomePage();
+          await showSnackBar(context, context.useTickets("${currentPlan.value.onetimeLimitTicketNumber()}"), true);
+        }
+      }
+    }
+
+    //Cancellation page for subscription
+    cancelPlan() async {
+      if (!isPurchasing.value) {
+        isPurchasing.value = true;
+        "isPurchasing: ${isPurchasing.value}".debugPrint();
+        "activePlan: ${activePlan.value}".debugPrint();
+        if (activePlan.value.isNotEmpty) {
+          try {
+            final canLaunch = await canLaunchUrl(subscriptionUri);
+            "canLaunchUrl: $canLaunch".debugPrint();
+            if (context.mounted) context.pushHomePage();
+            await launchUrl(subscriptionUri, mode: LaunchMode.externalApplication);
+          } on PlatformException catch (e) {
+            if (context.mounted) await purchaseExceptionDialog(context, e, isRestore: false, isCancel: true);
+          }
+        } else {
+          if (context.mounted) await purchaseFinishedDialog(context, isRestore: false, isCancel: true);
+        }
+      }
+    }
+
+    Future<void> buyPremium() async {
+      await buySubscriptionPlan(premiumID);
+    }
+
+    Future<void> buyStandard() async {
+      await buySubscriptionPlan(standardID);
+    }
+
+    //Buy subscription
+    toPurchase() {
+      isMenuOpen.value = false;
+      "isMenuOpen: ${isMenuOpen.value}".debugPrint();
+      isMyPurchase.value = true;
+    }
+
+    //Cancel Subscription,
+    toCancel() {
+      isMenuOpen.value = false;
+      "isMenuOpen: ${isMenuOpen.value}".debugPrint();
+      cancelDialog(context, currentPlan.value, cancelPlan);
+    }
+
+    //Upgrade & Downgrade Subscription,
+    toUpgradePlan() {
+      isMenuOpen.value = false;
+      "isMenuOpen: ${isMenuOpen.value}".debugPrint();
+      upgradePlanDialog(context, currentPlan.value, priceList.value, countryNumber.value, expirationDate.value, upgradePlan);
+    }
+
+    //Buy add on passes
+    toBuyOnetime() {
+      isMenuOpen.value = false;
+      "isMenuOpen: ${isMenuOpen.value}".debugPrint();
+      buyOnetimeDialog(context,
+        currentPlan.value,
+        priceList.value,
+        countryNumber.value,
+        expirationDate.value,
+        buyOnetime
+      );
+    }
+
+    //Restore Button
+    toRestore() async {
+      if (!isPurchasing.value) {
+        isPurchasing.value = true;
+        try {
+          final restoredInfo = await Purchases.restorePurchases();
+          "activePlan: ${restoredInfo.activeSubscriptions}".debugPrint();
+          if (restoredInfo.activeSubscriptions.isNotEmpty && currentPlan.value == freeID) {
+            await setPlan(
+              planString: restoredInfo.updatedPlan(),
+              ticketsInt: tickets.value,
+              expirationInt: restoredInfo.subscriptionExpirationDate()
+            );
+            if (context.mounted) purchaseSubscriptionSuccessDialog(context, restoredInfo.planID(), null, isRestore: true, isCancel: false);
+          } else {
+            if (context.mounted) purchaseErrorDialog(context, isRestore: true, isCancel: false);
+          }
+        } on PlatformException catch (e) {
+          if (context.mounted) purchaseExceptionDialog(context, e, isRestore: true, isCancel: false);
+        }
+      }
+    }
 
     return Scaffold(
       body: Stack(alignment: Alignment.centerLeft,
         children: [
           backGroundImage(context, countryNumber.value),
+          if (isShowAd.value && !context.isAdmobEnoughSideSpace()) adMobBanner(context),
           backFenceImage(context, countryNumber.value),
           if (countryNumber.value == 0) backEmergencyImage(context, countryNumber.value),
-          backGateImage(context, countryNumber.value),
+          if (countryNumber.value == 0) backGateImage(context, countryNumber.value),
           if (countryNumber.value != 3) backBarImage(context, countryNumber.value, barBackImage.value, barAngle.value, barShift.value, changeTime.value),
           if (countryNumber.value != 0) backGateImage(context, countryNumber.value),
           backPoleImage(context, countryNumber.value),
@@ -587,14 +1044,17 @@ class MyHomePage extends HookConsumerWidget {
           trafficSignImage(context, countryNumber.value),
           upDownSpacer(context),
           sideSpacer(context),
-          if (!isDebug && isShowAd) Container(alignment: countryNumber.value.adAlignment(), child: const AdBannerWidget()),
-          if (!isDebug) bottomButtons(),
-          if (isDebug) debugCountryButton(debugCountryNumber),
-          if (isDebug) debugTrainButton(debugIsLeft),
+          bottomButtons(),
+          if (!isYellow.value && !isRightWait.value && !isLeftWait.value && !isLoadingPhoto.value) selectCountryButton(),
+          if (isPossiblePhoto.value && !isLoadingPhoto.value) cameraButton(context, tickets.value, currentDate.value, lastClaimedDate.value, cameraAction),
+          if (isMenuOpen.value) menuWidget(context, currentPlan.value, tickets.value, countryNumber.value, currentDate.value, lastClaimedDate.value, expirationDate.value, toBuyOnetime, toUpgradePlan, toPurchase, toCancel, toRestore),
+          if (isMyPurchase.value) purchaseTable(context, currentPlan.value, tickets.value, priceList.value, buyPremium, buyStandard, buyOnetime),
+          if (!isYellow.value && !isRightWait.value && !isLeftWait.value && isLoadedSubscriptionInfo.value) menuButton(context, isMenuOpen.value, isMyPurchase.value, openMenu),
+          if (isShowPhoto.value) showPhotoImage(),
+          if (isPurchasing.value || isLoadingPhoto.value) circularProgressIndicator(context),
+          if (isShowAd.value && context.isAdmobEnoughSideSpace()) adMobBanner(context),
         ],
       ),
-      floatingActionButton: (!isDebug && (!isYellow.value) && (!isRightWait.value) && (!isLeftWait.value)) ? selectCountryButton(): null,
-      floatingActionButtonLocation: (!isDebug) ? countryNumber.value.floatingActionLocation(): null,
     );
   }
 }
