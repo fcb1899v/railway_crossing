@@ -45,18 +45,18 @@ class MyHomePage extends HookConsumerWidget {
     final isMyPurchase = useState(false);
     final isPurchasing = useState(false);
     final isShowAd = useState(true);
-    final isMainLandChina = useState(true);
     final counter = useState(0);
 
     //Purchase
     final currentPlan = useState(freeID);
     final activePlan = useState([]);
     final tickets = useState(0);
-    final expirationDate = useState(defaultDateTime);
-    final lastClaimedDate = useState(defaultDate);
+    final expirationDate = useState(defaultIntDateTime);
+    final lastClaimedDate = useState(defaultIntDate);
     final currentDate = useState(defaultDateTime);
-    final priceList = useState(["-", "-", "-", "-"]);
+    final priceList = useState(defaultPriceList);
     final isLoadedSubscriptionInfo = useState(false);
+    // final isMainLandChina = useState(false);
 
     //Photo
     final vertexAIToken = useState("");
@@ -69,13 +69,12 @@ class MyHomePage extends HookConsumerWidget {
     final isLoadingPhoto = useState(false);
 
     //Audio
-    final warningPlayer = AudioPlayer();
-    final leftTrainPlayer = AudioPlayer();
-    final rightTrainPlayer = AudioPlayer();
-    final emergencyPlayer = AudioPlayer();
-    final cameraPlayer = AudioPlayer();
+    final audioPlayers = AudioPlayerManager();
+    final effectPlayer = AudioPlayer();
+    final lifecycle = useAppLifecycleState();
 
     //Image
+    final countryCode = useState("OTH");
     final countryNumber = useState(3);
     final barFrontImage = useState("");
     final barBackImage = useState("");
@@ -101,82 +100,93 @@ class MyHomePage extends HookConsumerWidget {
     final changeTime = useState(0);
     final emergencyColor = useState(whiteColor);
 
-    setPlan({required String planString, required int ticketsInt, required int expirationInt}) async {
+    initState() async {
+      "initState".debugPrint();
+      "width: ${context.mediaWidth()}, height: ${context.mediaHeight()}".debugPrint();
+      "sideMargin: ${context.sideMargin()}, upDownMargin: ${context.upDownMargin()}".debugPrint();
+      final prefs = await SharedPreferences.getInstance();
+      priceList.value = await loadPriceList(prefs);
+      countryCode.value = await getCountryCode(prefs);
+      countryNumber.value = countryCode.value.getCountryNumber();
+      // isMainLandChina.value = countryCode.value.getIsMainLandChina();
+      final androidSDK = await getAndroidSDK();
+      photoPermission.value = await (androidSDK < 33 ? Permission.storage.status: Permission.photos.status);
+    }
+
+    showDebugPrints() {
+      "currentPlan: ${currentPlan.value}, activePlan: ${activePlan.value}".debugPrint();
+      "tickets: ${tickets.value}, isShowAd: ${isShowAd.value}".debugPrint();
+      "expirationDate: ${expirationDate.value}, lastClaimDate: ${lastClaimedDate.value}".debugPrint();
+    }
+
+    getCurrentPlan() async {
+      "getCurrentPlan".debugPrint();
+      final prefs = await SharedPreferences.getInstance();
+      currentDate.value = await getServerDateTime();
+      currentPlan.value = prefs.getString("plan") ?? freeID;
+      activePlan.value = prefs.getStringList("activePlan") ?? [];
+      tickets.value = prefs.getInt("tickets") ?? 0;
+      expirationDate.value = prefs.getInt('expiration') ?? defaultIntDateTime;
+      lastClaimedDate.value = prefs.getInt('lastClaim') ?? defaultIntDate;
+      isShowAd.value = (currentPlan.value != premiumID && defaultIsShowAd);
+      showDebugPrints();
+    }
+
+    setPlan({required String planString, required List<String> activePlanListString, required int ticketsInt, required int expirationInt}) async {
       "setPlan: $planString".debugPrint();
-      final customerInfo = await Purchases.getCustomerInfo();
       currentPlan.value = planString;
-      activePlan.value = planString == freeID ? []: customerInfo.activeSubscriptions;
+      activePlan.value = activePlanListString;
       tickets.value = ticketsInt;
       expirationDate.value = expirationInt;
       isShowAd.value = (currentPlan.value != premiumID);
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString("plan", planString);
+      await prefs.setStringList("activePlan", activePlanListString);
       await prefs.setInt("tickets", ticketsInt);
       await prefs.setInt('expiration', expirationInt);
-      "currentPlan: ${currentPlan.value}, activePlan: ${activePlan.value}".debugPrint();
-      "tickets: ${tickets.value}, isShowAd: ${isShowAd.value}".debugPrint();
-      "currentDate: ${currentDate.value}, expirationDate: ${expirationDate.value}, lastClaimDate: ${lastClaimedDate.value}".debugPrint();
-    }
-
-    loadSubscriptionData(SharedPreferences prefs) async {
-      final customerInfo = await Purchases.getCustomerInfo();
-      currentPlan.value = prefs.getString("plan") ?? defaultPlan;
-      activePlan.value = customerInfo.activeSubscriptions;
-      tickets.value = prefs.getInt("tickets") ?? defaultTickets;
-      expirationDate.value = prefs.getInt('expiration') ?? defaultDateTime;
-      isShowAd.value = (currentPlan.value != premiumID && defaultIsShowAd);
-      lastClaimedDate.value = prefs.getInt('lastClaim') ?? defaultDate;
-      "currentPlan: ${currentPlan.value}, activePlan: ${activePlan.value}".debugPrint();
-      "tickets: ${tickets.value}, isShowAd: ${isShowAd.value}".debugPrint();
-      "currentDate: ${currentDate.value}, expirationDate: ${expirationDate.value}, lastClaimDate: ${lastClaimedDate.value}".debugPrint();
+      showDebugPrints();
     }
 
     loadSubscriptionInfo() async {
-      final prefs = await SharedPreferences.getInstance();
-      await loadSubscriptionData(prefs);
-      try {
-        if (currentPlan.value != freeID && activePlan.value.isNotEmpty && currentDate.value > expirationDate.value) {
+      if (currentPlan.value != freeID && activePlan.value.isNotEmpty && currentDate.value.intDateTime() > expirationDate.value) {
+        try {
+          "loadSubscriptionInfo: Update".debugPrint();
           final customerInfo = await Purchases.getCustomerInfo();
           await setPlan(
             planString: customerInfo.updatedPlan(),
-            ticketsInt: customerInfo.addTicket(),
+            activePlanListString: customerInfo.activeSubscriptions,
+            ticketsInt: (expirationDate.value == defaultDateTime.intDateTime()) ? tickets.value: customerInfo.addTicket(),
             expirationInt: customerInfo.subscriptionExpirationDate(),
           );
           "Grant tickets: ${customerInfo.planID()}".debugPrint();
-        } else if (currentPlan.value != freeID && activePlan.value.isEmpty && currentDate.value > expirationDate.value) {
-          "Cancel plan".debugPrint();
-          if (!isDebugMode) {
-            await setPlan(
-              planString: freeID,
-              ticketsInt: 0,
-              expirationInt: defaultDateTime,
-            );
+          isLoadedSubscriptionInfo.value = true;
+          "isLoadedSubscriptionInfo: ${isLoadedSubscriptionInfo.value}".debugPrint();
+        } on PlatformException catch (e) {
+          "Failed to load subscription information: $e".debugPrint();
+          isLoadedSubscriptionInfo.value = false;
+          "isLoadedSubscriptionInfo: ${isLoadedSubscriptionInfo.value}".debugPrint();
+          counter.value += 1;
+          if (!isLoadedSubscriptionInfo.value && counter.value < 10) {
+            Future.delayed(const Duration(seconds: 10), () {
+              loadSubscriptionInfo();
+              if (context.mounted && counter.value == 9) showSnackBar(context, context.checkNetwork(), true);
+            });
           }
         }
+      } else if (currentPlan.value != freeID && activePlan.value.isEmpty && currentDate.value.intDateTime() > expirationDate.value) {
+        "loadSubscriptionInfo: Cancel".debugPrint();
+        await setPlan(
+          planString: freeID,
+          activePlanListString: [],
+          ticketsInt: 0,
+          expirationInt: defaultIntDateTime,
+        );
         isLoadedSubscriptionInfo.value = true;
         "isLoadedSubscriptionInfo: ${isLoadedSubscriptionInfo.value}".debugPrint();
-      } on PlatformException catch (e) {
-        "Failed to load subscription information: $e".debugPrint();
-        isLoadedSubscriptionInfo.value = false;
+      } else {
+        isLoadedSubscriptionInfo.value = true;
         "isLoadedSubscriptionInfo: ${isLoadedSubscriptionInfo.value}".debugPrint();
-        counter.value += 1;
-        if (!isLoadedSubscriptionInfo.value && counter.value < 10) {
-          Future.delayed(const Duration(seconds: 10), () {
-            loadSubscriptionInfo();
-            if (context.mounted && counter.value == 9) showSnackBar(context, context.checkNetwork(), true);
-          });
-        }
       }
-    }
-
-    initState() async {
-      "width: ${context.mediaWidth()}, height: ${context.mediaHeight()}".debugPrint();
-      "sideMargin: ${context.sideMargin()}, upDownMargin: ${context.upDownMargin()}".debugPrint();
-      if (currentDate.value == defaultDateTime) currentDate.value = await getServerDateTime(currentDate.value);
-      if (context.mounted) countryNumber.value = await getDefaultCountryNumber(context);
-      isMainLandChina.value = await isAppleMainLandChinaByStorefront();
-      final isAndroidUnder33 = await isAndroidSDKUnder33();
-      photoPermission.value = await (isAndroidUnder33 ? Permission.storage.status: Permission.photos.status);
     }
 
     setNormalState() async {
@@ -188,6 +198,7 @@ class MyHomePage extends HookConsumerWidget {
       isRightOn.value = false;
       isRightWait.value = false;
       isYellow.value = false;
+      emergencyColor.value = whiteColor;
       warningFrontImage.value = countryNumber.value.warningFrontImageOff();
       warningBackImage.value = countryNumber.value.warningBackImageOff();
       barFrontImage.value = countryNumber.value.barFrontOff();
@@ -198,28 +209,35 @@ class MyHomePage extends HookConsumerWidget {
       isPossibleEmergency.value = true;
       isPossiblePhoto.value = false;
       isLoadingPhoto.value = false;
-      await warningPlayer.stop();
+      await audioPlayers.audioPlayers[0].stop();
     }
 
-    loadPriceList() async {
-      if (priceList.value[0] == "-") {
-        "Get Price List".debugPrint();
-        final offerings = await Purchases.getOfferings();
-        offerings.all.forEach((key, offering) {
-          for (var package in offering.availablePackages) {
-            final storeProduct = package.storeProduct;
-            final price = storeProduct.priceString;
-            priceList.value[storeProduct.identifier.planNumber()] = price;
+    useEffect(() {
+      Future<void> handleLifecycleChange() async {
+        // ウィジェットが破棄されていたら何もしない
+        if (!context.mounted) return;
+        // アプリがバックグラウンドに移行する直前
+        if (lifecycle == AppLifecycleState.paused) {
+          for (int i = 0; i < audioPlayers.audioPlayers.length; i++) {
+            final player = audioPlayers.audioPlayers[i];
+            try {
+              if (player.state == PlayerState.playing) await player.stop();
+              setNormalState();
+            } catch (e) {
+              'Error handling stop for player $i: $e'.debugPrint();
+            }
           }
-        });
-        "Price List: ${priceList.value}".debugPrint();
+        }
       }
-    }
+      handleLifecycleChange();
+      return null;
+    }, [lifecycle, context.mounted, audioPlayers.audioPlayers.length]);
 
     // Initialize app
     useEffect(() {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         await initState();
+        await getCurrentPlan();
         await loadSubscriptionInfo();
         await setNormalState();
       });
@@ -248,8 +266,8 @@ class MyHomePage extends HookConsumerWidget {
     }
 
     leftWaitOff() async {
-      await leftTrainPlayer.stop();
-      "leftTrainPlayer: ${leftTrainPlayer.state}".debugPrint();
+      await audioPlayers.audioPlayers[1].stop();
+      "leftTrainPlayer: ${audioPlayers.audioPlayers[1].state}".debugPrint();
       directionImage.value = countryNumber.value.offOrRightDirection(isRightWait.value);
       isLeftOn.value = false;
       isLeftWait.value = false;
@@ -261,15 +279,12 @@ class MyHomePage extends HookConsumerWidget {
     goLeftTrain() async {
       if (isLeftWait.value && !isEmergency.value) {
         isPossibleEmergency.value = false;
-        if (tickets.value > 0 || !lastClaimedDate.value.isToday(currentDate.value)) {
-          isPossiblePhoto.value = true;
-          "isPossiblePhoto: ${isPossiblePhoto.value}".debugPrint();
-        }
-        "isPossibleEmergency: ${isPossibleEmergency.value}".debugPrint();
-        await leftTrainPlayer.play(AssetSource(soundTrain));
-        await leftTrainPlayer.setReleaseMode(ReleaseMode.release);
-        await leftTrainPlayer.setVolume(trainVolume);
-        "leftTrainPlayer: ${leftTrainPlayer.state}".debugPrint();
+        isPossiblePhoto.value = true;
+        "isPossiblePhoto: ${isPossiblePhoto.value}, isPossibleEmergency: ${isPossibleEmergency.value}".debugPrint();
+        await audioPlayers.audioPlayers[1].play(AssetSource(soundTrain));
+        await audioPlayers.audioPlayers[1].setReleaseMode(ReleaseMode.release);
+        await audioPlayers.audioPlayers[1].setVolume(trainVolume);
+        "leftTrainPlayer: ${audioPlayers.audioPlayers[1].state}".debugPrint();
         if (context.mounted) leftAnimation.value = context.leftAnimation(leftController, isLeftFast.value);
         await leftController.forward(from: 0);
         Future.delayed(const Duration(seconds: 2), () {
@@ -308,8 +323,8 @@ class MyHomePage extends HookConsumerWidget {
     }
 
     rightWaitOff() async {
-      await rightTrainPlayer.stop();
-      "rightTrainPlayer: ${rightTrainPlayer.state}".debugPrint();
+      await audioPlayers.audioPlayers[2].stop();
+      "rightTrainPlayer: ${audioPlayers.audioPlayers[2].state}".debugPrint();
       directionImage.value = countryNumber.value.offOrLeftDirection(isLeftWait.value);
       isRightOn.value = false;
       isRightWait.value = false;
@@ -321,14 +336,12 @@ class MyHomePage extends HookConsumerWidget {
     goRightTrain() async {
       if (isRightWait.value && !isEmergency.value) {
         isPossibleEmergency.value = false;
-        if (tickets.value > 0 || !lastClaimedDate.value.isToday(currentDate.value)) {
-          isPossiblePhoto.value = true;
-          "isPossiblePhoto: ${isPossiblePhoto.value}".debugPrint();
-        }
-        await rightTrainPlayer.play(AssetSource(soundTrain));
-        await rightTrainPlayer.setReleaseMode(ReleaseMode.release);
-        await rightTrainPlayer.setVolume(trainVolume);
-        "rightTrainPlayer: ${rightTrainPlayer.state}".debugPrint();
+        isPossiblePhoto.value = true;
+        "isPossiblePhoto: ${isPossiblePhoto.value}, isPossibleEmergency: ${isPossibleEmergency.value}".debugPrint();
+        await audioPlayers.audioPlayers[2].play(AssetSource(soundTrain));
+        await audioPlayers.audioPlayers[2].setReleaseMode(ReleaseMode.release);
+        await audioPlayers.audioPlayers[2].setVolume(trainVolume);
+        "rightTrainPlayer: ${audioPlayers.audioPlayers[2].state}".debugPrint();
         if (context.mounted) rightAnimation.value = context.rightAnimation(rightController, isRightFast.value);
         await rightController.forward(from: 0);
         Future.delayed(const Duration(seconds: 2), () {
@@ -415,10 +428,19 @@ class MyHomePage extends HookConsumerWidget {
     changeCountry(MapEntry entry) async {
       if (!isLoadingPhoto.value) {
         changeTime.value = 0;
-        countryNumber.value = entry.value['countryNumber'] as int;
-        'select_${entry.key}: ${countryNumber.value}'.debugPrint();
+        final newCountryNumber = entry.value['countryNumber'] as int;
+        if (countryNumber.value != newCountryNumber) {
+          await effectPlayer.setVolume(decideVolume);
+          await effectPlayer.play(AssetSource(decideSound));
+          "play: $decideSound".debugPrint();
+          countryNumber.value = newCountryNumber;
+          'select_${entry.key}: ${countryNumber.value}'.debugPrint();
+          await setNormalState();
+        } else {
+          await effectPlayer.setVolume(openVolume);
+          await effectPlayer.play(AssetSource(openSound));
+        }
         fabKey.currentState?.close();
-        await setNormalState();
       }
     }
 
@@ -430,13 +452,13 @@ class MyHomePage extends HookConsumerWidget {
 
       leftWarningToggle() {
         if (!isLeftWait.value && !isRightWait.value) {
-          warningPlayer.stop();
-          "warningPlayer: ${warningPlayer.state}".debugPrint();
+          audioPlayers.audioPlayers[0].stop();
+          "warningPlayer: ${audioPlayers.audioPlayers[0].state}".debugPrint();
           return;
         }
-        if (warningPlayer.state == PlayerState.completed) {
-          warningPlayer.play(AssetSource(countryNumber.value.warningSound()));
-          "warningPlayer: ${warningPlayer.state}".debugPrint();
+        if (audioPlayers.audioPlayers[0].state == PlayerState.completed) {
+          audioPlayers.audioPlayers[0].play(AssetSource(countryNumber.value.warningSound()));
+          "warningPlayer: ${audioPlayers.audioPlayers[0].state}".debugPrint();
         }
         warningFrontImage.value = countryNumber.value.reverseWarningFront(warningFrontImage.value);
         warningBackImage.value = countryNumber.value.reverseWarningBack(warningBackImage.value);
@@ -451,11 +473,11 @@ class MyHomePage extends HookConsumerWidget {
       }
 
       if (isLeftWait.value) {
-        if (warningPlayer.state != PlayerState.playing) {
-          warningPlayer.play(AssetSource(countryNumber.value.warningSound()));
-          warningPlayer.setReleaseMode(ReleaseMode.release);
-          warningPlayer.setVolume(warningVolume);
-          "warningPlayer: ${warningPlayer.state}".debugPrint();
+        if (audioPlayers.audioPlayers[0].state != PlayerState.playing) {
+          audioPlayers.audioPlayers[0].play(AssetSource(countryNumber.value.warningSound()));
+          audioPlayers.audioPlayers[0].setReleaseMode(ReleaseMode.release);
+          audioPlayers.audioPlayers[0].setVolume(warningVolume);
+          "warningPlayer: ${audioPlayers.audioPlayers[0].state}".debugPrint();
         }
         leftWarningToggle();
         leftBarToggle();
@@ -464,6 +486,7 @@ class MyHomePage extends HookConsumerWidget {
       return () {
         leftWarningTimer?.cancel();
         leftBarTimer?.cancel();
+        audioPlayers.audioPlayers[1].stop();
       };
     }, [isLeftWait.value]);
 
@@ -475,14 +498,14 @@ class MyHomePage extends HookConsumerWidget {
 
       rightWarningToggle() {
         if (!isLeftWait.value && !isRightWait.value) {
-          warningPlayer.stop();
-          "warningPlayer: ${warningPlayer.state}".debugPrint();
+          audioPlayers.audioPlayers[0].stop();
+          "warningPlayer: ${audioPlayers.audioPlayers[0].state}".debugPrint();
           return;
         }
         if (!isLeftWait.value) {
-          if (warningPlayer.state == PlayerState.completed) {
-            warningPlayer.play(AssetSource(countryNumber.value.warningSound()));
-            "warningPlayer: ${warningPlayer.state}".debugPrint();
+          if (audioPlayers.audioPlayers[0].state == PlayerState.completed) {
+            audioPlayers.audioPlayers[0].play(AssetSource(countryNumber.value.warningSound()));
+            "warningPlayer: ${audioPlayers.audioPlayers[0].state}".debugPrint();
           }
           warningFrontImage.value = countryNumber.value.reverseWarningFront(warningFrontImage.value);
           warningBackImage.value = countryNumber.value.reverseWarningBack(warningBackImage.value);
@@ -500,11 +523,11 @@ class MyHomePage extends HookConsumerWidget {
       }
 
       if (isRightWait.value) {
-        if (!isLeftWait.value && (warningPlayer.state != PlayerState.playing)) {
-          warningPlayer.play(AssetSource(countryNumber.value.warningSound()));
-          warningPlayer.setReleaseMode(ReleaseMode.release);
-          warningPlayer.setVolume(warningVolume);
-          "warningPlayer: ${warningPlayer.state}".debugPrint();
+        if (!isLeftWait.value && (audioPlayers.audioPlayers[0].state != PlayerState.playing)) {
+          audioPlayers.audioPlayers[0].play(AssetSource(countryNumber.value.warningSound()));
+          audioPlayers.audioPlayers[0].setReleaseMode(ReleaseMode.release);
+          audioPlayers.audioPlayers[0].setVolume(warningVolume);
+          "warningPlayer: ${audioPlayers.audioPlayers[0].state}".debugPrint();
         }
         rightWarningToggle();
         rightBarToggle();
@@ -513,6 +536,7 @@ class MyHomePage extends HookConsumerWidget {
       return () {
         rightWarningTimer?.cancel();
         rightBarTimer?.cancel();
+        audioPlayers.audioPlayers[2].stop();
       };
     }, [isRightWait.value]);
 
@@ -523,31 +547,26 @@ class MyHomePage extends HookConsumerWidget {
 
       emergencyToggle() {
         if (!isEmergency.value) {
-          emergencyPlayer.stop();
-          "emergencyPlayer: ${warningPlayer.state}".debugPrint();
+          audioPlayers.audioPlayers[3].stop();
+          "Stop emergencyPlayer: ${audioPlayers.audioPlayers[3].state}".debugPrint();
           return;
-        }
-        if (emergencyPlayer.state == PlayerState.completed) {
-          emergencyPlayer.play(AssetSource(soundEmergency));
-          "emergencyPlayer: ${emergencyPlayer.state}".debugPrint();
+        } else if (audioPlayers.audioPlayers[3].state == PlayerState.stopped) {
+          audioPlayers.audioPlayers[3].play(AssetSource(soundEmergency));
+          audioPlayers.audioPlayers[3].setVolume(emergencyVolume);
+          "Play emergencyPlayer: ${audioPlayers.audioPlayers[3].state}".debugPrint();
+        } else if (audioPlayers.audioPlayers[3].state == PlayerState.completed) {
+          "Continue emergencyPlayer: ${audioPlayers.audioPlayers[3].state}".debugPrint();
+          audioPlayers.audioPlayers[3].play(AssetSource(soundEmergency));
         }
         emergencyColor.value = (emergencyColor.value == whiteColor) ? yellowColor: whiteColor;
         emergencyTimer = Timer(const Duration(milliseconds: emergencyFlashTime), emergencyToggle);
       }
 
-      if (isEmergency.value) {
-        emergencyPlayer.play(AssetSource(soundEmergency));
-        emergencyPlayer.setReleaseMode(ReleaseMode.release);
-        emergencyPlayer.setVolume(emergencyVolume);
-        emergencyToggle();
-      } else {
-        emergencyPlayer.stop;
-        emergencyColor.value = whiteColor;
-      }
+      if (isEmergency.value) emergencyToggle();
 
       return () {
         emergencyTimer?.cancel();
-        emergencyPlayer.dispose();
+        audioPlayers.audioPlayers[3].stop();
       };
     }, [isEmergency.value]);
 
@@ -590,21 +609,28 @@ class MyHomePage extends HookConsumerWidget {
         color: whiteColor,
         size: context.fabIconSize(),
       ),
-      onDisplayChange: (isOpen) {
-        if (isOpen) isMenuOpen.value = false;
+      onDisplayChange: (isOpen) async {
+        if (isOpen){
+          isMenuOpen.value = false;
+          await effectPlayer.setVolume(openVolume);
+          await effectPlayer.play(AssetSource(openSound));
+          "play: $openSound".debugPrint();
+        }
       },
       children: flagList.entries.map((entry) => GestureDetector(
         child: SizedBox(
           width: context.fabChildIconSize(),
           child: Image.asset(entry.value['image'] as String),
         ),
-        onTap: () async => await changeCountry(entry),
+        onTap: () async {
+          await changeCountry(entry);
+        },
       )).toList(),
     );
 
     openMenu() async {
-      if (isLoadedSubscriptionInfo.value && !isMainLandChina.value) {
-        await loadPriceList();
+      if (isLoadedSubscriptionInfo.value) {
+        effectPlayer.play(AssetSource(openSound));
         fabKey.currentState?.close();
         isMenuOpen.value = !isMenuOpen.value;
       }
@@ -688,10 +714,11 @@ class MyHomePage extends HookConsumerWidget {
       );
 
     getFreePhoto() async {
-      final byteData = await rootBundle.load(countryNumber.value.countryFreePhoto(currentDate.value));
+      "getFreePhoto".debugPrint();
+      final byteData = await rootBundle.load(countryNumber.value.countryFreePhoto(currentDate.value.intDateTime()));
       photoImage.value = [byteData.buffer.asUint8List()];
       final prefs = await SharedPreferences.getInstance();
-      lastClaimedDate.value = currentDate.value.currentDay();
+      lastClaimedDate.value = currentDate.value.toLocal().intDate();
       prefs.setInt('lastClaim', lastClaimedDate.value);
       "lastClaimedDate: ${lastClaimedDate.value}".debugPrint();
       isLoadingPhoto.value = false;
@@ -734,6 +761,7 @@ class MyHomePage extends HookConsumerWidget {
 
     ///Generate Dall-E-3 photo
     getGenerateVertexAIPhoto() async {
+      "getGenerateVertexAIPhoto".debugPrint();
       try {
         vertexAIToken.value = await loadVertexAIToken(context);
         final prompt = countryNumber.value.vertexAIPrompt();
@@ -772,21 +800,22 @@ class MyHomePage extends HookConsumerWidget {
       "isMenuOpen: ${isMenuOpen.value}".debugPrint();
       "photoPermission: ${photoPermission.value}".debugPrint();
       if (photoPermission.value != PermissionStatus.granted) {
+        await permitPhotoAccess();
         if (photoPermission.value != PermissionStatus.granted) {
           if (context.mounted) showSnackBar(context, context.photoAccessPermission(), true);
           Future.delayed(const Duration(seconds: 3), () async => await openAppSettings());
         }
       } else {
-        await cameraPlayer.play(AssetSource(cameraSound));
-        await cameraPlayer.setVolume(cameraVolume);
-        isLoadingPhoto.value = true;
-        "isLoadingPhoto: ${isLoadingPhoto.value}".debugPrint();
-        if (!lastClaimedDate.value.isToday(currentDate.value)) {
-          "getFreePhoto".debugPrint();
-          await getFreePhoto();
-        } else if (tickets.value > 0) {
-          "getGenerateVertexAIPhoto".debugPrint();
-          await getGenerateVertexAIPhoto();
+        if (tickets.value > 0 || !lastClaimedDate.value.isToday(currentDate.value.intDateTime())) {
+          await effectPlayer.setVolume(cameraVolume);
+          await effectPlayer.play(AssetSource(cameraSound));
+          isLoadingPhoto.value = true;
+          "isLoadingPhoto: ${isLoadingPhoto.value}".debugPrint();
+          if (!lastClaimedDate.value.isToday(currentDate.value.intDateTime())) {
+            await getFreePhoto();
+          } else if (tickets.value > 0) {
+            await getGenerateVertexAIPhoto();
+          }
         }
       }
     }
@@ -804,13 +833,25 @@ class MyHomePage extends HookConsumerWidget {
               final offerings = await Purchases.getOfferings();
               final offering = offerings.getOffering(planID.offeringID());
               final purchaseResult = await Purchases.purchasePackage(offering!.monthly!);
-              "activePlan: ${purchaseResult.activeSubscriptions}".debugPrint();
+              currentDate.value = await getServerDateTime();
               if (purchaseResult.isSubscriptionActive(planID)) {
-                await setPlan(
-                  planString: planID,
-                  ticketsInt: planID.updatedTickets(tickets.value, true),
-                  expirationInt: purchaseResult.subscriptionExpirationDate()
-                );
+                if (Platform.isIOS || Platform.isMacOS) {
+                  final originalPurchaseDate = DateTime.parse(purchaseResult.originalPurchaseDate!);
+                  "originalPurchaseDate: $originalPurchaseDate".debugPrint();
+                  await setPlan(
+                    planString: planID,
+                    activePlanListString: purchaseResult.activeSubscriptions,
+                    ticketsInt: tickets.value + planID.appleUpdatedTickets(currentDate.value, originalPurchaseDate),
+                    expirationInt: purchaseResult.subscriptionExpirationDate()
+                  );
+                } else {
+                  await setPlan(
+                    planString: planID,
+                    activePlanListString: purchaseResult.activeSubscriptions,
+                    ticketsInt: tickets.value + planID.updatedTickets(currentDate.value),
+                    expirationInt: purchaseResult.subscriptionExpirationDate()
+                  );
+                }
                 if (context.mounted) context.pushHomePage();
               } else {
                 if (context.mounted) await purchaseErrorDialog(context, isRestore: false, isCancel: false);
@@ -840,14 +881,15 @@ class MyHomePage extends HookConsumerWidget {
               final offerings = await Purchases.getOfferings();
               final offering = offerings.getOffering(premiumID.offeringID());
               final purchaseResult = await Purchases.purchasePackage(
-                  offering!.monthly!,
-                  googleProductChangeInfo: GoogleProductChangeInfo(standardID)
+                offering!.monthly!,
+                googleProductChangeInfo: GoogleProductChangeInfo(standardID)
               );
               "activePlan: ${purchaseResult.activeSubscriptions}".debugPrint();
               if (purchaseResult.isSubscriptionActive(premiumID)) {
                 await setPlan(
                   planString: premiumID,
-                  ticketsInt: premiumID.updatedTickets(tickets.value, true),
+                  activePlanListString: purchaseResult.activeSubscriptions,
+                  ticketsInt: tickets.value + premiumTicketNumber,
                   expirationInt: purchaseResult.subscriptionExpirationDate()
                 );
                 if (context.mounted) context.pushHomePage();
@@ -883,6 +925,7 @@ class MyHomePage extends HookConsumerWidget {
             if (purchaseResult.allPurchasedProductIdentifiers.isNotEmpty) {
               await setPlan(
                 planString: currentPlan.value,
+                activePlanListString: [premiumID],
                 ticketsInt: addOnTicketNumber,
                 expirationInt: expirationDate.value
               );
@@ -915,6 +958,7 @@ class MyHomePage extends HookConsumerWidget {
             if (purchaseResult.allPurchasedProductIdentifiers.isNotEmpty) {
               await setPlan(
                 planString: currentPlan.value,
+                activePlanListString: [],
                 ticketsInt: trialTicketNumber,
                 expirationInt: expirationDate.value
               );
@@ -1005,6 +1049,7 @@ class MyHomePage extends HookConsumerWidget {
           if (restoredInfo.activeSubscriptions.isNotEmpty && currentPlan.value == freeID) {
             await setPlan(
               planString: restoredInfo.updatedPlan(),
+              activePlanListString: restoredInfo.activeSubscriptions,
               ticketsInt: tickets.value,
               expirationInt: restoredInfo.subscriptionExpirationDate()
             );
@@ -1048,10 +1093,10 @@ class MyHomePage extends HookConsumerWidget {
           sideSpacer(context),
           bottomButtons(),
           if (!isYellow.value && !isRightWait.value && !isLeftWait.value && !isLoadingPhoto.value) selectCountryButton(),
-          if (isPossiblePhoto.value && !isLoadingPhoto.value) cameraButton(context, tickets.value, currentDate.value, lastClaimedDate.value, cameraAction),
-          if (isMenuOpen.value) menuWidget(context, currentPlan.value, tickets.value, countryNumber.value, currentDate.value, lastClaimedDate.value, expirationDate.value, toBuyOnetime, toUpgradePlan, toPurchase, toCancel, toRestore),
+          if (isPossiblePhoto.value && !isLoadingPhoto.value) cameraButton(context, tickets.value, currentDate.value.intDateTime(), lastClaimedDate.value, cameraAction),
+          if (isMenuOpen.value) menuWidget(context, currentPlan.value, tickets.value, countryNumber.value, currentDate.value.intDateTime(), lastClaimedDate.value, expirationDate.value, toBuyOnetime, toUpgradePlan, toPurchase, toCancel, toRestore),
           if (isMyPurchase.value) purchaseTable(context, currentPlan.value, tickets.value, priceList.value, buyPremium, buyStandard, buyTrial),
-          if (!isYellow.value && !isRightWait.value && !isLeftWait.value && !isMainLandChina.value) menuButton(context, isMenuOpen.value, isMyPurchase.value, openMenu),
+          if (!isYellow.value && !isRightWait.value && !isLeftWait.value) menuButton(context, isMenuOpen.value, isMyPurchase.value, openMenu),
           if (isShowPhoto.value) showPhotoImage(),
           if (isPurchasing.value || isLoadingPhoto.value) circularProgressIndicator(context),
           if (isShowAd.value && context.isAdmobEnoughSideSpace()) adMobBanner(context),
@@ -1060,3 +1105,4 @@ class MyHomePage extends HookConsumerWidget {
     );
   }
 }
+

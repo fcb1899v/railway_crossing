@@ -6,9 +6,10 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:railroad_crossing/common_extension.dart';
 
 ///Parameter
-double countryNumber = 4;
+const double countryNumber = 4;
 double aspectRatio = 16.0 / 9.0;
-double barUpAngle = 1.5;
+const double barUpAngle = 1.5;
+const audioPlayerNumber = 4;
 
 ///Time
 const int waitTime = 10;            //seconds
@@ -18,8 +19,13 @@ const int ledDurationTime = 200;    //milliSeconds
 const int trainTime = 16;           //seconds
 const int emergencyWaitTime = 15;   //seconds
 const int emergencyFlashTime = 500; //milliSeconds
-const int defaultDateTime = 20240101000000;
-const int defaultDate = 20240101;
+
+///Default
+DateTime defaultDateTime = DateTime(2024,1,1,0,0,0);
+DateTime defaultDate = DateTime(2024,1,1);
+const int defaultIntDateTime = 20240101000000;
+const int defaultIntDate = 20240101;
+const List<String> defaultPriceList = ["-", "-", "-", "-"];
 
 ///Vibration
 const int vibTime = 200;
@@ -52,9 +58,12 @@ const String soundEmergency = "audios/emergency.mp3";
 const double warningVolume = 0.6;
 const double trainVolume = 0.8;
 const double emergencyVolume = 1.0;
+const double openVolume = 1.0;
+const double decideVolume = 1.0;
 const double cameraVolume = 1.0;
+const String openSound = "audios/popi.mp3";
+const String decideSound = "audios/tetete.mp3";
 const String cameraSound = "audios/camera.mp3";
-
 /// Image
 String backGroundDefault = "${0.crossingAssets()}background.png";
 String barFrontDefault = "${0.crossingAssets()}bar_front_off.png";
@@ -84,7 +93,7 @@ const String trialID = 'trial_onetime';
 const String freeID = 'free';
 const String defaultOffering = 'default_offering';
 const String premiumOffering = 'premium_offering';
-String addPassesOffering = (Platform.isIOS || Platform.isMacOS) ? 'default_offering': 'premium_offering';
+const String addPassesOffering = 'premium_offering';
 const String premiumUserAccess = 'premium_user_access';
 const String standardUserAccess = 'standard_user_access';
 const String freeUserAccess = 'free_user_access';
@@ -136,3 +145,4 @@ const usSpot = [
   "Waikiki Beach", "Hawai'i Volcanoes"
 ];
 
+const storeFrontUrl = 'nakajimamasao.appstudio.railwaycrossing/storefront';

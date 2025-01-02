@@ -8,7 +8,6 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:purchases_flutter/purchases_flutter.dart';
 import 'common_function.dart';
 import 'constant.dart';
 import 'firebase_options.dart';
@@ -19,16 +18,21 @@ const defaultIsShowAd = !isDebugMode;
 String defaultPlan = isDebugMode ? premiumID: freeID;
 const defaultTickets = isDebugMode ? premiumTicketNumber: 0;
 
-final currentDateProvider = StateProvider<int>((ref) => 20240101000000);
-final countryNumberProvider = StateProvider<int>((ref) => 3);
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Purchases.setLogLevel(LogLevel.debug);
+  //Fix landscape orientation
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.landscapeLeft,
     DeviceOrientation.landscapeRight,
-  ]); //横向き指定
+  ]);
+  // Enable edge to edge mode
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  // Status bar style
+  SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.light,
+  ));
+  // Initialize ads
   MobileAds.instance.initialize();
   await dotenv.load(fileName: "assets/.env");
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -45,6 +49,8 @@ Future<void> main() async {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
+  
 
   @override
   Widget build(BuildContext context) {
