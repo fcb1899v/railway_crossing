@@ -1,16 +1,17 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:devicelocale/devicelocale.dart';
 import 'package:flutter/material.dart';
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:googleapis_auth/auth_io.dart';
 import 'package:ntp/ntp.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'common_extension.dart';
 import 'constant.dart';
 
@@ -41,14 +42,36 @@ initPurchase() async {
   });
 }
 
+Future<List<String>> loadPriceList(SharedPreferences prefs) async {
+  final priceList = prefs.getStringList("price") ?? defaultPriceList;
+  "Price List: $priceList".debugPrint();
+  if (priceList[0] == "-") {
+    final offerings = await Purchases.getOfferings();
+    final newPriceList = List<String>.from(defaultPriceList);
+    offerings.all.forEach((key, offering) {
+      for (var package in offering.availablePackages) {
+        final storeProduct = package.storeProduct;
+        final price = storeProduct.priceString;
+        newPriceList[storeProduct.identifier.planNumber()] = price;
+      }
+    });
+    prefs.setStringList("price", newPriceList);
+    "Get Price List: $newPriceList".debugPrint();
+    return newPriceList;
+  } else {
+    return priceList;
+  }
+}
+
+
 /// Photo Access
 Future<void> permitPhotoAccess() async {
-  final isAndroidUnder33 = await isAndroidSDKUnder33();
-  final photoPermission = await (isAndroidUnder33 ? Permission.storage.status: Permission.photos.status);
+  final androidSDK = await getAndroidSDK();
+  final photoPermission = await (androidSDK < 33 ? Permission.storage.status: Permission.photos.status);
   "Photo permission: $photoPermission".debugPrint();
   if (photoPermission != PermissionStatus.granted) {
     try {
-      await (isAndroidUnder33 ? Permission.storage.request(): Permission.photos.request());
+      await (androidSDK < 33 ? Permission.storage.request(): Permission.photos.request());
       "Photo permission request: $photoPermission".debugPrint();
     } on PlatformException catch (e) {
       "Photo permission error: $e".debugPrint();
@@ -58,74 +81,79 @@ Future<void> permitPhotoAccess() async {
 
 
 /// Get current DateTime from server
-Future<int> getServerDateTime(int currentDate) async {
-  if (currentDate == 20240101000000) {
-    try {
-      final serverDateTime = await NTP.now();
-      final utcDateTime = serverDateTime.toUtc().intDateTime();
-      'Fetch server utc time successfully: $utcDateTime'.debugPrint();
-      return utcDateTime;
-    } catch (e) {
-      'Failed to fetch time: $e'.debugPrint();
-      return 20240101000000;
-    }
-  } else {
-    return currentDate;
+Future<DateTime> getServerDateTime() async {
+  try {
+    final serverDateTime = await NTP.now();
+    final utcDateTime = serverDateTime.toUtc();
+    'Fetch server utc time successfully: $utcDateTime'.debugPrint();
+    return utcDateTime;
+  } catch (e) {
+    'Failed to fetch time: $e'.debugPrint();
+    return defaultDateTime;
   }
 }
 
 /// Get Android SDK version
-Future<bool> isAndroidSDKUnder33() async {
-  if (Platform.isIOS || Platform.isMacOS) return false;
-  try {
-    DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
-    AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
-    final sdkVersion = androidInfo.version.sdkInt;
-    "Android SDK version: $sdkVersion".debugPrint();
-    return (sdkVersion < 33);
-  } on PlatformException {
-    return false;
+Future<int> getAndroidSDK() async {
+  final prefs = await SharedPreferences.getInstance();
+  final androidSDK = prefs.getInt("androidSDK") ?? 0;
+  if (androidSDK == 0) {
+    if (Platform.isIOS || Platform.isMacOS) return 100;
+    try {
+      DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+      AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+      final sdkVersion = androidInfo.version.sdkInt;
+      prefs.setInt("androidSDK", sdkVersion);
+      "Android SDK version: $sdkVersion".debugPrint();
+      return sdkVersion;
+    } on PlatformException {
+      return 0;
+    }
+  } else {
+    return androidSDK;
   }
 }
 
-Future<bool> isAppleMainLandChinaByStorefront() async {
-  if (!Platform.isIOS && !Platform.isMacOS) return false;
-  try {
-    final channel = MethodChannel('nakajimamasao.appstudio.railwaycrossing/storefront');
-    final countryCode = await channel.invokeMethod<String>("getStorefrontCountryCode");
-    "countryCodeByStoreFront: $countryCode".debugPrint();
-    return (countryCode == "CHN");
-  } catch (e) {
-    'Error getting storefront country code: $e'.debugPrint();
-    return true;
-  }
+Future<String> getStoreFrontCountryCode(SharedPreferences prefs) async {
+  final channel = MethodChannel(storeFrontUrl);
+  final countryCode = await channel.invokeMethod<String>("getStorefrontCountryCode");
+  "countryCodeByStoreFront: $countryCode".debugPrint();
+  prefs.setString("countryCode", (countryCode == null) ? "OTH": countryCode);
+  return (countryCode == null) ? "OTH": countryCode;
 }
 
-///CountryNumber
-Future<int> getDefaultCountryNumber(BuildContext context) async {
+Future<String> getLocalCountryCode(SharedPreferences prefs) async {
   final locale = await Devicelocale.currentLocale ?? "en-US";
   final countryCode = locale.substring(3, 5);
-  final countryNumber = (countryCode == "JP") ? 0:
-                        (countryCode == "GB") ? 1:
-                        (countryCode == "CN") ? 2:
-                        3;
-  "countryCode: $countryCode, countryNumber: $countryNumber".debugPrint();
-  return countryNumber;
+  prefs.setString("countryCode", countryCode);
+  return countryCode;
+}
+
+Future<String> getCountryCode(SharedPreferences prefs) async {
+  final countryCode = prefs.getString("countryCode") ?? "OTH";
+  return (countryCode != "OTH") ? countryCode:
+         // (Platform.isIOS || Platform.isMacOS) ? await getStoreFrontCountryCode(prefs):
+         await getLocalCountryCode(prefs);
 }
 
 ///LifecycleEventHandler
 class LifecycleEventHandler extends WidgetsBindingObserver {
-  final AsyncCallback resumeCallBack;
-  final AsyncCallback suspendingCallBack;
-  LifecycleEventHandler({required this.resumeCallBack, required this.suspendingCallBack});
+  // final AsyncCallback resumeCallBack;
+  // final AsyncCallback suspendingCallBack;
+  final Future<void> Function()? detachedCallBack;
+  // LifecycleEventHandler({required this.resumeCallBack, required this.suspendingCallBack, required this.detachedCallBack});
+  LifecycleEventHandler({required this.detachedCallBack});
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     switch (state) {
-      case AppLifecycleState.resumed:
-        resumeCallBack();
-        break;
-      case AppLifecycleState.paused:
-        suspendingCallBack();
+      // case AppLifecycleState.resumed:
+      //   resumeCallBack();
+      //   break;
+      // case AppLifecycleState.paused:
+      //   suspendingCallBack();
+      //   break;
+      case AppLifecycleState.detached:
+        if (detachedCallBack != null) detachedCallBack!();
         break;
       default:
         break;
@@ -145,3 +173,32 @@ loadVertexAIToken(BuildContext context) async {
   return authClient.credentials.accessToken.data;
 }
 
+class AudioPlayerManager {
+  // シングルトンインスタンス
+  static final AudioPlayerManager _instance = AudioPlayerManager._internal();
+  factory AudioPlayerManager() => _instance;
+  final List<AudioPlayer> audioPlayers = [];
+  // 4つの AudioPlayer インスタンスを初期化
+  AudioPlayerManager._internal() {
+    for (int i = 0; i < audioPlayerNumber; i++) {
+      audioPlayers.add(AudioPlayer());
+    }
+  }
+  /// 全ての AudioPlayer を dispose する
+  Future<void> disposeAll() async {
+    for (var player in audioPlayers) {
+      try {
+        await player.dispose();
+      } catch (e) {
+        'Error disposing AudioPlayer: $e'.debugPrint();
+      }
+    }
+  }
+}
+
+// アプリが終了する際に disposeAll を呼び出す
+void handleLifecycleChange(AppLifecycleState state) {
+  if (state == AppLifecycleState.detached) {
+    AudioPlayerManager().disposeAll();
+  }
+}

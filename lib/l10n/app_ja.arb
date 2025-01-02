@@ -8,7 +8,7 @@
   "cancel" : "キャンセル",
   "passes" : "撮り鉄チケット: {number}回",
   "number" : "{number}回",
-  "noPasses" : "チケットなし",
+  "noPasses" : "残数なし",
   "oneFreePerDay" : "1日1回無料",
   "album" : "アルバム",
   "worldsFirstApp" : "話題の生成AI技術で、あなただけの撮り鉄写真を手に入れよう！",

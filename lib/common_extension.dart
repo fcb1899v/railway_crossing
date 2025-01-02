@@ -592,6 +592,20 @@ extension StringExt on String {
     }
   }
 
+  ///CountryNumber
+  int getCountryNumber() {
+    final countryNumber =
+      (this == "JPN" || this == "JP") ? 0:
+      (this == "GBR" || this == "GB") ? 1:
+      (this == "CHN" || this == "CN") ? 2:
+      3;
+    "countryCode: $this, countryNumber: $countryNumber".debugPrint();
+    return countryNumber;
+  }
+
+  // bool getIsMainLandChina() =>
+  //     (this == "CHN" || this == "OTH");
+
   //Generate Image from AI
   ///Dall-E
   dallEResponse() async => http.post(
@@ -626,7 +640,7 @@ extension StringExt on String {
         "sampleCount": generatePhotoNumber,
         "negativePrompt": vertexAINegativePrompt,
         "aspectRatio": "1:1",
-        "personGeneration": "off",
+        // "personGeneration": "off",
       }
     }),
   );
@@ -655,16 +669,18 @@ extension StringExt on String {
       (this == premiumID) ? premiumUserAccess:
       (this == standardID) ? standardUserAccess:
       freeUserAccess;
-  int updatedTickets(int tickets, bool isUpgrade) =>
-      (isUpgrade && this == premiumID) ? tickets + premiumTicketNumber:
-      (isUpgrade && this == standardID) ? tickets + standardTicketNumber:
-      tickets;
+  int updatedTickets(DateTime currentDate) =>
+      (this == premiumID) ? premiumTicketNumber:
+      (this == standardID) ? standardTicketNumber:
+      0;
+  int appleUpdatedTickets(DateTime currentDate, DateTime purchaseDate) =>
+      (currentDate.intDiffDateTime(purchaseDate) < 1000) ? updatedTickets(currentDate): 0;
+
   IconData adFreeIcon() =>
       (this == premiumID) ? CupertinoIcons.check_mark_circled_solid:
       CupertinoIcons.multiply_circle_fill;
   Color adFreeIconColor() =>
       (this == premiumID) ? redColor: grayColor;
-
 }
 
 extension CustomerInfoExt on CustomerInfo {
@@ -674,19 +690,18 @@ extension CustomerInfoExt on CustomerInfo {
   bool isSubscriptionActive(String planID) =>
       subscriptionEntitlementInfo(planID) == null ? false:
       subscriptionEntitlementInfo(planID)!.isActive;
-  bool isPremiumActive() => isSubscriptionActive(premiumID);
-  bool isStandardActive() => isSubscriptionActive(standardID);
   String planID() =>
-      isPremiumActive() ? premiumID:
-      isStandardActive() ? standardID:
+      isSubscriptionActive(premiumID) ? premiumID:
+      isSubscriptionActive(standardID) ? standardID:
       freeID;
   int addTicket() =>
-      isPremiumActive() ? premiumTicketNumber:
-      isStandardActive() ? standardTicketNumber:
+      isSubscriptionActive(premiumID) ? premiumTicketNumber:
+      isSubscriptionActive(standardID) ? standardTicketNumber:
       0;
   int subscriptionExpirationDate() =>
       (subscriptionEntitlementInfo(planID()) == null) ? 20240101000000:
       DateTime.parse(subscriptionEntitlementInfo(planID())!.expirationDate!).intDateTime();
+
   String updatedPlan() =>
       isSubscriptionActive(premiumID) ? premiumID:
       isSubscriptionActive(standardID) ? standardID:
@@ -875,5 +890,28 @@ extension DateTimeExt on DateTime {
   int intDate() {
     final DateFormat formatter = DateFormat('yyyyMMdd');
     return int.parse(formatter.format(this));
+  }
+
+  int intDiffDateTime(DateTime dateTime) {
+    final diffDateTime = difference(dateTime);
+    // 総日数を取得
+    final totalDays = diffDateTime.inDays;
+    // 便宜上「1ヶ月 = 30日」として月を算出
+    final months = totalDays ~/ 30;     // 何か月分あるか
+    final days   = totalDays % 30;      // 月を取り除いた余りの日数
+    final hours   = diffDateTime.inHours % 24;
+    final minutes = diffDateTime.inMinutes % 60;
+    final seconds = diffDateTime.inSeconds % 60;
+    // 月はゼロパディングしない（桁数に注意）
+    // 日・時・分・秒は2桁ゼロパディング
+    final monthPart   = '$months';
+    final dayPart     = days.toString().padLeft(2, '0');
+    final hourPart    = hours.toString().padLeft(2, '0');
+    final minutePart  = minutes.toString().padLeft(2, '0');
+    final secondPart  = seconds.toString().padLeft(2, '0');
+    // 連結した文字列を int に変換
+    final diff= '$monthPart$dayPart$hourPart$minutePart$secondPart';
+    "diffDateTime: $diff".debugPrint();
+    return int.parse(diff).abs();
   }
 }
