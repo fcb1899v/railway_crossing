@@ -9,7 +9,7 @@ import 'package:railroad_crossing/common_extension.dart';
 const double countryNumber = 4;
 double aspectRatio = 16.0 / 9.0;
 const double barUpAngle = 1.5;
-const audioPlayerNumber = 4;
+const audioPlayerNumber = 5;
 
 ///Time
 const int waitTime = 10;            //seconds

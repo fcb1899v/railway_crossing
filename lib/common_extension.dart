@@ -491,7 +491,7 @@ extension ContextExt on BuildContext {
 
   ///Buttons
   double buttonSpace() => height() * 0.03;
-  double buttonUpDownMargin() => upDownMargin() + buttonSpace();
+  double buttonUpDownMargin() => upDownMargin() + buttonSpace() * 1.8;
   double buttonSideMargin() => sideMargin();
   double operationButtonSize() => height() * 0.12;
   double operationButtonIconSize() => height() * 0.08;
