@@ -178,10 +178,26 @@ class AudioPlayerManager {
   static final AudioPlayerManager _instance = AudioPlayerManager._internal();
   factory AudioPlayerManager() => _instance;
   final List<AudioPlayer> audioPlayers = [];
-  // 4つの AudioPlayer インスタンスを初期化
+  // AudioPlayerのインスタンスを初期化
   AudioPlayerManager._internal() {
     for (int i = 0; i < audioPlayerNumber; i++) {
-      audioPlayers.add(AudioPlayer());
+      final player = AudioPlayer();
+      player.setAudioContext(
+        AudioContext(
+          iOS: AudioContextIOS(
+            category: AVAudioSessionCategory.ambient,
+            options: <AVAudioSessionOptions>{},
+          ),
+          android: AudioContextAndroid(
+            isSpeakerphoneOn: false,
+            stayAwake: false,
+            contentType: AndroidContentType.music,
+            usageType: AndroidUsageType.media,
+            audioFocus: AndroidAudioFocus.gain,
+          ),
+        ),
+      );
+      audioPlayers.add(player);
     }
   }
   /// 全ての AudioPlayer を dispose する

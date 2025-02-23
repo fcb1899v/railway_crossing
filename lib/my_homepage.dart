@@ -70,7 +70,6 @@ class MyHomePage extends HookConsumerWidget {
 
     //Audio
     final audioPlayers = AudioPlayerManager();
-    final effectPlayer = AudioPlayer();
     final lifecycle = useAppLifecycleState();
 
     //Image
@@ -93,8 +92,8 @@ class MyHomePage extends HookConsumerWidget {
       begin: context.trainEndPosition(isRightFast.value),
       end: context.trainBeginPosition(isRightFast.value),
     ).animate(rightController));
-    final leftTrain = useState(0.trainImage());
-    final rightTrain = useState(0.trainImage());
+    final leftTrain = useState(3.trainImage());
+    final rightTrain = useState(3.trainImage());
     final barAngle = useState(0.0);
     final barShift = useState(0.0);
     final changeTime = useState(0);
@@ -105,9 +104,9 @@ class MyHomePage extends HookConsumerWidget {
       "width: ${context.mediaWidth()}, height: ${context.mediaHeight()}".debugPrint();
       "sideMargin: ${context.sideMargin()}, upDownMargin: ${context.upDownMargin()}".debugPrint();
       final prefs = await SharedPreferences.getInstance();
-      priceList.value = await loadPriceList(prefs);
       countryCode.value = await getCountryCode(prefs);
       countryNumber.value = countryCode.value.getCountryNumber();
+      priceList.value = await loadPriceList(prefs);
       // isMainLandChina.value = countryCode.value.getIsMainLandChina();
       final androidSDK = await getAndroidSDK();
       photoPermission.value = await (androidSDK < 33 ? Permission.storage.status: Permission.photos.status);
@@ -217,7 +216,7 @@ class MyHomePage extends HookConsumerWidget {
         // ウィジェットが破棄されていたら何もしない
         if (!context.mounted) return;
         // アプリがバックグラウンドに移行する直前
-        if (lifecycle == AppLifecycleState.paused) {
+        if (lifecycle == AppLifecycleState.inactive || lifecycle == AppLifecycleState.paused) {
           for (int i = 0; i < audioPlayers.audioPlayers.length; i++) {
             final player = audioPlayers.audioPlayers[i];
             try {
@@ -240,6 +239,8 @@ class MyHomePage extends HookConsumerWidget {
         await getCurrentPlan();
         await loadSubscriptionInfo();
         await setNormalState();
+        "leftTrain: ${leftTrain.value}".debugPrint();
+        "rightTrain: ${rightTrain.value}".debugPrint();
       });
       return null;
     }, const []);
@@ -430,15 +431,15 @@ class MyHomePage extends HookConsumerWidget {
         changeTime.value = 0;
         final newCountryNumber = entry.value['countryNumber'] as int;
         if (countryNumber.value != newCountryNumber) {
-          await effectPlayer.setVolume(decideVolume);
-          await effectPlayer.play(AssetSource(decideSound));
+          await audioPlayers.audioPlayers[4].setVolume(decideVolume);
+          await audioPlayers.audioPlayers[4].play(AssetSource(decideSound));
           "play: $decideSound".debugPrint();
           countryNumber.value = newCountryNumber;
           'select_${entry.key}: ${countryNumber.value}'.debugPrint();
           await setNormalState();
         } else {
-          await effectPlayer.setVolume(openVolume);
-          await effectPlayer.play(AssetSource(openSound));
+          await audioPlayers.audioPlayers[4].setVolume(openVolume);
+          await audioPlayers.audioPlayers[4].play(AssetSource(openSound));
         }
         fabKey.currentState?.close();
       }
@@ -571,20 +572,19 @@ class MyHomePage extends HookConsumerWidget {
     }, [isEmergency.value]);
 
     Widget bottomButtons() => Container(
-      alignment: Alignment.bottomCenter,
+      alignment: Alignment.bottomLeft,
       margin: EdgeInsets.only(
         left: context.buttonSideMargin(),
         right: context.buttonSideMargin() + context.buttonSpace(),
         bottom: context.buttonUpDownMargin()
       ),
-      child: Row(children: List.generate(6, (i) =>
-        (i == 1) ? const Spacer():
-        (i == 2) ? leftButton(context, isLeftOn.value, pushLeftButton):
-        (i == 3) ? leftSpeedButton(context, isLeftOn.value, isLeftFast.value, pushLeftSpeedButton):
-        (i == 4) ? rightSpeedButton(context, isRightOn.value, isRightFast.value, pushRightSpeedButton):
-        (i == 5) ? rightButton(context, isRightOn.value, pushRightButton):
+      child: Row(children: List.generate(5, (i) =>
+        (i == 0) ? leftButton(context, isLeftOn.value, pushLeftButton):
+        (i == 1) ? leftSpeedButton(context, isLeftOn.value, isLeftFast.value, pushLeftSpeedButton):
+        (i == 2) ? rightSpeedButton(context, isRightOn.value, isRightFast.value, pushRightSpeedButton):
+        (i == 3) ? rightButton(context, isRightOn.value, pushRightButton):
         (countryNumber.value == 0 || countryNumber.value == 1) ? emergencyOffButton(context, emergencyColor.value, emergencyOff):
-        SizedBox(width: context.buttonSpace())
+        SizedBox()
       ))
     );
 
@@ -612,8 +612,8 @@ class MyHomePage extends HookConsumerWidget {
       onDisplayChange: (isOpen) async {
         if (isOpen){
           isMenuOpen.value = false;
-          await effectPlayer.setVolume(openVolume);
-          await effectPlayer.play(AssetSource(openSound));
+          await audioPlayers.audioPlayers[4].setVolume(openVolume);
+          await audioPlayers.audioPlayers[4].play(AssetSource(openSound));
           "play: $openSound".debugPrint();
         }
       },
@@ -630,7 +630,7 @@ class MyHomePage extends HookConsumerWidget {
 
     openMenu() async {
       if (isLoadedSubscriptionInfo.value) {
-        effectPlayer.play(AssetSource(openSound));
+        audioPlayers.audioPlayers[4].play(AssetSource(openSound));
         fabKey.currentState?.close();
         isMenuOpen.value = !isMenuOpen.value;
       }
@@ -807,8 +807,8 @@ class MyHomePage extends HookConsumerWidget {
         }
       } else {
         if (tickets.value > 0 || !lastClaimedDate.value.isToday(currentDate.value.intDateTime())) {
-          await effectPlayer.setVolume(cameraVolume);
-          await effectPlayer.play(AssetSource(cameraSound));
+          await audioPlayers.audioPlayers[4].setVolume(cameraVolume);
+          await audioPlayers.audioPlayers[4].play(AssetSource(cameraSound));
           isLoadingPhoto.value = true;
           "isLoadingPhoto: ${isLoadingPhoto.value}".debugPrint();
           if (!lastClaimedDate.value.isToday(currentDate.value.intDateTime())) {
@@ -1067,7 +1067,6 @@ class MyHomePage extends HookConsumerWidget {
       body: Stack(alignment: Alignment.centerLeft,
         children: [
           backGroundImage(context, countryNumber.value),
-          if (isShowAd.value && !context.isAdmobEnoughSideSpace()) adMobBanner(context),
           backFenceImage(context, countryNumber.value),
           if (countryNumber.value == 0) backEmergencyImage(context, countryNumber.value),
           if (countryNumber.value == 0) backGateImage(context, countryNumber.value),
@@ -1097,9 +1096,9 @@ class MyHomePage extends HookConsumerWidget {
           if (isMenuOpen.value) menuWidget(context, currentPlan.value, tickets.value, countryNumber.value, currentDate.value.intDateTime(), lastClaimedDate.value, expirationDate.value, toBuyOnetime, toUpgradePlan, toPurchase, toCancel, toRestore),
           if (isMyPurchase.value) purchaseTable(context, currentPlan.value, tickets.value, priceList.value, buyPremium, buyStandard, buyTrial),
           if (!isYellow.value && !isRightWait.value && !isLeftWait.value) menuButton(context, isMenuOpen.value, isMyPurchase.value, openMenu),
+          if (isShowAd.value) AdBannerWidget(),
           if (isShowPhoto.value) showPhotoImage(),
           if (isPurchasing.value || isLoadingPhoto.value) circularProgressIndicator(context),
-          if (isShowAd.value && context.isAdmobEnoughSideSpace()) adMobBanner(context),
         ],
       ),
     );

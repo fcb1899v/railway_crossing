@@ -20,37 +20,32 @@ const defaultTickets = isDebugMode ? premiumTicketNumber: 0;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  //Fix landscape orientation
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.landscapeLeft,
     DeviceOrientation.landscapeRight,
-  ]);
-  // Enable edge to edge mode
-  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  // Status bar style
+  ]); //Fix landscape orientation
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.light,
-  ));
-  // Initialize ads
-  MobileAds.instance.initialize();
+    systemNavigationBarColor: Colors.transparent,
+    systemNavigationBarIconBrightness: Brightness.light,
+  )); // Status bar style
   await dotenv.load(fileName: "assets/.env");
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await FirebaseAppCheck.instance.activate(
     androidProvider: androidProvider,
     appleProvider: appleProvider,
   );
-  await permitPhotoAccess();
+  await MobileAds.instance.initialize();  // Initialize ads
   await initATTPlugin();
   await initPurchase();
-  runApp(const ProviderScope(child: MyApp())
-  );
+  await permitPhotoAccess();
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
-  
 
   @override
   Widget build(BuildContext context) {
