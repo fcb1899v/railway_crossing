@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:convert';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:audioplayers/audioplayers.dart';
@@ -12,10 +13,10 @@ import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
-import 'package:railroad_crossing/main.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
+// import 'package:railroad_crossing/main.dart';
+// import 'package:url_launcher/url_launcher.dart';
 import 'package:vibration/vibration.dart';
 import 'common_extension.dart';
 import 'common_function.dart';
@@ -45,17 +46,18 @@ class MyHomePage extends HookConsumerWidget {
     final isMyPurchase = useState(false);
     final isPurchasing = useState(false);
     final isShowAd = useState(true);
-    final counter = useState(0);
+    // final counter = useState(0);
 
     //Purchase
-    final currentPlan = useState(freeID);
-    final activePlan = useState([]);
+    // final currentPlan = useState(freeID);
+    // final activePlan = useState([]);
     final tickets = useState(0);
+    final currentDate = useState(defaultIntDateTime);
     final expirationDate = useState(defaultIntDateTime);
-    final lastClaimedDate = useState(defaultIntDate);
-    final currentDate = useState(defaultDateTime);
-    final priceList = useState(defaultPriceList);
-    final isLoadedSubscriptionInfo = useState(false);
+    final lastClaimedDate = useState(defaultIntDateTime);
+    final passesPrice = useState(defaultPrice);
+    // final priceList = useState(defaultPriceList);
+    // final isLoadedSubscriptionInfo = useState(false);
     // final isMainLandChina = useState(false);
 
     //Photo
@@ -106,87 +108,145 @@ class MyHomePage extends HookConsumerWidget {
       final prefs = await SharedPreferences.getInstance();
       countryCode.value = await getCountryCode(prefs);
       countryNumber.value = countryCode.value.getCountryNumber();
-      priceList.value = await loadPriceList(prefs);
+      passesPrice.value = await loadPrice(prefs);
+      // priceList.value = await loadPriceList(prefs);
       // isMainLandChina.value = countryCode.value.getIsMainLandChina();
       final androidSDK = await getAndroidSDK();
       photoPermission.value = await (androidSDK < 33 ? Permission.storage.status: Permission.photos.status);
     }
 
+    appCheck() async {
+      "appCheck".debugPrint();
+      final token = await FirebaseAppCheck.instance.getToken();
+      'FirebaseAppCheckToken: $token'.debugPrint;
+    }
+
     showDebugPrints() {
-      "currentPlan: ${currentPlan.value}, activePlan: ${activePlan.value}".debugPrint();
-      "tickets: ${tickets.value}, isShowAd: ${isShowAd.value}".debugPrint();
-      "expirationDate: ${expirationDate.value}, lastClaimDate: ${lastClaimedDate.value}".debugPrint();
+      // "currentPlan: ${currentPlan.value}, activePlan: ${activePlan.value}".debugPrint();
+      "tickets: ${tickets.value}".debugPrint();
+      "currentDate: ${currentDate.value}".debugPrint();
+      "expirationDate: ${expirationDate.value} (${context.toCountryDateNoYear(countryNumber.value, expirationDate.value)})".debugPrint();
+      "lastClaimDate: ${lastClaimedDate.value}".debugPrint();
+      "isShowAd: ${isShowAd.value}".debugPrint();
     }
 
-    getCurrentPlan() async {
-      "getCurrentPlan".debugPrint();
+    getCurrentStatus() async {
+      "getCurrentStatus".debugPrint();
       final prefs = await SharedPreferences.getInstance();
-      currentDate.value = await getServerDateTime();
-      currentPlan.value = prefs.getString("plan") ?? freeID;
-      activePlan.value = prefs.getStringList("activePlan") ?? [];
+      // currentPlan.value = prefs.getString("plan") ?? freeID;
+      // activePlan.value = prefs.getStringList("activePlan") ?? [];
       tickets.value = prefs.getInt("tickets") ?? 0;
+      currentDate.value = await getServerDateTime();
       expirationDate.value = prefs.getInt('expiration') ?? defaultIntDateTime;
-      lastClaimedDate.value = prefs.getInt('lastClaim') ?? defaultIntDate;
-      isShowAd.value = (currentPlan.value != premiumID && defaultIsShowAd);
+      lastClaimedDate.value = prefs.getInt('lastClaim') ?? defaultIntDateTime;
+      isShowAd.value = (currentDate.value > expirationDate.value);
+      // isShowAd.value = (currentPlan.value != premiumID && defaultIsShowAd);
       showDebugPrints();
     }
 
-    setPlan({required String planString, required List<String> activePlanListString, required int ticketsInt, required int expirationInt}) async {
-      "setPlan: $planString".debugPrint();
-      currentPlan.value = planString;
-      activePlan.value = activePlanListString;
-      tickets.value = ticketsInt;
-      expirationDate.value = expirationInt;
-      isShowAd.value = (currentPlan.value != premiumID);
+    // setPlan({required String planString, required List<String> activePlanListString, required int ticketsInt, required int expirationInt}) async {
+    //   "setPlan: $planString".debugPrint();
+    //   currentPlan.value = planString;
+    //   activePlan.value = activePlanListString;
+    //   tickets.value = ticketsInt;
+    //   expirationDate.value = expirationInt;
+    //   isShowAd.value = (currentPlan.value != premiumID);
+    //   final prefs = await SharedPreferences.getInstance();
+    //   await prefs.setString("plan", planString);
+    //   await prefs.setStringList("activePlan", activePlanListString);
+    //   await prefs.setInt("tickets", ticketsInt);
+    //   await prefs.setInt('expiration', expirationInt);
+    //   showDebugPrints();
+    // }
+
+    onetimeSetPlan() async {
+      "onetimeSetPlan".debugPrint();
+      tickets.value += addOnTicketNumber;
+      expirationDate.value = currentDate.value.nextMonth();
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString("plan", planString);
-      await prefs.setStringList("activePlan", activePlanListString);
-      await prefs.setInt("tickets", ticketsInt);
-      await prefs.setInt('expiration', expirationInt);
+      await prefs.setInt("tickets", tickets.value);
+      await prefs.setInt('expiration', expirationDate.value);
       showDebugPrints();
     }
 
-    loadSubscriptionInfo() async {
-      if (currentPlan.value != freeID && activePlan.value.isNotEmpty && currentDate.value.intDateTime() > expirationDate.value) {
-        try {
-          "loadSubscriptionInfo: Update".debugPrint();
-          final customerInfo = await Purchases.getCustomerInfo();
-          await setPlan(
-            planString: customerInfo.updatedPlan(),
-            activePlanListString: customerInfo.activeSubscriptions,
-            ticketsInt: (expirationDate.value == defaultDateTime.intDateTime()) ? tickets.value: customerInfo.addTicket(),
-            expirationInt: customerInfo.subscriptionExpirationDate(),
-          );
-          "Grant tickets: ${customerInfo.planID()}".debugPrint();
-          isLoadedSubscriptionInfo.value = true;
-          "isLoadedSubscriptionInfo: ${isLoadedSubscriptionInfo.value}".debugPrint();
-        } on PlatformException catch (e) {
-          "Failed to load subscription information: $e".debugPrint();
-          isLoadedSubscriptionInfo.value = false;
-          "isLoadedSubscriptionInfo: ${isLoadedSubscriptionInfo.value}".debugPrint();
-          counter.value += 1;
-          if (!isLoadedSubscriptionInfo.value && counter.value < 10) {
-            Future.delayed(const Duration(seconds: 10), () {
-              loadSubscriptionInfo();
-              if (context.mounted && counter.value == 9) showSnackBar(context, context.checkNetwork(), true);
-            });
-          }
-        }
-      } else if (currentPlan.value != freeID && activePlan.value.isEmpty && currentDate.value.intDateTime() > expirationDate.value) {
-        "loadSubscriptionInfo: Cancel".debugPrint();
-        await setPlan(
-          planString: freeID,
-          activePlanListString: [],
-          ticketsInt: 0,
-          expirationInt: defaultIntDateTime,
-        );
-        isLoadedSubscriptionInfo.value = true;
-        "isLoadedSubscriptionInfo: ${isLoadedSubscriptionInfo.value}".debugPrint();
-      } else {
-        isLoadedSubscriptionInfo.value = true;
-        "isLoadedSubscriptionInfo: ${isLoadedSubscriptionInfo.value}".debugPrint();
-      }
-    }
+    // loadPurchaseInfo() async {
+    //   if (currentDate.value > expirationDate.value) {
+    //     try {
+    //       "loadPurchaseInfo".debugPrint();
+    //       final customerInfo = await Purchases.getCustomerInfo();
+    //       await onetimeSetPlan(tickets.value, expirationDate.value);
+    //       "Grant tickets: ${customerInfo.planID()}".debugPrint();
+    //       isLoadedSubscriptionInfo.value = true;
+    //       "isLoadedSubscriptionInfo: ${isLoadedSubscriptionInfo.value}".debugPrint();
+    //     } on PlatformException catch (e) {
+    //       "Failed to load subscription information: $e".debugPrint();
+    //       isLoadedSubscriptionInfo.value = false;
+    //       "isLoadedSubscriptionInfo: ${isLoadedSubscriptionInfo.value}".debugPrint();
+    //       counter.value += 1;
+    //       if (!isLoadedSubscriptionInfo.value && counter.value < 10) {
+    //         Future.delayed(const Duration(seconds: 10), () {
+    //           //loadSubscriptionInfo();
+    //           if (context.mounted && counter.value == 9) showSnackBar(context, context.checkNetwork(), true);
+    //         });
+    //       }
+    //     }
+    //   } else if (currentPlan.value != freeID && activePlan.value.isEmpty && currentDate.value > expirationDate.value) {
+    //     "loadSubscriptionInfo: Cancel".debugPrint();
+    //     await setPlan(
+    //       planString: freeID,
+    //       activePlanListString: [],
+    //       ticketsInt: 0,
+    //       expirationInt: defaultIntDateTime,
+    //     );
+    //     isLoadedSubscriptionInfo.value = true;
+    //     "isLoadedSubscriptionInfo: ${isLoadedSubscriptionInfo.value}".debugPrint();
+    //   } else {
+    //     isLoadedSubscriptionInfo.value = true;
+    //     "isLoadedSubscriptionInfo: ${isLoadedSubscriptionInfo.value}".debugPrint();
+    //   }
+    // }
+
+    // loadSubscriptionInfo() async {
+    //   if (currentPlan.value != freeID && activePlan.value.isNotEmpty && currentDate.value > expirationDate.value) {
+    //     try {
+    //       "loadSubscriptionInfo: Update".debugPrint();
+    //       final customerInfo = await Purchases.getCustomerInfo();
+    //       await setPlan(
+    //         planString: customerInfo.updatedPlan(),
+    //         activePlanListString: customerInfo.activeSubscriptions,
+    //         ticketsInt: (expirationDate.value == defaultDateTime.intDateTime()) ? tickets.value: customerInfo.addTicket(),
+    //         expirationInt: customerInfo.subscriptionExpirationDate(),
+    //       );
+    //       "Grant tickets: ${customerInfo.planID()}".debugPrint();
+    //       isLoadedSubscriptionInfo.value = true;
+    //       "isLoadedSubscriptionInfo: ${isLoadedSubscriptionInfo.value}".debugPrint();
+    //     } on PlatformException catch (e) {
+    //       "Failed to load subscription information: $e".debugPrint();
+    //       isLoadedSubscriptionInfo.value = false;
+    //       "isLoadedSubscriptionInfo: ${isLoadedSubscriptionInfo.value}".debugPrint();
+    //       counter.value += 1;
+    //       if (!isLoadedSubscriptionInfo.value && counter.value < 10) {
+    //         Future.delayed(const Duration(seconds: 10), () {
+    //           loadSubscriptionInfo();
+    //           if (context.mounted && counter.value == 9) showSnackBar(context, context.checkNetwork(), true);
+    //         });
+    //       }
+    //     }
+    //   } else if (currentPlan.value != freeID && activePlan.value.isEmpty && currentDate.value > expirationDate.value) {
+    //     "loadSubscriptionInfo: Cancel".debugPrint();
+    //     await setPlan(
+    //       planString: freeID,
+    //       activePlanListString: [],
+    //       ticketsInt: 0,
+    //       expirationInt: defaultIntDateTime,
+    //     );
+    //     isLoadedSubscriptionInfo.value = true;
+    //     "isLoadedSubscriptionInfo: ${isLoadedSubscriptionInfo.value}".debugPrint();
+    //   } else {
+    //     isLoadedSubscriptionInfo.value = true;
+    //     "isLoadedSubscriptionInfo: ${isLoadedSubscriptionInfo.value}".debugPrint();
+    //   }
+    // }
 
     setNormalState() async {
       "setNormal".debugPrint();
@@ -236,11 +296,10 @@ class MyHomePage extends HookConsumerWidget {
     useEffect(() {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         await initState();
-        await getCurrentPlan();
-        await loadSubscriptionInfo();
+        await getCurrentStatus();
+        // await loadSubscriptionInfo();
         await setNormalState();
-        "leftTrain: ${leftTrain.value}".debugPrint();
-        "rightTrain: ${rightTrain.value}".debugPrint();
+        await appCheck();
       });
       return null;
     }, const []);
@@ -629,11 +688,11 @@ class MyHomePage extends HookConsumerWidget {
     );
 
     openMenu() async {
-      if (isLoadedSubscriptionInfo.value) {
-        audioPlayers.audioPlayers[4].play(AssetSource(openSound));
-        fabKey.currentState?.close();
-        isMenuOpen.value = !isMenuOpen.value;
-      }
+      // if (isLoadedSubscriptionInfo.value) {
+      audioPlayers.audioPlayers[4].play(AssetSource(openSound));
+      fabKey.currentState?.close();
+      isMenuOpen.value = !isMenuOpen.value;
+      // }
     }
 
     sharePhoto() async {
@@ -715,10 +774,10 @@ class MyHomePage extends HookConsumerWidget {
 
     getFreePhoto() async {
       "getFreePhoto".debugPrint();
-      final byteData = await rootBundle.load(countryNumber.value.countryFreePhoto(currentDate.value.intDateTime()));
+      final byteData = await rootBundle.load(countryNumber.value.countryFreePhoto(currentDate.value));
       photoImage.value = [byteData.buffer.asUint8List()];
       final prefs = await SharedPreferences.getInstance();
-      lastClaimedDate.value = currentDate.value.toLocal().intDate();
+      lastClaimedDate.value = currentDate.value;
       prefs.setInt('lastClaim', lastClaimedDate.value);
       "lastClaimedDate: ${lastClaimedDate.value}".debugPrint();
       isLoadingPhoto.value = false;
@@ -806,12 +865,12 @@ class MyHomePage extends HookConsumerWidget {
           Future.delayed(const Duration(seconds: 3), () async => await openAppSettings());
         }
       } else {
-        if (tickets.value > 0 || !lastClaimedDate.value.isToday(currentDate.value.intDateTime())) {
+        if (tickets.value > 0 || !lastClaimedDate.value.isToday(currentDate.value)) {
           await audioPlayers.audioPlayers[4].setVolume(cameraVolume);
           await audioPlayers.audioPlayers[4].play(AssetSource(cameraSound));
           isLoadingPhoto.value = true;
           "isLoadingPhoto: ${isLoadingPhoto.value}".debugPrint();
-          if (!lastClaimedDate.value.isToday(currentDate.value.intDateTime())) {
+          if (!lastClaimedDate.value.isToday(currentDate.value)) {
             await getFreePhoto();
           } else if (tickets.value > 0) {
             await getGenerateVertexAIPhoto();
@@ -822,246 +881,232 @@ class MyHomePage extends HookConsumerWidget {
 
     ///Revenue cat Subscription
     //Buy subscription plan
-    buySubscriptionPlan(String planID) async {
-      if (!isPurchasing.value) {
-        isPurchasing.value = true;
-        "isPurchasing: ${isPurchasing.value}".debugPrint();
-        if (currentPlan.value != planID && tickets.value <= premiumTicketNumber) {
-          try {
-            "Buy: $planID: ${activePlan.value.contains(planID)}".debugPrint();
-            if (!activePlan.value.contains(planID)) {
-              final offerings = await Purchases.getOfferings();
-              final offering = offerings.getOffering(planID.offeringID());
-              final purchaseResult = await Purchases.purchasePackage(offering!.monthly!);
-              currentDate.value = await getServerDateTime();
-              if (purchaseResult.isSubscriptionActive(planID)) {
-                if (Platform.isIOS || Platform.isMacOS) {
-                  final originalPurchaseDate = DateTime.parse(purchaseResult.originalPurchaseDate!);
-                  "originalPurchaseDate: $originalPurchaseDate".debugPrint();
-                  await setPlan(
-                    planString: planID,
-                    activePlanListString: purchaseResult.activeSubscriptions,
-                    ticketsInt: tickets.value + planID.appleUpdatedTickets(currentDate.value, originalPurchaseDate),
-                    expirationInt: purchaseResult.subscriptionExpirationDate()
-                  );
-                } else {
-                  await setPlan(
-                    planString: planID,
-                    activePlanListString: purchaseResult.activeSubscriptions,
-                    ticketsInt: tickets.value + planID.updatedTickets(currentDate.value),
-                    expirationInt: purchaseResult.subscriptionExpirationDate()
-                  );
-                }
-                if (context.mounted) context.pushHomePage();
-              } else {
-                if (context.mounted) await purchaseErrorDialog(context, isRestore: false, isCancel: false);
-              }
-            } else{
-              if (context.mounted) await purchaseFinishedDialog(context, isRestore: false, isCancel: false);
-            }
-          } on PlatformException catch (e) {
-            if (context.mounted) await purchaseExceptionDialog(context, e, isRestore: false, isCancel: false);
-          }
-        } else {
-          if (context.mounted) context.pushHomePage();
-          await showSnackBar(context, context.useTickets(premiumTicketNumber), true);
-        }
-      }
-    }
+    // buySubscriptionPlan(String planID) async {
+    //   if (!isPurchasing.value) {
+    //     isPurchasing.value = true;
+    //     "isPurchasing: ${isPurchasing.value}".debugPrint();
+    //     if (currentPlan.value != planID && tickets.value <= premiumTicketNumber) {
+    //       try {
+    //         "Buy: $planID: ${activePlan.value.contains(planID)}".debugPrint();
+    //         if (!activePlan.value.contains(planID)) {
+    //           final offerings = await Purchases.getOfferings();
+    //           final offering = offerings.getOffering(planID.offeringID());
+    //           final purchaseResult = await Purchases.purchasePackage(offering!.monthly!);
+    //           currentDate.value = await getServerDateTime();
+    //           if (purchaseResult.isSubscriptionActive(planID)) {
+    //             if (Platform.isIOS || Platform.isMacOS) {
+    //               final originalPurchaseDate = DateTime.parse(purchaseResult.originalPurchaseDate!);
+    //               "originalPurchaseDate: $originalPurchaseDate".debugPrint();
+    //               await setPlan(
+    //                 planString: planID,
+    //                 activePlanListString: purchaseResult.activeSubscriptions,
+    //                 ticketsInt: tickets.value + planID.appleUpdatedTickets(currentDate.value, originalPurchaseDate),
+    //                 expirationInt: purchaseResult.subscriptionExpirationDate()
+    //               );
+    //             } else {
+    //               await setPlan(
+    //                 planString: planID,
+    //                 activePlanListString: purchaseResult.activeSubscriptions,
+    //                 ticketsInt: tickets.value + planID.updatedTickets(currentDate.value),
+    //                 expirationInt: purchaseResult.subscriptionExpirationDate()
+    //               );
+    //             }
+    //             if (context.mounted) context.pushHomePage();
+    //           } else {
+    //             if (context.mounted) await purchaseErrorDialog(context, isRestore: false, isCancel: false);
+    //           }
+    //         } else{
+    //           if (context.mounted) await purchaseFinishedDialog(context, isRestore: false, isCancel: false);
+    //         }
+    //       } on PlatformException catch (e) {
+    //         if (context.mounted) await purchaseExceptionDialog(context, e, isRestore: false, isCancel: false);
+    //       }
+    //     } else {
+    //       if (context.mounted) context.pushHomePage();
+    //       await showSnackBar(context, context.useTickets(premiumTicketNumber), true);
+    //     }
+    //   }
+    // }
 
-    upgradePlan() async {
-      if (context.mounted) context.popPage();
-      if (!isPurchasing.value) {
-        isPurchasing.value = true;
-        "isPurchasing: ${isPurchasing.value}".debugPrint();
-        if (currentPlan.value != premiumID && tickets.value <= premiumTicketNumber) {
-          try {
-            "Upgrade: $premiumID: ${activePlan.value.contains(premiumID)}".debugPrint();
-            if (!activePlan.value.contains(premiumID)) {
-              final offerings = await Purchases.getOfferings();
-              final offering = offerings.getOffering(premiumID.offeringID());
-              final purchaseResult = await Purchases.purchasePackage(
-                offering!.monthly!,
-                googleProductChangeInfo: GoogleProductChangeInfo(standardID)
-              );
-              "activePlan: ${purchaseResult.activeSubscriptions}".debugPrint();
-              if (purchaseResult.isSubscriptionActive(premiumID)) {
-                await setPlan(
-                  planString: premiumID,
-                  activePlanListString: purchaseResult.activeSubscriptions,
-                  ticketsInt: tickets.value + premiumTicketNumber,
-                  expirationInt: purchaseResult.subscriptionExpirationDate()
-                );
-                if (context.mounted) context.pushHomePage();
-              } else {
-                if (context.mounted) await purchaseErrorDialog(context, isRestore: false, isCancel: false);
-              }
-            } else{
-              if (context.mounted) await purchaseFinishedDialog(context, isRestore: false, isCancel: false);
-            }
-          } on PlatformException catch (e) {
-            if (context.mounted) await purchaseExceptionDialog(context, e, isRestore: false, isCancel: false);
-          }
-        } else {
-          if (context.mounted) context.pushHomePage();
-          await showSnackBar(context, context.useTickets(premiumTicketNumber), true);
-        }
-      }
-    }
+    // upgradePlan() async {
+    //   if (context.mounted) context.popPage();
+    //   if (!isPurchasing.value) {
+    //     isPurchasing.value = true;
+    //     "isPurchasing: ${isPurchasing.value}".debugPrint();
+    //     if (currentPlan.value != premiumID && tickets.value <= premiumTicketNumber) {
+    //       try {
+    //         "Upgrade: $premiumID: ${activePlan.value.contains(premiumID)}".debugPrint();
+    //         if (!activePlan.value.contains(premiumID)) {
+    //           final offerings = await Purchases.getOfferings();
+    //           final offering = offerings.getOffering(premiumID.offeringID());
+    //           final purchaseResult = await Purchases.purchasePackage(
+    //             offering!.monthly!,
+    //             googleProductChangeInfo: GoogleProductChangeInfo(standardID)
+    //           );
+    //           "activePlan: ${purchaseResult.activeSubscriptions}".debugPrint();
+    //           if (purchaseResult.isSubscriptionActive(premiumID)) {
+    //             await setPlan(
+    //               planString: premiumID,
+    //               activePlanListString: purchaseResult.activeSubscriptions,
+    //               ticketsInt: tickets.value + premiumTicketNumber,
+    //               expirationInt: purchaseResult.subscriptionExpirationDate()
+    //             );
+    //             if (context.mounted) context.pushHomePage();
+    //           } else {
+    //             if (context.mounted) await purchaseErrorDialog(context, isRestore: false, isCancel: false);
+    //           }
+    //         } else{
+    //           if (context.mounted) await purchaseFinishedDialog(context, isRestore: false, isCancel: false);
+    //         }
+    //       } on PlatformException catch (e) {
+    //         if (context.mounted) await purchaseExceptionDialog(context, e, isRestore: false, isCancel: false);
+    //       }
+    //     } else {
+    //       if (context.mounted) context.pushHomePage();
+    //       await showSnackBar(context, context.useTickets(premiumTicketNumber), true);
+    //     }
+    //   }
+    // }
 
     //Buy onetime passes
     buyOnetime() async {
-      if (context.mounted) context.popPage();
       if (!isPurchasing.value) {
         isPurchasing.value = true;
         "isPurchasing: ${isPurchasing.value}".debugPrint();
-        if (tickets.value <= 1) {
-          try {
-            "buyOnetime".debugPrint();
-            final offerings = await Purchases.getOfferings();
-            final offering = offerings.getOffering(addPassesOffering);
-            final purchaseResult = await Purchases.purchasePackage(offering!.lifetime!);
-            "${purchaseResult.allPurchasedProductIdentifiers}".debugPrint();
-            if (purchaseResult.allPurchasedProductIdentifiers.isNotEmpty) {
-              await setPlan(
-                planString: currentPlan.value,
-                activePlanListString: [premiumID],
-                ticketsInt: addOnTicketNumber,
-                expirationInt: expirationDate.value
-              );
-              if (context.mounted) context.pushHomePage();
-            } else {
-              if (context.mounted) await purchaseErrorDialog(context, isRestore: false, isCancel: false);
-            }
-          } on PlatformException catch (e) {
-            if (context.mounted) await purchaseExceptionDialog(context, e, isRestore: false, isCancel: false);
+        if (context.mounted) context.popPage();
+        try {
+          "buyOnetime".debugPrint();
+          final offerings = await Purchases.getOfferings();
+          final offering = offerings.getOffering(normalOffering);
+          final purchaseResult = await Purchases.purchasePackage(offering!.lifetime!);
+          "${purchaseResult.allPurchasedProductIdentifiers}".debugPrint();
+          if (purchaseResult.allPurchasedProductIdentifiers.isNotEmpty) {
+            await onetimeSetPlan();
+            if (context.mounted) context.pushHomePage();
+          } else {
+            if (context.mounted) await onetimePurchaseErrorDialog(context);
           }
-        } else {
-          if (context.mounted) context.pushHomePage();
-          await showSnackBar(context, context.useTickets(1), true);
+        } on PlatformException catch (e) {
+          if (context.mounted) await onetimePurchaseExceptionDialog(context, e);
         }
       }
     }
 
     //Buy trial passes
-    buyTrial() async {
-      if (!isPurchasing.value) {
-        isPurchasing.value = true;
-        "isPurchasing: ${isPurchasing.value}".debugPrint();
-        if (tickets.value <= 1) {
-          try {
-            "buyOnetime".debugPrint();
-            final offerings = await Purchases.getOfferings();
-            final offering = offerings.getOffering(defaultOffering);
-            final purchaseResult = await Purchases.purchasePackage(offering!.lifetime!);
-            "${purchaseResult.allPurchasedProductIdentifiers}".debugPrint();
-            if (purchaseResult.allPurchasedProductIdentifiers.isNotEmpty) {
-              await setPlan(
-                planString: currentPlan.value,
-                activePlanListString: [],
-                ticketsInt: trialTicketNumber,
-                expirationInt: expirationDate.value
-              );
-              if (context.mounted) context.pushHomePage();
-            } else {
-              if (context.mounted) await purchaseErrorDialog(context, isRestore: false, isCancel: false);
-            }
-          } on PlatformException catch (e) {
-            if (context.mounted) await purchaseExceptionDialog(context, e, isRestore: false, isCancel: false);
-          }
-        } else {
-          if (context.mounted) context.pushHomePage();
-          await showSnackBar(context, context.useTickets(1), true);
-        }
-      }
-    }
+    // buyTrial() async {
+    //   if (!isPurchasing.value) {
+    //     isPurchasing.value = true;
+    //     "isPurchasing: ${isPurchasing.value}".debugPrint();
+    //     if (tickets.value <= 1) {
+    //       try {
+    //         "buyOnetime".debugPrint();
+    //         final offerings = await Purchases.getOfferings();
+    //         final offering = offerings.getOffering(defaultOffering);
+    //         final purchaseResult = await Purchases.purchasePackage(offering!.lifetime!);
+    //         "${purchaseResult.allPurchasedProductIdentifiers}".debugPrint();
+    //         if (purchaseResult.allPurchasedProductIdentifiers.isNotEmpty) {
+    //           await setPlan(
+    //             planString: currentPlan.value,
+    //             activePlanListString: [],
+    //             ticketsInt: trialTicketNumber,
+    //             expirationInt: expirationDate.value
+    //           );
+    //           if (context.mounted) context.pushHomePage();
+    //         } else {
+    //           if (context.mounted) await purchaseErrorDialog(context, isRestore: false, isCancel: false);
+    //         }
+    //       } on PlatformException catch (e) {
+    //         if (context.mounted) await purchaseExceptionDialog(context, e, isRestore: false, isCancel: false);
+    //       }
+    //     } else {
+    //       if (context.mounted) context.pushHomePage();
+    //       await showSnackBar(context, context.useTickets(1), true);
+    //     }
+    //   }
+    // }
 
     //Cancellation page for subscription
-    cancelPlan() async {
-      if (!isPurchasing.value) {
-        isPurchasing.value = true;
-        "isPurchasing: ${isPurchasing.value}".debugPrint();
-        "activePlan: ${activePlan.value}".debugPrint();
-        if (activePlan.value.isNotEmpty) {
-          try {
-            final canLaunch = await canLaunchUrl(subscriptionUri);
-            "canLaunchUrl: $canLaunch".debugPrint();
-            if (context.mounted) context.pushHomePage();
-            await launchUrl(subscriptionUri, mode: LaunchMode.externalApplication);
-          } on PlatformException catch (e) {
-            if (context.mounted) await purchaseExceptionDialog(context, e, isRestore: false, isCancel: true);
-          }
-        } else {
-          if (context.mounted) await purchaseFinishedDialog(context, isRestore: false, isCancel: true);
-        }
-      }
-    }
+    // cancelPlan() async {
+    //   if (!isPurchasing.value) {
+    //     isPurchasing.value = true;
+    //     "isPurchasing: ${isPurchasing.value}".debugPrint();
+    //     "activePlan: ${activePlan.value}".debugPrint();
+    //     if (activePlan.value.isNotEmpty) {
+    //       try {
+    //         final canLaunch = await canLaunchUrl(subscriptionUri);
+    //         "canLaunchUrl: $canLaunch".debugPrint();
+    //         if (context.mounted) context.pushHomePage();
+    //         await launchUrl(subscriptionUri, mode: LaunchMode.externalApplication);
+    //       } on PlatformException catch (e) {
+    //         if (context.mounted) await purchaseExceptionDialog(context, e, isRestore: false, isCancel: true);
+    //       }
+    //     } else {
+    //       if (context.mounted) await purchaseFinishedDialog(context, isRestore: false, isCancel: true);
+    //     }
+    //   }
+    // }
 
-    Future<void> buyPremium() async {
-      await buySubscriptionPlan(premiumID);
-    }
-
-    Future<void> buyStandard() async {
-      await buySubscriptionPlan(standardID);
-    }
+    // Future<void> buyPremium() async {
+    //   await buySubscriptionPlan(premiumID);
+    // }
+    //
+    // Future<void> buyStandard() async {
+    //   await buySubscriptionPlan(standardID);
+    // }
 
     //Buy subscription
-    toPurchase() async {
-      isMenuOpen.value = false;
-      "isMenuOpen: ${isMenuOpen.value}".debugPrint();
-      isMyPurchase.value = true;
-    }
+    // toPurchase() async {
+    //   isMenuOpen.value = false;
+    //   "isMenuOpen: ${isMenuOpen.value}".debugPrint();
+    //   isMyPurchase.value = true;
+    // }
 
     //Cancel Subscription,
-    toCancel() {
-      isMenuOpen.value = false;
-      "isMenuOpen: ${isMenuOpen.value}".debugPrint();
-      cancelDialog(context, currentPlan.value, cancelPlan);
-    }
+    // toCancel() {
+    //   isMenuOpen.value = false;
+    //   "isMenuOpen: ${isMenuOpen.value}".debugPrint();
+    //   cancelDialog(context, currentPlan.value, cancelPlan);
+    // }
 
     //Upgrade & Downgrade Subscription,
-    toUpgradePlan() {
-      isMenuOpen.value = false;
-      "isMenuOpen: ${isMenuOpen.value}".debugPrint();
-      upgradePlanDialog(context, currentPlan.value, priceList.value, countryNumber.value, expirationDate.value, upgradePlan);
-    }
+    // toUpgradePlan() {
+    //   isMenuOpen.value = false;
+    //   "isMenuOpen: ${isMenuOpen.value}".debugPrint();
+    //   upgradePlanDialog(context, currentPlan.value, priceList.value, countryNumber.value, expirationDate.value, upgradePlan);
+    // }
 
     //Buy add on passes
     toBuyOnetime() {
       isMenuOpen.value = false;
       "isMenuOpen: ${isMenuOpen.value}".debugPrint();
-      buyOnetimeDialog(context,
-        currentPlan.value,
-        priceList.value,
-        countryNumber.value,
-        expirationDate.value,
-        buyOnetime
-      );
+      (tickets.value > onetimeTicketLimitNumber) ?
+        showSnackBar(context, context.useTickets(onetimeTicketLimitNumber), true):
+        buyOnetimeDialog(context, passesPrice.value, countryNumber.value, currentDate.value, buyOnetime);
     }
 
     //Restore Button
-    toRestore() async {
-      if (!isPurchasing.value) {
-        isPurchasing.value = true;
-        try {
-          final restoredInfo = await Purchases.restorePurchases();
-          "activePlan: ${restoredInfo.activeSubscriptions}".debugPrint();
-          if (restoredInfo.activeSubscriptions.isNotEmpty && currentPlan.value == freeID) {
-            await setPlan(
-              planString: restoredInfo.updatedPlan(),
-              activePlanListString: restoredInfo.activeSubscriptions,
-              ticketsInt: tickets.value,
-              expirationInt: restoredInfo.subscriptionExpirationDate()
-            );
-            if (context.mounted) purchaseSubscriptionSuccessDialog(context, restoredInfo.planID(), null, isRestore: true, isCancel: false);
-          } else {
-            if (context.mounted) purchaseErrorDialog(context, isRestore: true, isCancel: false);
-          }
-        } on PlatformException catch (e) {
-          if (context.mounted) purchaseExceptionDialog(context, e, isRestore: true, isCancel: false);
-        }
-      }
-    }
+    // toRestore() async {
+    //   if (!isPurchasing.value) {
+    //     isPurchasing.value = true;
+    //     try {
+    //       final restoredInfo = await Purchases.restorePurchases();
+    //       "activePlan: ${restoredInfo.activeSubscriptions}".debugPrint();
+    //       if (restoredInfo.activeSubscriptions.isNotEmpty) { //&& currentPlan.value == freeID) {
+    //         // await setPlan(
+    //         //   planString: restoredInfo.updatedPlan(),
+    //         //   activePlanListString: restoredInfo.activeSubscriptions,
+    //         //   ticketsInt: tickets.value,
+    //         //   expirationInt: restoredInfo.subscriptionExpirationDate()
+    //         // );
+    //         if (context.mounted) purchaseSubscriptionSuccessDialog(context, restoredInfo.planID(), null, isRestore: true, isCancel: false);
+    //       } else {
+    //         if (context.mounted) purchaseErrorDialog(context, isRestore: true, isCancel: false);
+    //       }
+    //     } on PlatformException catch (e) {
+    //       if (context.mounted) purchaseExceptionDialog(context, e, isRestore: true, isCancel: false);
+    //     }
+    //   }
+    // }
 
     return Scaffold(
       body: Stack(alignment: Alignment.centerLeft,
@@ -1092,9 +1137,10 @@ class MyHomePage extends HookConsumerWidget {
           sideSpacer(context),
           bottomButtons(),
           if (!isYellow.value && !isRightWait.value && !isLeftWait.value && !isLoadingPhoto.value) selectCountryButton(),
-          if (isPossiblePhoto.value && !isLoadingPhoto.value) cameraButton(context, tickets.value, currentDate.value.intDateTime(), lastClaimedDate.value, cameraAction),
-          if (isMenuOpen.value) menuWidget(context, currentPlan.value, tickets.value, countryNumber.value, currentDate.value.intDateTime(), lastClaimedDate.value, expirationDate.value, toBuyOnetime, toUpgradePlan, toPurchase, toCancel, toRestore),
-          if (isMyPurchase.value) purchaseTable(context, currentPlan.value, tickets.value, priceList.value, buyPremium, buyStandard, buyTrial),
+          if (isPossiblePhoto.value && !isLoadingPhoto.value) cameraButton(context, tickets.value, currentDate.value, lastClaimedDate.value, cameraAction),
+          if (isMenuOpen.value) onetimeMenuWidget(context, tickets.value, countryNumber.value, currentDate.value, lastClaimedDate.value, expirationDate.value, toBuyOnetime),
+          // if (isMenuOpen.value) menuWidget(context, currentPlan.value, tickets.value, countryNumber.value, currentDate.value.intDateTime(), lastClaimedDate.value, expirationDate.value, toBuyOnetime, toUpgradePlan, toPurchase, toCancel, toRestore),
+          // if (isMyPurchase.value) purchaseTable(context, currentPlan.value, tickets.value, priceList.value, buyPremium, buyStandard, buyTrial),
           if (!isYellow.value && !isRightWait.value && !isLeftWait.value) menuButton(context, isMenuOpen.value, isMyPurchase.value, openMenu),
           if (isShowAd.value) AdBannerWidget(),
           if (isShowPhoto.value) showPhotoImage(),

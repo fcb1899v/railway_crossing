@@ -377,8 +377,8 @@ Widget emergencyOffButton(BuildContext context, Color emergencyColor, void Funct
 
 Widget leftButton(BuildContext context, bool isLeftOn, void Function() pushLeftButton) =>
     GestureDetector(
-        onTap: () async => pushLeftButton(),
-        child: operationIcon(context, operationColor(isLeftOn), Icons.arrow_back)
+      onTap: () async => pushLeftButton(),
+      child: operationIcon(context, operationColor(isLeftOn), Icons.arrow_back)
     );
 
 Widget rightButton(BuildContext context, bool isRightOn, void Function() pushRightButton) =>
@@ -389,8 +389,8 @@ Widget rightButton(BuildContext context, bool isRightOn, void Function() pushRig
 
 Widget leftSpeedButton(BuildContext context, bool isLeftOn, bool isLeftFast, void Function() pushLeftSpeedButton) =>
     GestureDetector(
-        onTap: () async => pushLeftSpeedButton(),
-        child: operationIcon(context, operationColor(isLeftOn), isLeftFast ? CupertinoIcons.chevron_left_2:  CupertinoIcons.chevron_left)
+      onTap: () async => pushLeftSpeedButton(),
+      child: operationIcon(context, operationColor(isLeftOn), isLeftFast ? CupertinoIcons.chevron_left_2:  CupertinoIcons.chevron_left)
     );
 
 Widget rightSpeedButton(BuildContext context, bool isRightOn, bool isRightFast, void Function() pushRightSpeedButton) =>
@@ -506,14 +506,14 @@ Widget menuDivider(BuildContext context) =>
       endIndent: context.menuDividerSideMargin(),
     );
 
-Widget menuTicketsLeftStatus(BuildContext context, String plan, int tickets, int currentDate, int lastClaimedDate) =>
+Widget menuTicketsLeftStatus(BuildContext context, int tickets, int currentDate, int lastClaimedDate) =>
     Container(
         margin: EdgeInsets.symmetric(
           horizontal: context.menuTextSideMargin(),
         ),
         alignment: Alignment.topLeft,
         child: Row(children: [
-          Text(context.ticketsLeft(tickets, currentDate, lastClaimedDate),
+          Text(context.ticketsLeft(currentDate, lastClaimedDate),
             style: TextStyle(
               fontSize: context.menuTextFontSize(),
               color: transpBlackColor,
@@ -600,7 +600,7 @@ Widget menuUpdatedDate(BuildContext context, int countryNumber, int expirationDa
     right: context.menuUpdatedDateMarginRight(),
     bottom: context.menuUpdatedDateMarginBottom()
   ),
-  child: Text(context.nextRenewal(context.toCountryDate(countryNumber, expirationDate.toLocalDate())),
+  child: Text(context.nextRenewal(context.toCountryDate(countryNumber, expirationDate)),
     style: TextStyle(
       fontSize: context.menuUpdatedDateFontSize(),
       color: transpBlackColor,
@@ -623,7 +623,7 @@ Widget menuWidget(BuildContext context, String plan, int tickets, int countryNum
       ),
       child: Column(children: [
         menuTitleText(context, plan),
-        menuTicketsLeftStatus(context, plan, tickets, currentDate, lastClaimedDate),
+        menuTicketsLeftStatus(context, tickets, currentDate, lastClaimedDate),
         menuDivider(context),
         SizedBox(height: context.menuTextUpDownMargin()),
         menuAdFreeStatus(context, plan),
@@ -637,6 +637,164 @@ Widget menuWidget(BuildContext context, String plan, int tickets, int countryNum
           menuCancelOrRestore(context, plan, true, toCancel, toRestore),
         ]),
       ]),
+    );
+
+Widget onetimeMenuWidget(BuildContext context, int tickets, int countryNumber, int currentDate, int lastClaimedDate, int expirationDate, void Function() toBuyOnetime) =>
+    Container(
+      margin: EdgeInsets.only(
+        left: context.menuSideMargin(),
+        bottom: context.onetimeMenuMarginBottom(),
+      ),
+      padding: EdgeInsets.symmetric(vertical: context.menuPaddingTop()),
+      width: context.menuWidth(),
+      height: context.onetimeMenuHeight(),
+      decoration: BoxDecoration(
+        color: transpWhiteColor,
+        borderRadius: BorderRadius.circular(context.menuCornerRadius())
+      ),
+      child: Column(children: [
+        onetimeMenuTitleText(context),
+        onetimeMenuTicketsLeftStatus(context, tickets, currentDate, lastClaimedDate),
+        menuDivider(context),
+        SizedBox(height: context.menuTextUpDownMargin()),
+        onetimeMenuAdFreeStatus(context, countryNumber, currentDate, expirationDate),
+        menuDivider(context),
+        onetimeMenuPurchaseButton(context, toBuyOnetime),
+        SizedBox(height: context.menuPurchaseButtonMarginBottom()),
+        externalLink(context, context.contactUs(), context.contactUrl()),
+      ]),
+    );
+
+
+Widget onetimeMenuTitleText(BuildContext context) =>
+    Container(
+      margin: EdgeInsets.symmetric(
+        vertical: context.menuTitleMargin()
+      ),
+      child: Text(context.ticket(),
+        style: TextStyle(
+            fontSize: context.menuTitleTextFontSize(),
+            fontWeight: FontWeight.bold,
+            fontFamily: "beon",
+            color: transpBlackColor
+        ),
+      ),
+    );
+
+Widget onetimeMenuTicketsLeftStatus(BuildContext context, int tickets, int currentDate, int lastClaimedDate) =>
+    Container(
+        margin: EdgeInsets.symmetric(
+          horizontal: context.menuTextSideMargin(),
+        ),
+        alignment: Alignment.topLeft,
+        child: Row(children: [
+          Text(context.ticketsLeft(currentDate, lastClaimedDate),
+            style: TextStyle(
+              fontSize: context.menuTextFontSize(),
+              color: transpBlackColor,
+            ),
+          ),
+          const Spacer(),
+          Icon(tickets.onetimeHaveTicketsIcon(lastClaimedDate.isToday(currentDate)),
+            color: tickets.onetimeHaveTicketsColor(lastClaimedDate.isToday(currentDate)),
+            size: context.menuIconSize(),
+          ),
+          SizedBox(width: context.menuIconMargin()),
+          Text(context.menuTicketsNumber(tickets, currentDate, lastClaimedDate),
+            style: TextStyle(
+              fontSize: (tickets == 0) ? context.menuTextFontSize(): context.menuTextSubFontSize(),
+              fontWeight: FontWeight.bold,
+              fontFamily: (context.lang() == "en") ? "beon": null,
+              color: transpBlackColor,
+            ),
+          )
+        ])
+    );
+
+Widget
+onetimeMenuAdFreeStatus(BuildContext context, int countryNumber, int currentDate, int expirationDate) =>
+    Container(
+      margin: EdgeInsets.symmetric(
+        horizontal: context.menuTextSideMargin(),
+      ),
+      alignment: Alignment.topLeft,
+      child: Row(children: [
+        Text(context.adDisplay(),
+          style: TextStyle(
+            fontSize: context.menuTextFontSize(),
+            color: transpBlackColor,
+          ),
+        ),
+        const Spacer(),
+        Icon(currentDate.onetimeAdFreeIcon(expirationDate),
+          color: currentDate.onetimeAdFreeIconColor(expirationDate),
+          size: context.menuIconSize(),
+        ),
+        SizedBox(width: context.menuIconMargin()),
+        Text(context.onetimeAdFreeText(currentDate, expirationDate),
+          style: TextStyle(
+            fontSize: context.menuTextSubFontSize(),
+            fontWeight: FontWeight.bold,
+            fontFamily: "beon",
+            color: transpBlackColor,
+          ),
+        ),
+        if (currentDate <= expirationDate) SizedBox(width: context.menuIconMargin()),
+        if (currentDate <= expirationDate) Text(context.freeDate(context.toCountryDateNoYear(countryNumber, expirationDate)),
+          style: TextStyle(
+            fontSize: context.menuAdFreeDateFontSize(),
+            fontWeight: FontWeight.bold,
+            color: transpBlackColor,
+          ),
+        )
+      ])
+    );
+
+Widget onetimeMenuPurchaseButton(BuildContext context, void Function() toBuyOnetime) =>
+    GestureDetector(
+      onTap: toBuyOnetime,
+      child: Container(
+        width: context.menuPurchaseButtonWidth(),
+        height: context.menuPurchaseButtonHeight(),
+        margin: EdgeInsets.only(top: context.menuPurchaseButtonMargin()),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+            color: transpYellowColor,
+            border: Border.all(
+              color: redColor,
+              width: context.menuPurchaseButtonBorderWidth(),
+            ),
+            borderRadius: BorderRadius.circular(context.menuPurchaseButtonCornerRadius())
+        ),
+        child: Text(context.buyPasses(),
+          style: TextStyle(
+            fontSize: context.menuPurchaseButtonFontSize(),
+            fontWeight: FontWeight.bold,
+            fontFamily: "beon",
+            color: redColor,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+
+Widget onetimeMenuRestore(BuildContext context, void Function() toRestore) =>
+    GestureDetector(
+      onTap: toRestore,
+      child: Container(
+        margin: EdgeInsets.only(
+          top: context.menuOtherSelectMarginTop(),
+          right: context.menuOtherSelectMarginSide(),
+        ),
+        alignment: Alignment.centerRight,
+        child: Text(context.toOnetimeRestore(),
+          style: TextStyle(
+            fontSize: context.menuOtherSelectFontSize(),
+            color: transpBlackColor,
+            decoration: TextDecoration.underline,
+          ),
+        ),
+      ),
     );
 
 DataColumn dataColumnLabel(BuildContext context, String plan, String label) =>
@@ -674,15 +832,15 @@ DataCell textDataCell(BuildContext context, String text) =>
 DataCell numberDataCell(BuildContext context, String numberText) =>
     DataCell(
       Center(child:
-      Text(numberText,
-        style: TextStyle(
-          fontSize: context.purchaseTableNumberFontSize(),
-          fontFamily: "beon",
-          fontWeight: FontWeight.bold,
-          color: transpBlackColor,
+        Text(numberText,
+          style: TextStyle(
+            fontSize: context.purchaseTableNumberFontSize(),
+            fontFamily: "beon",
+            fontWeight: FontWeight.bold,
+            color: transpBlackColor,
+          ),
+          textAlign: TextAlign.center,
         ),
-        textAlign: TextAlign.center,
-      ),
       ),
     );
 
@@ -1003,8 +1161,21 @@ Widget cancelTable(BuildContext context, String plan) =>
       )
     );
 
+// buyOnetimeDialog(BuildContext context, String plan, List<String> priceList, int countryNumber, int date, void Function() buyOnetime) =>
+//     showGeneralDialog(
+//       context: context,
+//       barrierDismissible: true,
+//       barrierLabel: '',
+//       barrierColor: transpBlackColor,
+//       transitionDuration: const Duration(milliseconds: 500),
+//       pageBuilder: (context, animation, _) =>
+//         // buyOnetimeDialogButton(context, plan, priceList, countryNumber, date, buyOnetime),
+//         buyOnetimeDialogWidget(context, countryNumber, priceList, date, buyOnetime),
+//       transitionBuilder: (context, animation, _, child) =>
+//         customFadeTransition(animation, child),
+//     );
 
-buyOnetimeDialog(BuildContext context, String plan, List<String> priceList, int countryNumber, int expirationDate, void Function() buyOnetime) =>
+buyOnetimeDialog(BuildContext context, String price, int countryNumber, int date, void Function() buyOnetime) =>
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
@@ -1012,7 +1183,8 @@ buyOnetimeDialog(BuildContext context, String plan, List<String> priceList, int 
       barrierColor: transpBlackColor,
       transitionDuration: const Duration(milliseconds: 500),
       pageBuilder: (context, animation, _) =>
-        buyOnetimeDialogButton(context, plan, priceList, countryNumber, expirationDate, buyOnetime),
+        // buyOnetimeDialogButton(context, plan, priceList, countryNumber, date, buyOnetime),
+        buyOnetimeDialogWidget(context, countryNumber, price, date, buyOnetime),
       transitionBuilder: (context, animation, _, child) =>
         customFadeTransition(animation, child),
     );
@@ -1032,6 +1204,51 @@ Widget buyOnetimeDialogButton(BuildContext context, String plan, List<String> pr
                 child: purchaseButtonImage(context, premiumID, true, false),
               ),
             ),
+          ]),
+        ),
+      ),
+    );
+
+Widget buyOnetimeDialogWidget(BuildContext context, int countryNumber, String price, int currentDate, void Function() buyOnetime) =>
+    Center(
+      child: IntrinsicHeight(
+        child: AlertDialog(
+          backgroundColor: transpWhiteColor,
+          content: Column(children: [
+            Container(
+              alignment: Alignment.center,
+              margin: EdgeInsets.only(top: context.purchaseTableMarginTop()),
+              child: Text("${context.ticket()} : ${context.photos(addOnTicketNumber)}",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: context.onetimePurchaseTableFontSize(),
+                  color: transpBlackColor,
+                ),
+              ),
+            ),
+            Container(
+              alignment: Alignment.center,
+              margin: EdgeInsets.only(top: context.purchaseTableMarginTop()),
+              child: Text(price,
+                style: TextStyle(
+                  fontFamily: "beon",
+                  fontWeight: FontWeight.bold,
+                  fontSize: context.onetimePurchaseTableNumberFontSize(),
+                  color: transpBlackColor,
+                ),
+              ),
+            ),
+            Container(
+              alignment: Alignment.center,
+              margin: EdgeInsets.only(top: context.purchaseTableMarginTop()),
+              child: Text(context.adFreeDate(context.toCountryDate(countryNumber, currentDate.nextMonth())),
+                style: TextStyle(
+                  fontSize: context.onetimePurchaseTableSubFontSize(),
+                  color: transpBlackColor,
+                ),
+              ),
+            ),
+            onetimeMenuPurchaseButton(context, buyOnetime)
           ]),
         ),
       ),
@@ -1113,7 +1330,6 @@ Widget externalLink(BuildContext context, String title, String url) =>
       ),
     );
 
-
 Widget purchaseUpdatedDate(BuildContext context, String plan, int countryNumber, int expirationDate) =>
     Container(
       margin: EdgeInsets.only(
@@ -1121,7 +1337,7 @@ Widget purchaseUpdatedDate(BuildContext context, String plan, int countryNumber,
         right: context.purchaseUpdatedMarginRight(),
       ),
       alignment: Alignment.centerRight,
-      child: Text(context.nextRenewal(context.toCountryDate(countryNumber, expirationDate.toLocalDate())),
+      child: Text(context.nextRenewal(context.toCountryDate(countryNumber, expirationDate)),
         style: TextStyle(
           fontSize: context.purchaseUpdatedDateFontSize(),
           color: transpBlackColor,
@@ -1194,6 +1410,27 @@ purchaseErrorDialog(BuildContext context, {required bool isRestore, required boo
     isPositive: false,
   );
 }
+
+onetimePurchaseExceptionDialog(BuildContext context, PlatformException e) {
+  final errorCode = PurchasesErrorHelper.getErrorCode(e);
+  "Purchase Exception Error: $e".debugPrint();
+  return customDialog(context,
+    title: context.errorPurchase(),
+    content: context.onetimePurchaseErrorMessage(errorCode),
+    isPositive: false,
+  );
+}
+
+onetimePurchaseErrorDialog(BuildContext context) {
+  "Purchase Error".debugPrint();
+  return customDialog(context,
+    title: context.errorPurchase(),
+    content: "",
+    isPositive: false,
+  );
+}
+
+
 
 purchaseFinishedDialog(BuildContext context, {required bool isRestore, required bool isCancel}) {
   "Have already finished purchase".debugPrint();

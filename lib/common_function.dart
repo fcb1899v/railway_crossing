@@ -42,27 +42,48 @@ initPurchase() async {
   });
 }
 
-Future<List<String>> loadPriceList(SharedPreferences prefs) async {
-  final priceList = prefs.getStringList("price") ?? defaultPriceList;
-  "Price List: $priceList".debugPrint();
-  if (priceList[0] == "-") {
-    final offerings = await Purchases.getOfferings();
-    final newPriceList = List<String>.from(defaultPriceList);
-    offerings.all.forEach((key, offering) {
-      for (var package in offering.availablePackages) {
-        final storeProduct = package.storeProduct;
-        final price = storeProduct.priceString;
-        newPriceList[storeProduct.identifier.planNumber()] = price;
-      }
-    });
-    prefs.setStringList("price", newPriceList);
-    "Get Price List: $newPriceList".debugPrint();
-    return newPriceList;
+// Future<List<String>> loadPriceList(SharedPreferences prefs) async {
+//   final priceList = prefs.getStringList("price") ?? defaultPriceList;
+//   "Price List: $priceList".debugPrint();
+//   if (priceList[0] == "-") {
+//     final offerings = await Purchases.getOfferings();
+//     final newPriceList = List<String>.from(defaultPriceList);
+//     offerings.all.forEach((key, offering) {
+//       for (var package in offering.availablePackages) {
+//         final storeProduct = package.storeProduct;
+//         final price = storeProduct.priceString;
+//         newPriceList[storeProduct.identifier.planNumber()] = price;
+//       }
+//     });
+//     prefs.setStringList("price", newPriceList);
+//     "Get Price List: $newPriceList".debugPrint();
+//     return newPriceList;
+//   } else {
+//     return priceList;
+//   }
+// }
+
+Future<String> loadPrice(SharedPreferences prefs) async {
+  final price = prefs.getString("onetime_price") ?? defaultPrice;
+  "Passes price: $price".debugPrint();
+  if (price == "-") {
+    try {
+      final offerings = await Purchases.getOfferings();
+      final offering = offerings.getOffering(normalOffering);
+      final package = offering!.availablePackages[0];
+      final storeProduct = package.storeProduct;
+      final newPrice = storeProduct.priceString;
+      prefs.setString("onetime_price", newPrice);
+      "Get passes price: $newPrice".debugPrint();
+      return newPrice;
+    } catch (e) {
+      "Passes price: $defaultOnetimePrice".debugPrint();
+      return defaultOnetimePrice;
+    }
   } else {
-    return priceList;
+    return price;
   }
 }
-
 
 /// Photo Access
 Future<void> permitPhotoAccess() async {
@@ -79,17 +100,18 @@ Future<void> permitPhotoAccess() async {
   }
 }
 
-
 /// Get current DateTime from server
-Future<DateTime> getServerDateTime() async {
+Future<int> getServerDateTime() async {
   try {
     final serverDateTime = await NTP.now();
     final utcDateTime = serverDateTime.toUtc();
-    'Fetch server utc time successfully: $utcDateTime'.debugPrint();
-    return utcDateTime;
+    final localDateTime = utcDateTime.toLocal();
+    final localIntDateTime = localDateTime.intDateTime();
+    'Fetch server local time successfully: $localDateTime'.debugPrint();
+    return localIntDateTime;
   } catch (e) {
     'Failed to fetch time: $e'.debugPrint();
-    return defaultDateTime;
+    return defaultIntDateTime;
   }
 }
 

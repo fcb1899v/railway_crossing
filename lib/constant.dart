@@ -22,10 +22,11 @@ const int emergencyFlashTime = 500; //milliSeconds
 
 ///Default
 DateTime defaultDateTime = DateTime(2024,1,1,0,0,0);
-DateTime defaultDate = DateTime(2024,1,1);
 const int defaultIntDateTime = 20240101000000;
 const int defaultIntDate = 20240101;
 const List<String> defaultPriceList = ["-", "-", "-", "-"];
+const String defaultPrice = "-";
+const String defaultOnetimePrice = "\$3.99";
 
 ///Vibration
 const int vibTime = 200;
@@ -82,7 +83,8 @@ final revenueCatApiKey = dotenv.get((Platform.isIOS || Platform.isMacOS) ?
   "REVENUE_CAT_IOS_API_KEY":
   "REVENUE_CAT_ANDROID_API_KEY"
 );
-final androidProvider = kDebugMode ? AndroidProvider.debug: AndroidProvider.playIntegrity;
+
+final androidProvider = AndroidProvider.playIntegrity;
 final appleProvider = kDebugMode ? AppleProvider.debug: AppleProvider.deviceCheck;
 const List<bool?> isUpgradeAdFreeList = [true, false];
 const List<String> countryCodeList = ["JP", "GB", "CN", "US"];
@@ -94,6 +96,7 @@ const String freeID = 'free';
 const String defaultOffering = 'default_offering';
 const String premiumOffering = 'premium_offering';
 const String addPassesOffering = 'premium_offering';
+const String normalOffering = 'normal_offering';
 const String premiumUserAccess = 'premium_user_access';
 const String standardUserAccess = 'standard_user_access';
 const String freeUserAccess = 'free_user_access';
@@ -101,6 +104,8 @@ const int premiumTicketNumber  = 36;
 const int standardTicketNumber = 24;
 const int addOnTicketNumber    = 24;
 const int trialTicketNumber    = 10;
+const int onetimeTicketLimitNumber = 72;
+
 const List<String> monthList = [
   'Jan.', 'Feb.', 'Mar.', 'Apr.', 'May.', 'Jun.',
   'Jul.', 'Aug.', 'Sep.', 'Oct.', 'Nov.', 'Dec.'
@@ -114,9 +119,11 @@ const eulaUrl = "https://www.apple.com/legal/internet-services/itunes/dev/stdeul
 
 const projectName = "letscrossing-app";
 const vertexAILocation = "asia-northeast1";
-const vertexAIModel = "imagen-3.0-fast-generate-001";
+const vertexAIModel = "imagen-3.0-generate-002"; //"imagen-3.0-fast-generate-001";
 const vertexAIPostUrl = 'https://$vertexAILocation-aiplatform.googleapis.com/v1/projects/$projectName/locations/$vertexAILocation/publishers/google/models/$vertexAIModel:predict';
 const vertexAINegativePrompt = "Wiring, Frame";
+const vertexAIAspectRatio = "1:1";
+const vertexAIPersonGeneration = "dont_allow";
 const jpSpot = [
   "Mount Fuji and Cherry Blossoms", "Mount Fuji and Five-storied pagoda", "Tokyo Tower", "Himeji Castle",
   "Kinkaku-ji Temple", "Gassho style house of Shirakawa-go", "Fushimi Inari Shrine", "Atomic Bomb Dome",
