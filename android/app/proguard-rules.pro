@@ -1,0 +1,2 @@
+-keep class com.google.android.gms.safetynet.** { *; }
+-dontwarn com.google.android.gms.safetynet.**
