@@ -10,50 +10,51 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  webview_flutter_android: ^4.3.3
-  webview_flutter: ^4.10.0
+  webview_flutter_android: ^4.7.0
+  webview_flutter: ^4.13.0
   # Firebase Analytics
-  firebase_core: ^3.12.1
-  firebase_analytics: ^11.4.4
-  firebase_app_check: ^0.3.2+4
+  firebase_core: ^3.15.1
+  firebase_analytics: ^11.5.2
+  firebase_app_check: ^0.3.2+9
   # App Icon
   cupertino_icons: ^1.0.8
-  flutter_launcher_icons: ^0.14.3
+  flutter_launcher_icons: ^0.14.4
   # Audio Player
-  audioplayers: ^6.4.0
+  audioplayers: ^6.5.0
+  path: ^1.9.1
   # Vibration
   vibration: ^3.1.3
   # SharedPreference
-  shared_preferences: ^2.5.2
+  shared_preferences: ^2.5.3
   # Floating Button
   fab_circular_menu_plus: ^0.0.3
   # Admob
-  google_mobile_ads: ^5.3.1
+  google_mobile_ads: ^6.0.0
   app_tracking_transparency: ^2.0.6+1
   # Device locale
   devicelocale: ^0.8.1
   # OS version
-  device_info_plus: ^11.3.3
+  device_info_plus: ^11.5.0
   #env
   flutter_dotenv: ^5.2.1
   # Revenue Cat
-  purchases_flutter: ^8.6.1
+  purchases_flutter: ^8.10.5
   # HyperLink
   url_launcher: ^6.3.1
   #MVVM
   hooks_riverpod: ^2.6.1
   flutter_hooks: ^0.21.2
   #Generative AI
-  firebase_vertexai: ^1.4.0
-  googleapis_auth: ^1.6.0
-  http: ^1.3.0
+  firebase_ai: ^2.2.1
+  googleapis_auth: ^2.0.0
+  http: ^1.4.0
   #Server Time
   ntp: ^2.0.0
   #Save Image
-  permission_handler: ^11.4.0
+  permission_handler: ^12.0.1
   path_provider: ^2.1.5
   image_gallery_saver: ^2.0.3
-  share_plus: ^10.1.4
+  share_plus: ^11.0.0
 
   # Localize
   flutter_localizations:
@@ -63,9 +64,9 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
   # App Splash
-  flutter_native_splash: ^2.4.5
+  flutter_native_splash: ^2.4.6
 
 flutter_icons:
   image_path: "assets/icon/appIcon.png"

@@ -1,0 +1,105 @@
+{
+  "appPolicies" : {
+    "eula" : "",
+    "policies" : [
+      {
+        "locale" : "en_US",
+        "policyText" : "",
+        "policyURL" : ""
+      }
+    ]
+  },
+  "identifier" : "DA9F6D07",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "3.99",
+      "familyShareable" : false,
+      "internalID" : "6742987961",
+      "localizations" : [
+        {
+          "description" : "增加24张摄影票 & 1个月无广告",
+          "displayName" : "购买摄影票",
+          "locale" : "zh_Hant"
+        },
+        {
+          "description" : "24枚の撮り鉄チケットの追加・1ヶ月間の広告非表示",
+          "displayName" : "撮り鉄チケットの購入",
+          "locale" : "ja"
+        },
+        {
+          "description" : "Add 24 photo passes & remove ads for 1 month",
+          "displayName" : "Purchase train photo passes",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "buy_passes",
+      "referenceName" : "Purchase train photo passes",
+      "type" : "Consumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "6615077678",
+    "_developerTeamID" : "P3MMV68RR4",
+    "_failTransactionsEnabled" : false,
+    "_lastSynchronizedDate" : 773958911.49706602,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Load Products"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Purchase"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Verification"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Store Sync"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Subscription Status"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Transaction"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Manage Subscriptions Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Refund Request Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Offer Code Redeem Sheet"
+      }
+    ]
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

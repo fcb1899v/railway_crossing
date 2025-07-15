@@ -20,9 +20,10 @@ It features realistic visuals, authentic sounds, photo galleries, train illustra
 - **Cross-platform Support**: Android & iOS compatibility
 - **Multi-language Support**: Japanese, English, Chinese
 - **Google Mobile Ads**: Banner ads
-- **Firebase Integration**: Analytics, App Check, etc.
-- **Audio & Vibration Feedback**: Realistic operation feel
-- **In-app Purchase**: One-time unlock for premium features
+- **Firebase Integration**: Analytics, App Check, Vertex AI for image generation
+- **Audio & Vibration Feedback**: Realistic operation feel with proper resource management
+- **In-app Purchase**: One-time unlock for premium features via RevenueCat
+- **AI Photo Generation**: Vertex AI integration for custom railway crossing photos
 
 ## 🚀 Technology Stack
 
@@ -31,11 +32,11 @@ It features realistic visuals, authentic sounds, photo galleries, train illustra
 - **Dart**: 2.18.0+
 - **Firebase**: Analytics, App Check, Vertex AI
 - **Google Mobile Ads**: Banner ads
-- **RevenueCat**: In-app purchase
-- **Generative AI**: firebase_vertexai
+- **RevenueCat**: In-app purchase management
+- **Generative AI**: firebase_vertexai for photo generation
 
 ### Core Features
-- **Audio**: audioplayers
+- **Audio**: audioplayers with stopAll functionality
 - **Vibration**: vibration
 - **Localization**: flutter_localizations, intl
 - **Environment Variables**: flutter_dotenv
@@ -43,13 +44,15 @@ It features realistic visuals, authentic sounds, photo galleries, train illustra
 - **Permissions**: permission_handler
 - **Image Save**: image_gallery_saver
 - **WebView**: webview_flutter
+- **UI Components**: fab_circular_menu_plus
 
 ## 📋 Prerequisites
 
 - Flutter 3.3.0+
 - Dart 2.18.0+
 - Android Studio / Xcode
-- Firebase project (App Check, Analytics, etc.)
+- Firebase project (App Check, Analytics, Vertex AI)
+- RevenueCat account for in-app purchases
 
 ## 🛠️ Setup
 
@@ -99,16 +102,17 @@ flutter run
 ```
 lib/
 ├── main.dart                # Application entry point
-├── my_homepage.dart         # Main page
+├── homepage.dart            # Main railway crossing interface
+├── menu.dart                # Purchase and settings menu
+├── photo.dart               # Photo capture and gallery functionality
 ├── common_widget.dart       # Common widgets
 ├── common_function.dart     # Common functions
-├── common_extension.dart    # Extension functions
+├── common_extension.dart    # Extension functions with comprehensive documentation
 ├── constant.dart            # Constant definitions
-├── audio_manager.dart       # Audio management
-├── purchase_manager.dart    # In-app purchase management
-├── photo_manager.dart       # Photo gallery management
+├── audio_manager.dart       # Audio management with stopAll functionality
+├── purchase_manager.dart    # In-app purchase management with platform-specific handling
+├── photo_manager.dart       # Photo gallery and AI generation management
 ├── admob_banner.dart        # Banner ad management
-├── firebase_options.dart    # Firebase configuration
 └── l10n/                    # Localization
     ├── app_en.arb
     ├── app_ja.arb
@@ -130,10 +134,18 @@ assets/
 ### Crossing Styles
 - Multiple countries: Japan, China, UK, US
 - Each with unique visuals, sounds, and warning patterns
+- Realistic train animations and sound effects
 
 ### Visual Themes
 - Realistic backgrounds and crossing equipment
 - Photo galleries and train illustrations
+- AI-generated railway crossing photos
+
+### Audio Features
+- Authentic warning sounds for each country
+- Train passing sounds with proper looping
+- Emergency sound effects
+- Proper audio resource management
 
 ## 📱 Supported Platforms
 
@@ -171,6 +183,7 @@ This project includes security measures to protect sensitive information:
 - Firebase configuration files are excluded from version control
 - Ad unit IDs are stored in environment files
 - Keystore files are properly excluded
+- Proper audio stopping with stopAll functionality
 
 ## 📄 License
 
@@ -191,6 +204,7 @@ For new developers:
 2. Check the application structure
 3. Review the customization options
 4. Start with the `main.dart` file to understand the app flow
+5. Explore the comprehensive English documentation in the codebase
 
 ---
 
