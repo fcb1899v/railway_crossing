@@ -7,7 +7,7 @@ plugins {
 }
 //apply plugin: 'kotlin-parcelize'
 
-def kotlin_version = "2.0.21"
+def kotlin_version = "2.2.0"
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
@@ -32,7 +32,7 @@ if (keystorePropertiesFile.exists()) {
 
 android {
 
-    compileSdkVersion 35
+    compileSdkVersion 36
     ndkVersion "27.0.12077973"
     namespace "nakajimamasao.appstudio.railwaycrossing"
 
@@ -57,7 +57,7 @@ android {
     defaultConfig {
         applicationId "nakajimamasao.appstudio.railwaycrossing"
         minSdkVersion 23
-        targetSdkVersion 35
+        targetSdkVersion 36
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
@@ -90,7 +90,7 @@ flutter {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    implementation platform('com.google.firebase:firebase-bom:33.10.0')
+    implementation platform('com.google.firebase:firebase-bom:33.16.0')
     implementation 'com.google.firebase:firebase-analytics-ktx'
     implementation("com.google.firebase:firebase-appcheck:18.0.0") {
         exclude group: "com.google.firebase", module: "firebase-appcheck-safetynet"

@@ -21,7 +21,8 @@ It features realistic visuals, authentic sounds, photo galleries, train illustra
 - **Multi-language Support**: Japanese, English, Chinese
 - **Google Mobile Ads**: Banner ads
 - **Firebase Integration**: Analytics, App Check, Vertex AI for image generation
-- **Audio & Vibration Feedback**: Realistic operation feel with proper resource management
+- **Enhanced Audio System**: just_audio with improved state management and error handling
+- **Interactive UI Elements**: Blinking camera button animation and credits dialog
 - **In-app Purchase**: One-time unlock for premium features via RevenueCat
 - **AI Photo Generation**: Vertex AI integration for custom railway crossing photos
 
@@ -36,7 +37,7 @@ It features realistic visuals, authentic sounds, photo galleries, train illustra
 - **Generative AI**: firebase_vertexai for photo generation
 
 ### Core Features
-- **Audio**: audioplayers with stopAll functionality
+- **Audio**: just_audio with enhanced state management and error handling
 - **Vibration**: vibration
 - **Localization**: flutter_localizations, intl
 - **Environment Variables**: flutter_dotenv
@@ -140,12 +141,16 @@ assets/
 - Realistic backgrounds and crossing equipment
 - Photo galleries and train illustrations
 - AI-generated railway crossing photos
+- Interactive UI elements with blinking animations
+- Credits dialog for sound attribution
 
 ### Audio Features
 - Authentic warning sounds for each country
 - Train passing sounds with proper looping
 - Emergency sound effects
-- Proper audio resource management
+- Enhanced audio system using just_audio with improved state management
+- Robust error handling and debug logging
+- Non-blocking audio playback for smooth animations
 
 ## 📱 Supported Platforms
 
@@ -183,7 +188,7 @@ This project includes security measures to protect sensitive information:
 - Firebase configuration files are excluded from version control
 - Ad unit IDs are stored in environment files
 - Keystore files are properly excluded
-- Proper audio stopping with stopAll functionality
+- Enhanced audio resource management with just_audio
 
 ## 📄 License
 
@@ -221,7 +226,7 @@ This app uses the following open-source libraries:
 - google_mobile_ads (Apache License 2.0)
 - shared_preferences (BSD 3-Clause License)
 - flutter_dotenv (MIT License)
-- audioplayers (MIT License)
+- just_audio (Apache License 2.0)
 - vibration (MIT License)
 - hooks_riverpod, flutter_hooks (MIT License)
 - url_launcher (BSD 3-Clause License)

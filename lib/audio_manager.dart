@@ -1,4 +1,5 @@
-import 'package:audioplayers/audioplayers.dart';
+// import 'package:audioplayers/audioplayers.dart';
+import 'package:just_audio/just_audio.dart';
 import 'package:railroad_crossing/common_extension.dart';
 import 'constant.dart';
 
@@ -11,11 +12,11 @@ class AudioManager {
   final List<AudioPlayer> audioPlayers;
   static const audioPlayerNumber = 5;
   AudioManager() : audioPlayers = List.generate(audioPlayerNumber, (_) => AudioPlayer());
-  
+
   /// ===== PLAYER STATE MANAGEMENT =====
   // Get current state of specific audio player
-  PlayerState playerState(int index) => audioPlayers[index].state;
-  
+  ProcessingState playerState(int index) => audioPlayers[index].processingState;
+
   // Get descriptive title for audio player based on index
   String playerTitle(int index) => "${["warning", "left train", "right train", "emergency", "effect"][index]}Player";
 
@@ -28,28 +29,33 @@ class AudioManager {
   }) async {
     final player = audioPlayers[index];
     await player.setVolume(volume);
-    await player.setReleaseMode(ReleaseMode.loop);
-    await player.play(AssetSource(asset));
-    "Loop ${playerTitle(index)}: ${audioPlayers[index].state}".debugPrint();
+    await player.setLoopMode(LoopMode.all);
+    await player.setAsset(asset);
+    player.play();
+    "Loop ${playerTitle(index)}: ${audioPlayers[index].processingState}".debugPrint();
   }
+
   // Play one-time effect sound with default volume
   Future<void> playEffectSound(String asset) async {
     final player = audioPlayers[4];
     await player.setVolume(effectVolume);
-    await player.setReleaseMode(ReleaseMode.release);
-    await player.play(AssetSource(asset));
-    "Play effect sound: ${audioPlayers[4].state}".debugPrint();
+    await player.setLoopMode(LoopMode.off);
+    await player.setAsset(asset);
+    player.play();
+    "Play effect sound: ${audioPlayers[4].processingState}".debugPrint();
   }
+
   // Stop specific audio player
   Future<void> stopSound(int index) async {
     await audioPlayers[index].stop();
-    "Stop ${playerTitle(index)}: ${audioPlayers[index].state}".debugPrint();
+    "Stop ${playerTitle(index)}: ${audioPlayers[index].processingState}".debugPrint();
   }
+
   // Stop all audio players safely
   Future<void> stopAll() async {
     for (final player in audioPlayers) {
       try {
-        if (player.state == PlayerState.playing) {
+        if (player.playing) {
           await player.stop();
           "Stop all players".debugPrint();
         }
@@ -63,11 +69,10 @@ class AudioManager {
     playLoopSound(index: 0, asset: asset, volume: warningVolume);
 
   /// ===== TRAIN SOUND METHODS =====
-  // Play left train sound in loop mode
+  // Play left and right train sound in loop mode
   Future<void> playLeftTrainSound() async  =>
     playLoopSound(index: 1, asset: soundTrain, volume: trainVolume);
-  // Play right train sound in loop mode
-  Future<void> playRightTrainSound() async => 
+  Future<void> playRightTrainSound() async =>
     playLoopSound(index: 2, asset: soundTrain, volume: trainVolume);
   
   /// ===== EMERGENCY SOUND METHODS =====
@@ -87,13 +92,13 @@ class AudioManager {
 
   /// ===== PLAYER STATE CHECKING METHODS =====
   // Get current state of specific audio player
-  PlayerState getPlayerState(int index) => audioPlayers[index].state;
+  PlayerState getPlayerState(int index) => audioPlayers[index].playerState;
   // Check if specific player is currently playing
-  bool isPlaying(int index) => audioPlayers[index].state == PlayerState.playing;
+  bool isPlaying(int index) => audioPlayers[index].playing;
   // Check if specific player is currently stopped
-  bool isStopped(int index) => audioPlayers[index].state == PlayerState.stopped;
+  bool isStopped(int index) => audioPlayers[index].processingState == ProcessingState.idle;
   // Check if specific player has completed playback
-  bool isCompleted(int index) => audioPlayers[index].state == PlayerState.completed;
+  bool isCompleted(int index) => audioPlayers[index].processingState == ProcessingState.completed;
 
   /// ===== RESOURCE CLEANUP METHODS =====
   // Dispose all audio players and release resources

@@ -60,15 +60,15 @@ Color operationColor(bool isOn) => isOn ? redColor: whiteColor;
 
 /// ===== AUDIO ASSETS AND SETTINGS =====
 // Audio file paths and volume settings
-const String soundTrain = "audios/train.mp3";
-const String soundEmergency = "audios/emergency.mp3";
+const String soundTrain = "assets/audios/train.mp3";
+const String soundEmergency = "assets/audios/emergency.mp3";
 const double warningVolume = 0.6;
 const double trainVolume = 0.8;
 const double emergencyVolume = 1.0;
 const double effectVolume = 1.0;
-const String openSound = "audios/popi.mp3";
-const String decideSound = "audios/tetete.mp3";
-const String cameraSound = "audios/camera.mp3";
+const String openSound = "assets/audios/popi.mp3";
+const String decideSound = "assets/audios/tetete.mp3";
+const String cameraSound = "assets/audios/camera.mp3";
 
 /// ===== IMAGE ASSETS =====
 // Default image assets for railway crossing components
@@ -83,6 +83,12 @@ Map<String, Map<String, Object>> flagList = {
   for (var i = 0; i < countryNumber; i++) i.countryString(): i.flagMap()
 };
 String instagramLogo = "assets/images/instagram.png";
+
+/// ===== CREDITS INFORMATION =====
+// Sound credits for audio assets
+const List<String> credits = [
+  "railroad-crossing-signal-shanghai-china.wav © 2012 freesound.org / RTB45",
+];
 
 /// ===== PURCHASE CONFIGURATION =====
 // RevenueCat API keys and purchase-related constants

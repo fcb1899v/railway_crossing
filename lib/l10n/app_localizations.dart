@@ -139,7 +139,7 @@ abstract class AppLocalizations {
   /// No description provided for @passes.
   ///
   /// In en, this message translates to:
-  /// **'Passes: {number}'**
+  /// **'Train Photo Shots: {number}'**
   String passes(Object number);
 
   /// No description provided for @number.
@@ -157,7 +157,7 @@ abstract class AppLocalizations {
   /// No description provided for @noPasses.
   ///
   /// In en, this message translates to:
-  /// **'No Passes'**
+  /// **'No Shots'**
   String get noPasses;
 
   /// No description provided for @oneFreePerDay.
@@ -235,13 +235,13 @@ abstract class AppLocalizations {
   /// No description provided for @ticket.
   ///
   /// In en, this message translates to:
-  /// **'Photo passes'**
+  /// **'Train Photo Shots'**
   String get ticket;
 
   /// No description provided for @tickets.
   ///
   /// In en, this message translates to:
-  /// **'Photo\nPasses'**
+  /// **'Photo Shots'**
   String get tickets;
 
   /// No description provided for @ticketNumber.
@@ -259,7 +259,7 @@ abstract class AppLocalizations {
   /// No description provided for @todayPass.
   ///
   /// In en, this message translates to:
-  /// **'Today\'s Pass'**
+  /// **'Today\'s Shot'**
   String get todayPass;
 
   /// No description provided for @oneFree.
@@ -427,7 +427,7 @@ abstract class AppLocalizations {
   /// No description provided for @buyPasses.
   ///
   /// In en, this message translates to:
-  /// **'Buy Passes'**
+  /// **'Buy Photo Shots'**
   String get buyPasses;
 
   /// No description provided for @upgrade.
@@ -439,13 +439,13 @@ abstract class AppLocalizations {
   /// No description provided for @buyOnetimePasses.
   ///
   /// In en, this message translates to:
-  /// **'Buy'**
+  /// **'Buy Additional'**
   String get buyOnetimePasses;
 
   /// No description provided for @onetime.
   ///
   /// In en, this message translates to:
-  /// **'Additional\nPasses'**
+  /// **'Additional\nPhoto Shots'**
   String get onetime;
 
   /// No description provided for @nextRenewal.
@@ -511,7 +511,7 @@ abstract class AppLocalizations {
   /// No description provided for @addOnPlan.
   ///
   /// In en, this message translates to:
-  /// **'add on passes'**
+  /// **'additional photo shots'**
   String get addOnPlan;
 
   /// No description provided for @planPurchase.
@@ -559,7 +559,7 @@ abstract class AppLocalizations {
   /// No description provided for @successAddOn.
   ///
   /// In en, this message translates to:
-  /// **'\nPurchase of add-on passes\nhas been completed.'**
+  /// **'\nPurchase of additional passes\nhas been completed.'**
   String get successAddOn;
 
   /// No description provided for @errorPurchase.

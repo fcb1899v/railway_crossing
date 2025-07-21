@@ -531,12 +531,14 @@ class MenuWidget {
       onetimeMenuTitleText(),
       onetimeMenuTicketsLeftStatus(),
       menuDivider(),
-      SizedBox(height: context.menuTextUpDownMargin()),
       onetimeMenuAdFreeStatus(),
       menuDivider(),
       onetimeMenuPurchaseButton(onTap),
-      SizedBox(height: context.menuPurchaseButtonMarginBottom()),
-      externalLink(context.contactUs(), context.contactUrl()),
+      Row(children: [
+        creditsButton(),
+        Spacer(),
+        contactLink(),
+      ])
     ]),
   );
 
@@ -567,8 +569,8 @@ class MenuWidget {
 
   /// ===== EXTERNAL LINK COMPONENTS =====
   /// External link widget for opening URLs
-  Widget externalLink(String title, String url) => GestureDetector(
-    onTap: () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
+  Widget contactLink() => GestureDetector(
+    onTap: () => launchUrl(Uri.parse(context.contactUrl()), mode: LaunchMode.externalApplication),
     child: Container(
       margin: EdgeInsets.only(
         top: context.menuOtherSelectMarginTop(),
@@ -576,7 +578,7 @@ class MenuWidget {
         right: context.menuOtherSelectMarginSide(),
       ),
       alignment: Alignment.centerRight,
-      child: Text(title,
+      child: Text(context.contactUs(),
         style: TextStyle(
           fontSize: context.menuOtherSelectFontSize(),
           color: transpBlackColor,
@@ -584,6 +586,65 @@ class MenuWidget {
         ),
       ),
     ),
+  );
+
+  /// ===== CREDITS BUTTON COMPONENTS =====
+  /// Credits button widget - Bottom left button for showing credits
+  Widget creditsButton() => GestureDetector(
+    onTap: () => showCreditsDialog(),
+    child: Container(
+      margin: EdgeInsets.only(
+        top: context.menuOtherSelectMarginTop(),
+        left: context.menuOtherSelectMarginSide(),
+        right: context.menuOtherSelectMarginSide(),
+      ),
+      alignment: Alignment.centerRight,
+      child: Text("Credits",
+        style: TextStyle(
+          fontSize: context.menuOtherSelectFontSize(),
+          color: transpBlackColor,
+          decoration: TextDecoration.underline,
+        ),
+      ),
+    ),
+  );
+
+  // Show credits dialog
+  void showCreditsDialog() => showGeneralDialog(
+    context: context,
+    barrierDismissible: true,
+    barrierLabel: '',
+    barrierColor: transpBlackColor,
+    transitionDuration: const Duration(milliseconds: 500),
+    pageBuilder: (context, animation, _) => IntrinsicHeight(
+      child: AlertDialog(
+        backgroundColor: transpWhiteColor,
+        title: Text("Credits",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: context.menuTitleTextFontSize(),
+            color: transpBlackColor,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        content: Column(mainAxisSize: MainAxisSize.min,
+          children: credits.map((credit) => 
+            Container(
+              margin: EdgeInsets.symmetric(vertical: context.menuTextUpDownMargin()),
+              child: Text(credit,
+                style: TextStyle(
+                  fontSize: context.menuOtherSelectFontSize(),
+                  color: transpBlackColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ).toList(),
+        ),
+      ),
+    ),
+    transitionBuilder: (context, animation, _, child) =>
+      common().customFadeTransition(animation: animation, child: child),
   );
 
   /// ===== ONETIME MENU TEXT COMPONENTS =====
@@ -623,7 +684,7 @@ class MenuWidget {
       SizedBox(width: context.menuIconMargin()),
       Text(context.menuTicketsNumber(tickets, currentDate, lastClaimedDate),
         style: TextStyle(
-          fontSize: (tickets == 0) ? context.menuTextFontSize(): context.menuTextSubFontSize(),
+          fontSize: context.menuTextSubFontSize(),
           fontWeight: FontWeight.bold,
           fontFamily: (context.lang() == "en") ? "beon": null,
           color: transpBlackColor,
@@ -634,8 +695,10 @@ class MenuWidget {
 
   // One-time menu ad-free status widget
   Widget onetimeMenuAdFreeStatus() => Container(
-    margin: EdgeInsets.symmetric(
-      horizontal: context.menuTextSideMargin(),
+    margin: EdgeInsets.only(
+      top: context.menuTextUpDownMargin(),
+      left: context.menuTextSideMargin(),
+      right: context.menuTextSideMargin(),
     ),
     alignment: Alignment.topLeft,
     child: Row(children: [
@@ -738,7 +801,10 @@ class MenuWidget {
     child: Container(
       width: context.menuPurchaseButtonWidth(),
       height: context.menuPurchaseButtonHeight(),
-      margin: EdgeInsets.only(top: context.menuPurchaseButtonMargin()),
+      margin: EdgeInsets.only(
+        top: context.menuPurchaseButtonMargin(),
+        bottom: context.menuPurchaseButtonMarginBottom(),
+        ),
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: transpYellowColor,

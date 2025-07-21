@@ -45,7 +45,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get noPasses => '残数なし';
 
   @override
-  String get oneFreePerDay => '1日1枚無料';
+  String get oneFreePerDay => '本日1回';
 
   @override
   String get album => 'アルバム';
@@ -96,7 +96,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get todayPass => '本日のチケット';
 
   @override
-  String get oneFree => '1回無料';
+  String get oneFree => '本日1回';
 
   @override
   String get timing => '付与・請求\nタイミング';

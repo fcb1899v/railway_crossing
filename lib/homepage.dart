@@ -228,9 +228,8 @@ class HomePage extends HookConsumerWidget {
     // Return to home page from photo display
     Future returnHome() async {
       "returnHome".debugPrint();
-      setNormalState();
       ref.read(photoProvider.notifier).state = [];
-      ref.read(loadingProvider.notifier).state = false;
+      context.pushHomePage();
     }
 
     // Navigate between photo images (next/previous)
@@ -302,7 +301,7 @@ class HomePage extends HookConsumerWidget {
       if (!isLeftOn.value && !isEmergency.value) {
         isLeftOn.value = true;
         changeTime.value = barUpDownTime;
-        if (!isRightOn.value) {
+        if (!isRightWait.value && !isRightOn.value) {
           setYellowState();
           Future.delayed(const Duration(seconds: yellowTime), () => leftWaitOn());
         } else {
@@ -358,7 +357,7 @@ class HomePage extends HookConsumerWidget {
       if (!isRightWait.value && !isEmergency.value) {
         isRightOn.value = true;
         changeTime.value = barUpDownTime;
-        if (!isLeftWait.value) {
+        if (!isLeftWait.value && !isLeftOn.value) {
           setYellowState();
           Future.delayed(const Duration(seconds: yellowTime), () => rightWaitOn());
         } else {
@@ -423,9 +422,12 @@ class HomePage extends HookConsumerWidget {
 
     /// ===== MAIN UI LAYOUT =====
     // Main UI layout with railway crossing components
+    // Components are layered from background to foreground using Stack widget
     return Scaffold(
       body: Stack(alignment: Alignment.centerLeft,
         children: [
+          // ===== BACKGROUND AND BACK LAYER =====
+          // Base background and back components (fence, gates, barriers, poles)
           home.backGroundImage(),
           home.backFenceImage(),
           home.backEmergencyImage(),
@@ -436,8 +438,12 @@ class HomePage extends HookConsumerWidget {
           if (countryNumber == 3) home.backBarImage(ledFlashIndex, changeTime.value),
           home.backDirectionImage(),
           home.backWarningImage(warningFlashIndex),
+          // ===== TRAIN LAYER =====
+          // Animated train images (only when trains are active)
           if (isRightWait.value) home.rightTrainImage(rightAnimation.value),
           if (isLeftWait.value) home.leftTrainImage(leftAnimation.value),
+          // ===== FRONT LAYER =====
+          // Front components (poles, gates, barriers, emergency signs)
           home.frontPoleImage(),
           if (countryNumber == 1) home.frontGateImage(),
           home.frontBarImage(ledFlashIndex, changeTime.value),
@@ -448,8 +454,11 @@ class HomePage extends HookConsumerWidget {
           home.frontWaringImage(warningFlashIndex),
           home.frontFenceImage(),
           home.trafficSignImage(),
+          // ===== LAYOUT SPACERS =====
           home.upDownSpacer(),
           home.sideSpacer(),
+          // ===== INTERACTIVE CONTROLS =====
+          // Bottom control buttons for train operations and emergency functions
           home.bottomButtons(
             isEmergency: isEmergency.value,
             emergencyColor: flashEmergencyColor!,
@@ -461,6 +470,8 @@ class HomePage extends HookConsumerWidget {
               emergencyOff,
             ]
           ),
+          // ===== MENU AND UTILITY COMPONENTS =====
+          // Menu button with conditional visibility
           IgnorePointer(
             ignoring: (isYellow.value || isRightWait.value || isLeftWait.value || isLoading),
             child: Opacity(
@@ -468,8 +479,10 @@ class HomePage extends HookConsumerWidget {
               child: MenuButton(),
             ),
           ),
+          // Country selection and advertisement components
           if (!isYellow.value && !isRightWait.value && !isLeftWait.value && !isLoading) selectCountryButton(),
           if (currentDate > expirationDate) AdBannerWidget(),
+          // Photo capture button with conditional visibility
           IgnorePointer(
             ignoring: !(isPossiblePhoto.value && !isLoading),
             child: Opacity(
@@ -477,6 +490,8 @@ class HomePage extends HookConsumerWidget {
               child: PhotoButton(),
             ),
           ),
+          // ===== PHOTO DISPLAY =====
+          // Photo image display with navigation and sharing functionality
           if (photoImages.isNotEmpty) home.showPhotoImage(
             index: photoIndex.value,
             isSavePhoto: isSavePhoto.value,
@@ -485,6 +500,7 @@ class HomePage extends HookConsumerWidget {
             onTapBack: () => changeImageIndex(false),
             onTapNext: () => changeImageIndex(true),
           ),
+          // ===== LOADING INDICATOR =====
           if (isLoading) common.circularProgressIndicator(),
         ],
       ),

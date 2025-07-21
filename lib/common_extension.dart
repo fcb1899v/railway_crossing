@@ -520,18 +520,14 @@ extension ContextExt on BuildContext {
   double trainWidth() => height() * 40;
   double trainBeginPosition(bool isFast) => trainWidth() / (isFast ? 1.0 : 2.0);
   double trainEndPosition(bool isFast) => -trainWidth() / (isFast ? 1.0 : 2.0);
-  Animation<double> leftAnimation(
-          AnimationController leftController, bool isLeftFast) =>
-      Tween(
-        begin: trainBeginPosition(isLeftFast),
-        end: trainEndPosition(isLeftFast),
-      ).animate(leftController);
-  Animation<double> rightAnimation(
-          AnimationController rightController, bool isRightFast) =>
-      Tween(
-        begin: trainEndPosition(isRightFast),
-        end: trainBeginPosition(isRightFast),
-      ).animate(rightController);
+  Animation<double> leftAnimation(AnimationController leftController, bool isLeftFast) => Tween(
+    begin: trainBeginPosition(isLeftFast),
+    end: trainEndPosition(isLeftFast),
+  ).animate(leftController);
+  Animation<double> rightAnimation(AnimationController rightController, bool isRightFast) => Tween(
+    begin: trainEndPosition(isRightFast),
+    end: trainBeginPosition(isRightFast),
+  ).animate(rightController);
 
   /// ===== BUTTONS METHODS =====
   double buttonSpace() => height() * 0.03;
@@ -543,29 +539,30 @@ extension ContextExt on BuildContext {
   double operationButtonBorderRadius() => height() * 0.02;
 
   /// ===== FAB CIRCULAR MENU PLUS BUTTON METHODS =====
-  double fabSize() => height() * 0.15;
-  double ringWidth() => height() * 0.15;
-  double ringDiameter() => height() * 0.75;
+  double fabSize() => height() * 0.16;
+  double ringWidth() => height() * 0.16;
+  double ringDiameter() => height() * 0.7;
   double fabSideMargin() => buttonSpace() + sideMargin();
   double fabTopMargin() => buttonSpace() + upDownMargin();
-  double fabIconSize() => height() * 0.10;
-  double fabChildIconSize() => height() * 0.15;
+  double fabIconSize() => height() * 0.12;
+  double fabChildIconSize() => height() * 0.16;
   double fabBorderWidth() => height() * 0.005;
 
 
   /// ===== PHOTO METHODS =====
   double cameraSideMargin() => buttonSpace() * 2 + sideMargin();
   double cameraTopMargin() => buttonSpace() + upDownMargin();
-  double cameraIconSize() => height() * 0.08;
+  double cameraIconSize() => height() * 0.1;
   double cameraTextFontSize() => height() * 0.025;
-  double cameraIconBottomMargin() => height() * 0.03;
-  double cameraTextTopMargin() => height() * 0.07;
+  double cameraIconTopMargin() => height() * 0.01;
+  double cameraIconBottomMargin() => height() * 0.04;
+  double cameraTextTopMargin() => height() * 0.08;
   double circleSize() => height() * 0.1;
   double circleStrokeWidth() => height() * 0.01;
 
   /// ===== MENU METHODS =====
-  double menuButtonIconSize() => height() * 0.08;
-  double menuWidth() => width() * 0.55;
+  double menuButtonIconSize() => height() * 0.10;
+  double menuWidth() => width() * (lang() == "en" ? 0.58: 0.54);
   double menuHeight(String plan) =>
       height() - menuMarginBottom(plan) - 2 * buttonSpace();
   double menuMarginBottom(String plan) =>
@@ -573,10 +570,10 @@ extension ContextExt on BuildContext {
   double onetimeMenuHeight() =>
       height() - onetimeMenuMarginBottom() - 2 * buttonSpace();
   double onetimeMenuMarginBottom() => height() * (lang() == "en" ? 0.18 : 0.21);
-  double menuPaddingTop() => height() * 0.06;
+  double menuPaddingTop() => height() * 0.05;
   double menuSideMargin() => fabSideMargin();
   double menuCornerRadius() => fabSize() / 2;
-  double menuTitleTextFontSize() => height() * (lang() == "en" ? 0.06 : 0.054);
+  double menuTitleTextFontSize() => height() * (lang() == "en" ? 0.064 : 0.056);
   double menuTitleMargin() => height() * 0.03;
   double menuTextFontSize() => height() * 0.05;
   double menuTextSubFontSize() => height() * (lang() == "en" ? 0.06 : 0.05);
@@ -1045,7 +1042,7 @@ extension IntExt on int {
 
   /// ===== AUDIO ASSET METHODS =====
   // Get sound assets path
-  String soundAssets() => "audios/${countryString()}/";
+  String soundAssets() => "assets/audios/${countryString()}/";
   // Get warning sound path
   String warningSound() => "${soundAssets()}warning_${countryString()}.mp3";
 

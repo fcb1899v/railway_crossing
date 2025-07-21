@@ -1,7 +1,7 @@
 name: railroad_crossing
 description: railroad crossing simulator
 publish_to: 'none'
-version: 1.3.2+37
+version: 1.3.4+39
 
 environment:
   sdk: '>=2.18.0 <4.0.0'
@@ -20,7 +20,8 @@ dependencies:
   cupertino_icons: ^1.0.8
   flutter_launcher_icons: ^0.14.4
   # Audio Player
-  audioplayers: ^6.5.0
+  # audioplayers: ^6.5.0
+  just_audio: ^0.10.4
   path: ^1.9.1
   # Vibration
   vibration: ^3.1.3

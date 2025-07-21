@@ -12,7 +12,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get appTitle => '操作乐趣铁路道口';
 
   @override
-  String get thisApp => '这个应用程序是一个非常逼真的电梯模拟器。';
+  String get thisApp => '这个应用程序是一个非常逼真的铁路道口模拟器。';
 
   @override
   String get confirmed => 'OK';
@@ -28,24 +28,24 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String passes(Object number) {
-    return '摄影票: $number次';
+    return '铁路拍摄券: $number张';
   }
 
   @override
   String number(Object number) {
-    return '$number次';
+    return '$number张';
   }
 
   @override
   String shots(Object number) {
-    return '剩余$number次';
+    return '剩余$number张';
   }
 
   @override
-  String get noPasses => '无摄影票';
+  String get noPasses => '无拍摄券';
 
   @override
-  String get oneFreePerDay => '每日免费一次';
+  String get oneFreePerDay => '每日一张';
 
   @override
   String get album => '相册';
@@ -69,7 +69,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get trial => '试用';
 
   @override
-  String get free => '免费';
+  String get free => '免费版';
 
   @override
   String get premiumTitle => '每月高级';
@@ -81,22 +81,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get price => '价格';
 
   @override
-  String get ticket => '摄影票';
+  String get ticket => '铁路拍摄券';
 
   @override
-  String get tickets => '摄影票';
+  String get tickets => '拍摄券';
 
   @override
-  String get ticketNumber => '摄影票数量';
+  String get ticketNumber => '拍摄券数量';
 
   @override
   String get none => '无';
 
   @override
-  String get todayPass => '今日的摄影票';
+  String get todayPass => '今日的拍摄券';
 
   @override
-  String get oneFree => '1次免费';
+  String get oneFree => '今日一张';
 
   @override
   String get timing => '发放与计费时间';
@@ -123,7 +123,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get normally => 'Normally ';
 
   @override
-  String get adFree => '无广告';
+  String get adFree => '无广告版';
 
   @override
   String get adDisplay => '广告显示';
@@ -152,12 +152,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String useTickets(Object number) {
-    return '请将票数用到$number次以下。';
+    return '请将票数用到$number张以下。';
   }
 
   @override
   String photos(Object number) {
-    return '$number次';
+    return '$number张';
   }
 
   @override
@@ -185,16 +185,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cancelSubscription => '取消付费计划';
 
   @override
-  String get buyPasses => '购买摄影票';
+  String get buyPasses => '购买拍摄券';
 
   @override
   String get upgrade => '升级';
 
   @override
-  String get buyOnetimePasses => '购买追加票';
+  String get buyOnetimePasses => '购买追加拍摄券';
 
   @override
-  String get onetime => '追加票';
+  String get onetime => '追加拍摄券';
 
   @override
   String nextRenewal(Object date) {
@@ -229,7 +229,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get standardPlan => '标准计划';
 
   @override
-  String get addOnPlan => '追加摄影票';
+  String get addOnPlan => '追加拍摄券';
 
   @override
   String planPurchase(Object plan) {
@@ -253,7 +253,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String successRestore(Object plan) {
-    return '\n$plan\n恢复已成功。\n剩余的摄影票无法恢复。';
+    return '\n$plan\n恢复已成功。\n剩余的拍摄券无法恢复。';
   }
 
   @override
@@ -262,10 +262,10 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get successOnetime => '\n试用摄影票购买已成功。';
+  String get successOnetime => '\n试用拍摄券购买已成功。';
 
   @override
-  String get successAddOn => '\n追加摄影票购买已成功。';
+  String get successAddOn => '\n追加拍摄券购买已成功。';
 
   @override
   String get errorPurchase => '购买错误';

@@ -28,7 +28,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String passes(Object number) {
-    return 'Passes: $number';
+    return 'Train Photo Shots: $number';
   }
 
   @override
@@ -42,7 +42,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get noPasses => 'No Passes';
+  String get noPasses => 'No Shots';
 
   @override
   String get oneFreePerDay => '1 Free Daily';
@@ -82,10 +82,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get price => 'Price';
 
   @override
-  String get ticket => 'Photo passes';
+  String get ticket => 'Train Photo Shots';
 
   @override
-  String get tickets => 'Photo\nPasses';
+  String get tickets => 'Photo Shots';
 
   @override
   String get ticketNumber => 'Number of passes';
@@ -94,7 +94,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get none => 'None';
 
   @override
-  String get todayPass => 'Today\'s Pass';
+  String get todayPass => 'Today\'s Shot';
 
   @override
   String get oneFree => '1 Free';
@@ -187,16 +187,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cancelSubscription => 'Cancel subscription';
 
   @override
-  String get buyPasses => 'Buy Passes';
+  String get buyPasses => 'Buy Photo Shots';
 
   @override
   String get upgrade => 'Upgrade';
 
   @override
-  String get buyOnetimePasses => 'Buy';
+  String get buyOnetimePasses => 'Buy Additional';
 
   @override
-  String get onetime => 'Additional\nPasses';
+  String get onetime => 'Additional\nPhoto Shots';
 
   @override
   String nextRenewal(Object date) {
@@ -231,7 +231,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get standardPlan => 'standard plan';
 
   @override
-  String get addOnPlan => 'add on passes';
+  String get addOnPlan => 'additional photo shots';
 
   @override
   String planPurchase(Object plan) {
@@ -268,7 +268,8 @@ class AppLocalizationsEn extends AppLocalizations {
       '\nPurchase of one-time passes\nhas been completed.';
 
   @override
-  String get successAddOn => '\nPurchase of add-on passes\nhas been completed.';
+  String get successAddOn =>
+      '\nPurchase of additional passes\nhas been completed.';
 
   @override
   String get errorPurchase => 'Purchase error';

@@ -30,6 +30,20 @@ class PhotoButton extends HookConsumerWidget {
     final photoPermission = useState(PermissionStatus.denied);
     final lifecycle = useAppLifecycleState();
 
+    /// ===== ANIMATION CONTROLLERS =====
+    // Animation controllers for camera button blinking effect
+    final blinkController = useAnimationController(
+      duration: const Duration(milliseconds: 1000),
+    );
+    final blinkAnimation = useAnimation(
+      Tween<double>(begin: 1.0, end: (tickets > 0 || !lastClaimedDate.isToday(currentDate)) ? 0.0: 1.0).animate(
+        CurvedAnimation(
+          parent: blinkController,
+          curve: Curves.linear,
+        ),
+      ),
+    );
+
     /// ===== MANAGER INITIALIZATION =====
     // Initialize managers and widgets for audio and photo functionality
     final audioManager = useMemoized(() => AudioManager());
@@ -53,6 +67,7 @@ class PhotoButton extends HookConsumerWidget {
         if (lifecycle == AppLifecycleState.inactive || lifecycle == AppLifecycleState.paused) {
           try {
             await audioManager.stopAll();
+            blinkController.stop();
           } catch (e) {
             'Error handling stop for player: $e'.debugPrint();
           }
@@ -67,6 +82,7 @@ class PhotoButton extends HookConsumerWidget {
     useEffect(() {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         photoPermission.value = await photoManager.permitPhotoAccess();
+        blinkController.repeat(reverse: true);
       });
       return null;
     }, const []);
@@ -139,7 +155,10 @@ class PhotoButton extends HookConsumerWidget {
         }
       }
     }
-    return photo.cameraButton(onTap: () => cameraAction());
+    return photo.cameraButton(
+      onTap: () => cameraAction(),
+      animation: blinkAnimation,
+    );
   }
 }
 
@@ -164,7 +183,8 @@ class PhotoWidget {
   /// ===== CAMERA UI COMPONENTS =====
   /// Camera Button Widget - Floating action button for photo capture
   Widget cameraButton({
-    required void Function() onTap
+    required void Function() onTap,
+    required double animation,
   }) => Container(
     alignment: Alignment.topRight,
     margin: EdgeInsets.symmetric(
@@ -173,28 +193,34 @@ class PhotoWidget {
     ),
     child: GestureDetector(
       onTap: onTap,
-      child: cameraButtonImage(false),
+      child: Opacity(
+        opacity: animation < 0.2 ? 0.0 : 1.0,
+        child: cameraButtonImage(),
+      ),
     ),
   );
 
   /// Camera Button Image with Icon and Text - Displays camera icon and remaining shots
-  Widget cameraButtonImage(bool isPurchase) => Stack(
+  Widget cameraButtonImage() => Stack(
     alignment: Alignment.center,
     children: [
       Container(
         width: context.fabSize(),
         height: context.fabSize(),
         decoration: BoxDecoration(
-          color: isPurchase ? transpColor: transpBlackColor,
+          color: transpBlackColor,
           shape: BoxShape.circle,
-          border: Border.all(color: whiteColor,
+          border: Border.all(color: (lastClaimedDate.isToday(currentDate) && tickets == 0) ? grayColor: whiteColor,
             width: context.fabBorderWidth(),
           ),
         ),
         child: Container(
-          margin: EdgeInsets.only(bottom: context.cameraIconBottomMargin()),
+          margin: EdgeInsets.only(
+            top: context.cameraIconTopMargin(),
+            bottom: context.cameraIconBottomMargin()
+          ),
           child: Icon(Icons.camera_alt_outlined,
-            color: (lastClaimedDate.isToday(currentDate) && tickets == 0 && !isPurchase) ? grayColor: whiteColor,
+            color: (lastClaimedDate.isToday(currentDate) && tickets == 0) ? grayColor: whiteColor,
             size: context.cameraIconSize(),
           ),
         ),
@@ -205,7 +231,7 @@ class PhotoWidget {
           style: TextStyle(
             fontSize: context.cameraTextFontSize(),
             fontWeight: FontWeight.bold,
-            color: (lastClaimedDate.isToday(currentDate) && tickets == 0 && !isPurchase) ? grayColor: whiteColor
+            color: (lastClaimedDate.isToday(currentDate) && tickets == 0) ? grayColor: whiteColor
           ),
         ),
       ),
