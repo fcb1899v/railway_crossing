@@ -93,13 +93,13 @@ class PhotoButton extends HookConsumerWidget {
       "getFreePhoto".debugPrint();
       try {
         final photoResult = await photoManager.getFreePhoto(countryNumber);
-        ref.read(photoProvider.notifier).state = photoResult;
+        ref.read(photoProvider.notifier).update(photoResult);
         if (photoResult.isNotEmpty) {
           final prefs = await SharedPreferences.getInstance();
           final newCurrentDate = await getServerDateTime();
           'lastClaim'.setSharedPrefInt(prefs, newCurrentDate);
-          ref.read(lastClaimedProvider.notifier).state = newCurrentDate;
-          ref.read(currentProvider.notifier).state = newCurrentDate;
+          ref.read(lastClaimedProvider.notifier).update(newCurrentDate);
+          ref.read(currentProvider.notifier).update(newCurrentDate);
         } else {
           "Free photo error".debugPrint();
         }
@@ -115,10 +115,10 @@ class PhotoButton extends HookConsumerWidget {
         final aiPhoto = await photoManager.getGenerativeAIPhoto(countryNumber);
         "photoImage: $aiPhoto".debugPrint();
         if (aiPhoto.isNotEmpty) {
-          ref.read(photoProvider.notifier).state = aiPhoto;
+          ref.read(photoProvider.notifier).update(aiPhoto);
           final prefs = await SharedPreferences.getInstance();
           final newTickets = tickets - 1;
-          ref.read(ticketsProvider.notifier).state = newTickets;
+          ref.read(ticketsProvider.notifier).update(newTickets);
           'tickets'.setSharedPrefInt(prefs, newTickets);
         } else {
           "Generative AI photo error: empty result".debugPrint();
@@ -138,7 +138,7 @@ class PhotoButton extends HookConsumerWidget {
         "Camera action".debugPrint();
         final newCurrentDate = await getServerDateTime();
         if (tickets > 0 || !lastClaimedDate.isToday(newCurrentDate)) {
-          ref.read(loadingProvider.notifier).state = true;
+          ref.read(loadingProvider.notifier).update(true);
           await audioManager.playEffectSound(cameraSound);
           try {
             if (!lastClaimedDate.isToday(newCurrentDate)) {
@@ -149,7 +149,7 @@ class PhotoButton extends HookConsumerWidget {
           } catch (e) {
             "Camera action error: $e".debugPrint();
           } finally {
-            ref.read(loadingProvider.notifier).state = false;
+            ref.read(loadingProvider.notifier).update(false);
             "isLoading: $isLoading".debugPrint();
           }
         }

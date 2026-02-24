@@ -8,7 +8,7 @@ import 'package:railroad_crossing/common_extension.dart';
 /// ===== GENERAL PARAMETERS =====
 // Core application parameters and configuration
 const int countryNumber = 4;
-double aspectRatio = 16.0 / 9.0;
+const double aspectRatio = 16.0 / 9.0;
 const double barUpAngle = 1.5;
 const audioPlayerNumber = 5;
 
@@ -96,9 +96,9 @@ final revenueCatApiKey = dotenv.get((Platform.isIOS || Platform.isMacOS) ?
   "REVENUE_CAT_IOS_API_KEY":
   "REVENUE_CAT_ANDROID_API_KEY"
 );
-// Platform-specific provider settings
-final androidProvider = AndroidProvider.playIntegrity;
-final appleProvider = kDebugMode ? AppleProvider.debug: AppleProvider.deviceCheck;
+// Platform-specific App Check providers (non-legacy API)
+final androidAppCheckProvider = const AndroidPlayIntegrityProvider();
+final appleAppCheckProvider = kDebugMode ? const AppleDebugProvider() : const AppleDeviceCheckProvider();
 // Purchase plan configurations
 const List<bool?> isUpgradeAdFreeList = [true, false];
 const List<String> countryCodeList = ["JP", "GB", "CN", "US"];

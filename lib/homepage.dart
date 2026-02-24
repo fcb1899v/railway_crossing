@@ -7,6 +7,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:railroad_crossing/photo.dart';
 import 'package:vibration/vibration.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'common_widget.dart';
 import 'common_extension.dart';
 import 'constant.dart';
@@ -120,6 +121,7 @@ class HomePage extends HookConsumerWidget {
     useEffect(() {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         await setNormalState();
+        FlutterNativeSplash.remove();
         // await loadSubscriptionInfo();
       });
       return null;
@@ -153,7 +155,7 @@ class HomePage extends HookConsumerWidget {
         final newCountryNumber = entry.value['countryNumber'] as int;
         if (countryNumber != newCountryNumber) {
           await audioManager.playEffectSound(decideSound);
-          ref.read(countryProvider.notifier).state = newCountryNumber;
+          ref.read(countryProvider.notifier).update(newCountryNumber);
           'select_${entry.key}: $countryNumber'.debugPrint();
         } else {
           await audioManager.playEffectSound(openSound);
@@ -206,29 +208,29 @@ class HomePage extends HookConsumerWidget {
     // Share photo image to external apps
     Future sharePhotoImage() async {
       "Share photo image".debugPrint();
-      ref.read(loadingProvider.notifier).state = true;
+      ref.read(loadingProvider.notifier).update(true);
       await photoManager.sharePhoto(
         imageList: photoImages,
         index: photoIndex.value
       );
-      ref.read(loadingProvider.notifier).state = false;
+      ref.read(loadingProvider.notifier).update(false);
     }
 
     // Save photo image to device gallery
     Future savePhotoImage() async {
       "Save photo image".debugPrint();
-      ref.read(loadingProvider.notifier).state = true;
+      ref.read(loadingProvider.notifier).update(true);
       isSavePhoto.value = await photoManager.savePhoto(
         imageList: photoImages,
         index: photoIndex.value
       );
-      ref.read(loadingProvider.notifier).state = false;
+      ref.read(loadingProvider.notifier).update(false);
     }
 
     // Return to home page from photo display
     Future returnHome() async {
       "returnHome".debugPrint();
-      ref.read(photoProvider.notifier).state = [];
+      ref.read(photoProvider.notifier).update([]);
       context.pushHomePage();
     }
 

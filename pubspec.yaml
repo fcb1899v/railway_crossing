@@ -1,7 +1,7 @@
 name: railroad_crossing
 description: railroad crossing simulator
 publish_to: 'none'
-version: 1.3.4+39
+version: 1.3.5+41
 
 environment:
   sdk: '>=2.18.0 <4.0.0'
@@ -10,52 +10,53 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  webview_flutter_android: ^4.7.0
-  webview_flutter: ^4.13.0
+  webview_flutter_android: ^4.10.11
+  webview_flutter: ^4.13.1
   # Firebase Analytics
-  firebase_core: ^3.15.1
-  firebase_analytics: ^11.5.2
-  firebase_app_check: ^0.3.2+9
+  firebase_core: ^4.4.0
+  firebase_analytics: ^12.1.2
+  firebase_app_check: ^0.4.1+4
   # App Icon
   cupertino_icons: ^1.0.8
   flutter_launcher_icons: ^0.14.4
   # Audio Player
-  # audioplayers: ^6.5.0
-  just_audio: ^0.10.4
+  just_audio: ^0.10.5
   path: ^1.9.1
   # Vibration
-  vibration: ^3.1.3
+  vibration: ^3.1.7
   # SharedPreference
-  shared_preferences: ^2.5.3
+  shared_preferences: ^2.5.4
   # Floating Button
-  fab_circular_menu_plus: ^0.0.3
+  fab_circular_menu_plus: ^0.0.4
   # Admob
-  google_mobile_ads: ^6.0.0
+  google_mobile_ads: ^7.0.0
   app_tracking_transparency: ^2.0.6+1
   # Device locale
-  devicelocale: ^0.8.1
+  devicelocale: ^0.8.2
   # OS version
-  device_info_plus: ^11.5.0
+  device_info_plus: ^12.3.0
   #env
-  flutter_dotenv: ^5.2.1
+  flutter_dotenv: ^6.0.0
   # Revenue Cat
-  purchases_flutter: ^8.10.5
+  purchases_flutter: ^9.12.2
   # HyperLink
-  url_launcher: ^6.3.1
+  url_launcher: ^6.3.2
   #MVVM
-  hooks_riverpod: ^2.6.1
-  flutter_hooks: ^0.21.2
+  hooks_riverpod: ^3.2.1
+  flutter_hooks: ^0.21.3+1
   #Generative AI
-  firebase_ai: ^2.2.1
+  firebase_ai: ^3.8.0
   googleapis_auth: ^2.0.0
-  http: ^1.4.0
+  http: ^1.6.0
   #Server Time
   ntp: ^2.0.0
   #Save Image
   permission_handler: ^12.0.1
   path_provider: ^2.1.5
   image_gallery_saver: ^2.0.3
-  share_plus: ^11.0.0
+  share_plus: ^12.0.1
+  # App Splash (runtime API used in main/homepage)
+  flutter_native_splash: ^2.4.7
 
   # Localize
   flutter_localizations:
@@ -66,8 +67,6 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-  # App Splash
-  flutter_native_splash: ^2.4.6
 
 flutter_icons:
   image_path: "assets/icon/appIcon.png"

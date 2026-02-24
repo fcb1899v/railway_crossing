@@ -88,10 +88,25 @@ Future<String> getCountryCode(SharedPreferences prefs) async {
 
 // Get country code from device locale settings
 Future<String> getLocalCountryCode(SharedPreferences prefs) async {
-  final locale = await Devicelocale.currentLocale ?? "en-US";
-  final countryCode = locale.substring(3, 5);
-  "countryCode".setSharedPrefString(prefs, countryCode);
-  return countryCode;
+  try {
+    final locale = await Devicelocale.currentLocale ?? "en-US";
+    // Locale can be "en-US", "ja_JP", "en", "ja" - avoid substring(3,5) on short strings
+    String countryCode = "US";
+    if (locale.length >= 5) {
+      countryCode = locale.substring(3, 5).toUpperCase();
+    } else if (locale.contains("-") || locale.contains("_")) {
+      final parts = locale.split(RegExp(r'[-_]'));
+      if (parts.length >= 2 && parts[1].length >= 2) {
+        countryCode = parts[1].substring(0, 2).toUpperCase();
+      }
+    }
+    "countryCode".setSharedPrefString(prefs, countryCode);
+    return countryCode;
+  } catch (e) {
+    "getLocalCountryCode error: $e".debugPrint();
+    "countryCode".setSharedPrefString(prefs, "US");
+    return "US";
+  }
 }
 
 // Get country code from App Store/Play Store front (iOS/Android specific)

@@ -1,4 +1,3 @@
-// import 'package:audioplayers/audioplayers.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:railroad_crossing/common_extension.dart';
 import 'constant.dart';
@@ -10,7 +9,6 @@ class AudioManager {
   /// ===== AUDIO PLAYER INITIALIZATION =====
   // Audio player instances for different sound types
   final List<AudioPlayer> audioPlayers;
-  static const audioPlayerNumber = 5;
   AudioManager() : audioPlayers = List.generate(audioPlayerNumber, (_) => AudioPlayer());
 
   /// ===== PLAYER STATE MANAGEMENT =====

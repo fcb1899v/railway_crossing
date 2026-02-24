@@ -12,9 +12,21 @@ allprojects {
 }
 
 rootProject.buildDir = '../build'
-subprojects {
-    project.buildDir = "${rootProject.buildDir}/${project.name}"
-    project.evaluationDependsOn(':app')
+subprojects { subproject ->
+    subproject.buildDir = "${rootProject.buildDir}/${subproject.name}"
+    subproject.evaluationDependsOn(':app')
+    subproject.plugins.withId("com.android.library") {
+        if (subproject.name == 'image_gallery_saver') {
+            subproject.android.namespace = 'com.example.imagegallerysaver'
+            subproject.android.compileOptions.sourceCompatibility = JavaVersion.VERSION_1_8
+            subproject.android.compileOptions.targetCompatibility = JavaVersion.VERSION_1_8
+        }
+    }
+    if (subproject.name == 'image_gallery_saver') {
+        subproject.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+            it.kotlinOptions.jvmTarget = "1.8"
+        }
+    }
 }
 
 tasks.register("clean", Delete) {

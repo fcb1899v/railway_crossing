@@ -114,23 +114,23 @@ class MenuButton extends HookConsumerWidget {
       final addedTickets = tickets + addOnTicketNumber;
       "tickets".setSharedPrefInt(prefs, addedTickets);
       "expiration".setSharedPrefInt(prefs, newCurrentDate.nextMonth());
-      ref.read(ticketsProvider.notifier).state = addedTickets;
-      ref.read(currentProvider.notifier).state = newCurrentDate;
-      ref.read(expirationProvider.notifier).state = newCurrentDate.nextMonth();
+      ref.read(ticketsProvider.notifier).update(addedTickets);
+      ref.read(currentProvider.notifier).update(newCurrentDate);
+      ref.read(expirationProvider.notifier).update(newCurrentDate.nextMonth());
       if (context.mounted) context.pushHomePage();
     }
 
     // Buy one-time passes through RevenueCat
     Future<void> buyOnetimeAction() async {
       if (!isLoading) {
-        ref.read(loadingProvider.notifier).state = true;
+        ref.read(loadingProvider.notifier).update(true);
         try {
           final CustomerInfo? purchaseInfo = await purchaseManager.buyOnetime();
           (purchaseInfo == null) ? menu.onetimePurchaseErrorDialog(): await onetimeSetPlan();
-          ref.read(loadingProvider.notifier).state = false;
+          ref.read(loadingProvider.notifier).update(false);
         } catch (e) {
           menu.onetimePurchaseErrorDialog();
-          ref.read(loadingProvider.notifier).state = false;
+          ref.read(loadingProvider.notifier).update(false);
         }
       }
     }
@@ -252,7 +252,7 @@ class MenuButton extends HookConsumerWidget {
     // //Buy subscription plan
     // buySubscriptionPlan(String planID) async {
     //   if (!isLoading) {
-    //     ref.read(loadingProvider.notifier).state = true;
+    //     ref.read(loadingProvider.notifier).update(true);
     //     "isLoading: $isLoading".debugPrint();
     //     if (currentPlan.value != planID && tickets <= premiumTicketNumber) {
     //       try {
@@ -299,7 +299,7 @@ class MenuButton extends HookConsumerWidget {
     // upgradePlan() async {
     //   if (context.mounted) context.popPage();
     //   if (!isLoading) {
-    //     ref.read(loadingProvider.notifier).state = true;
+    //     ref.read(loadingProvider.notifier).update(true);
     //     "isLoading: $isLoading".debugPrint();
     //     if (currentPlan.value != premiumID && tickets <= premiumTicketNumber) {
     //       try {
@@ -339,7 +339,7 @@ class MenuButton extends HookConsumerWidget {
     // //Buy trial passes
     // buyTrial() async {
     //   if (!isLoading) {
-    //     ref.read(loadingProvider.notifier).state = true;
+    //     ref.read(loadingProvider.notifier).update(true);
     //     "isLoading: $isLoading".debugPrint();
     //     if (tickets <= 1) {
     //       try {
@@ -372,7 +372,7 @@ class MenuButton extends HookConsumerWidget {
     // //Cancellation page for subscription
     // cancelPlan() async {
     //   if (!isLoading) {
-    //     ref.read(loadingProvider.notifier).state = true;
+    //     ref.read(loadingProvider.notifier).update(true);
     //     "isLoading: $isLoading".debugPrint();
     //     "activePlan: ${activePlan.value}".debugPrint();
     //     if (activePlan.value.isNotEmpty) {
@@ -422,7 +422,7 @@ class MenuButton extends HookConsumerWidget {
     // //Restore Button
     // toRestore() async {
     //   if (!isLoading) {
-    //     ref.read(loadingProvider.notifier).state = true;
+    //     ref.read(loadingProvider.notifier).update(true);
     //     try {
     //       final restoredInfo = await Purchases.restorePurchases();
     //       "activePlan: ${restoredInfo.activeSubscriptions}".debugPrint();

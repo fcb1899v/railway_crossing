@@ -53,9 +53,10 @@ class PurchaseManager {
     final offerings = await Purchases.getOfferings();
     "offering: $offerings".debugPrint();
     final targetOffering = offerings.getOffering(offering)!;
-    final purchaseResult = await Purchases.purchasePackage(isSubscription ? targetOffering.monthly!: targetOffering.lifetime!);
+    final package = isSubscription ? targetOffering.monthly! : targetOffering.lifetime!;
+    final purchaseResult = await Purchases.purchase(PurchaseParams.package(package));
     "purchaseResult: $purchaseResult".debugPrint();
-    return purchaseResult;
+    return purchaseResult.customerInfo;
   }
 
   // Execute one-time purchase transaction
