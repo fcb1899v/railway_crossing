@@ -26,6 +26,11 @@ subprojects { subproject ->
         subproject.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
             it.kotlinOptions.jvmTarget = "1.8"
         }
+        subproject.afterEvaluate {
+            if (subproject.android.hasProperty('compileSdkVersion')) {
+                subproject.android.compileSdkVersion = 34
+            }
+        }
     }
 }
 
