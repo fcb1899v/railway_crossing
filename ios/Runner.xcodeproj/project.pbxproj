@@ -160,6 +160,7 @@
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				5594A4DCCEB81752617A48B8 /* [CP] Embed Pods Frameworks */,
+				8E3F2A1B4C5D6E7F8901A2B3 /* Generate dSYM for objective_c.framework */,
 				781077213EF41FB4F60A2AA5 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
@@ -249,17 +250,29 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks-${CONFIGURATION}-output-files.xcfilelist",
 			);
-			outputPaths = (
-			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		8E3F2A1B4C5D6E7F8901A2B3 /* Generate dSYM for objective_c.framework */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Generate dSYM for objective_c.framework";
+			outputPaths = (
+				"${DWARF_DSYM_FOLDER_PATH}/objective_c.framework.dSYM",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"${CONFIGURATION}\" = \"Debug\" ]; then exit 0; fi\nmkdir -p \"${DWARF_DSYM_FOLDER_PATH}\"\nFRAMEWORK_PATH=\"${TARGET_BUILD_DIR}/${WRAPPER_NAME}/Frameworks/objective_c.framework\"\nif [ ! -d \"$FRAMEWORK_PATH\" ]; then\n  FRAMEWORK_PATH=$(find \"${TARGET_BUILD_DIR}\" -name \"objective_c.framework\" -type d 2>/dev/null | head -1)\nfi\nif [ -n \"$FRAMEWORK_PATH\" ] && [ -d \"$FRAMEWORK_PATH\" ]; then\n  dsymutil \"$FRAMEWORK_PATH\" -o \"${DWARF_DSYM_FOLDER_PATH}/objective_c.framework.dSYM\" 2>/dev/null || true\nfi\n";
 			showEnvVarsInLog = 0;
 		};
 		781077213EF41FB4F60A2AA5 /* [CP] Copy Pods Resources */ = {
@@ -270,13 +283,9 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;

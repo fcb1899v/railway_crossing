@@ -1,2 +1,2 @@
--keep class com.google.android.gms.safetynet.** { *; }
+# SafetyNet is deprecated; migrated to Play Integrity API. Suppress warnings if any references remain.
 -dontwarn com.google.android.gms.safetynet.**
