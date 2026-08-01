@@ -77,6 +77,6 @@ ios/Runner/GoogleService-Info.plist
 assets/letscrossing-app-804542f853dd.json
 android/key.properties
 lib/firebase_options.dart
-firebase.json
+# firebase.json is safe to track (no secrets; needed for Cloud Functions deploy)
 ios/firebase_app_id_file.json
 
