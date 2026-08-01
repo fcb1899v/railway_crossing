@@ -161,6 +161,7 @@ class HomePage extends HookConsumerWidget {
           await audioManager.playEffectSound(openSound);
         }
         fabKey.currentState?.close();
+        await audioManager.stopAll();
         if (context.mounted) context.pushHomePage();
       }
     }
@@ -230,6 +231,7 @@ class HomePage extends HookConsumerWidget {
     // Return to home page from photo display
     Future returnHome() async {
       "returnHome".debugPrint();
+      await audioManager.stopAll();
       ref.read(photoProvider.notifier).update([]);
       context.pushHomePage();
     }
@@ -281,7 +283,7 @@ class HomePage extends HookConsumerWidget {
         isPossiblePhoto.value = true;
         isPossibleEmergency.value = false;
         "isPossibleEmergency: ${isPossibleEmergency.value}".debugPrint();
-        await audioManager.playLeftTrainSound();
+        audioManager.playLeftTrainSound();
         if (context.mounted) leftAnimation.value = context.leftAnimation(leftController, isLeftFast.value);
         await leftController.forward(from: 0);
         Future.delayed(const Duration(seconds: 2), () => leftWaitOff());
@@ -337,7 +339,7 @@ class HomePage extends HookConsumerWidget {
         isPossiblePhoto.value = true;
         isPossibleEmergency.value = false;
         "isPossibleEmergency: ${isPossibleEmergency.value}".debugPrint();
-        await audioManager.playRightTrainSound();
+        audioManager.playRightTrainSound();
         if (context.mounted) rightAnimation.value = context.rightAnimation(rightController, isRightFast.value);
         await rightController.forward(from: 0);
         Future.delayed(const Duration(seconds: 2), () => rightWaitOff());

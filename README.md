@@ -73,18 +73,22 @@ Create `assets/.env` and configure required environment variables:
 ```env
 IOS_BANNER_UNIT_ID="your-ios-banner-id"
 ANDROID_BANNER_UNIT_ID="your-android-banner-id"
-OPEN_AI_API_KEY="your-openai-key"
+IOS_BANNER_TEST_ID="your-ios-test-banner-id"
+ANDROID_BANNER_TEST_ID="your-android-test-banner-id"
 REVENUE_CAT_IOS_API_KEY="your-revenuecat-ios-key"
 REVENUE_CAT_ANDROID_API_KEY="your-revenuecat-android-key"
-# Other ad IDs and secrets...
+APPCHECK_DEBUG_TOKEN="your-app-check-debug-token"
 ```
 
+AI credentials (OpenAI / Vertex) must **not** be in the app. Store them with Cloud Functions / Secret Manager. See `functions/README.md`.
+
 ### 4. Firebase Configuration
-1. Create a Firebase project
+1. Create a Firebase project (Blaze plan required for Cloud Functions + Vertex AI)
 2. Place `google-services.json` (Android) in `android/app/`
 3. Place `GoogleService-Info.plist` (iOS) in `ios/Runner/`
-4. Place your Firebase service account JSON in `assets/` (if needed)
-5. These files are automatically excluded by `.gitignore`
+4. Enable Anonymous Authentication
+5. Deploy Cloud Functions (`cd functions && npm install && cd .. && firebase deploy --only functions`)
+6. These secret/config files are excluded by `.gitignore`
 
 ### 5. Run the Application
 ```bash

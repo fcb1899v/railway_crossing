@@ -1,0 +1,20 @@
+{
+  "name": "railway-crossing-functions",
+  "description": "Secure AI image generation proxy for LETS CROSSING",
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "scripts": {
+    "serve": "firebase emulators:start --only functions",
+    "deploy": "firebase deploy --only functions",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@firebase/app": "^0.16.0",
+    "firebase-admin": "^13.0.2",
+    "firebase-functions": "^6.3.0",
+    "google-auth-library": "^9.15.1"
+  },
+  "private": true
+}

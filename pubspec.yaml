@@ -10,53 +10,53 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  webview_flutter_android: ^4.13.0
-  webview_flutter: ^4.14.1
-  # Firebase Analytics
-  firebase_core: ^4.12.1
-  firebase_analytics: ^12.4.5
-  firebase_app_check: ^0.4.5+2
+  webview_flutter_android: ^4.10.11
+  webview_flutter: ^4.13.1
+  # Firebase
+  firebase_core: ^4.4.0
+  firebase_analytics: ^12.1.2
+  firebase_app_check: ^0.4.1+4
+  firebase_auth: ^6.1.2
+  cloud_functions: ^6.0.4
   # App Icon
-  cupertino_icons: ^1.0.9
+  cupertino_icons: ^1.0.8
   flutter_launcher_icons: ^0.14.4
   # Audio Player
-  just_audio: ^0.10.6
+  just_audio: ^0.10.5
   path: ^1.9.1
   # Vibration
-  vibration: ^3.2.0
+  vibration: ^3.1.7
   # SharedPreference
-  shared_preferences: ^2.5.5
+  shared_preferences: ^2.5.4
   # Floating Button
   fab_circular_menu_plus: ^0.0.4
   # Admob
-  google_mobile_ads: ^9.0.0
-  app_tracking_transparency: ^2.0.7
+  google_mobile_ads: ^7.0.0
+  app_tracking_transparency: ^2.0.6+1
   # Device locale
-  devicelocale: ^0.9.0
+  devicelocale: ^0.8.2
   # OS version
-  device_info_plus: ^13.2.0
+  device_info_plus: ^12.3.0
   #env
-  flutter_dotenv: ^6.0.1
+  flutter_dotenv: ^6.0.0
   # Revenue Cat
-  purchases_flutter: ^10.6.0
+  purchases_flutter: ^9.12.2
   # HyperLink
   url_launcher: ^6.3.2
   #MVVM
-  hooks_riverpod: ^3.4.2
+  hooks_riverpod: ^3.2.1
   flutter_hooks: ^0.21.3+1
-  #Generative AI
-  firebase_ai: ^3.14.1
-  googleapis_auth: ^2.3.3
+  # Networking (sharing / gallery helpers)
   http: ^1.6.0
   #Server Time
   ntp: ^2.0.0
   #Save Image
-  permission_handler: ^12.0.3
-  path_provider: ^2.1.6
+  permission_handler: ^12.0.1
+  path_provider: ^2.1.5
   image_gallery_saver_plus: ^5.1.1
-  share_plus: ^13.3.0
+  share_plus: ^12.0.1
   # App Splash (runtime API used in main/homepage)
-  flutter_native_splash: ^2.4.8
+  flutter_native_splash: ^2.4.7
 
   # Localize
   flutter_localizations:

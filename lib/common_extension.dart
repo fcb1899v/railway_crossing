@@ -732,50 +732,9 @@ extension StringExt on String {
     "countryCode: $this, countryNumber: $countryNumber".debugPrint();
     return countryNumber;
   }
-  // bool getIsMainLandChina() =>　(this == "CHN" || this == "OTH");
-
-  /// ===== AI IMAGE GENERATION METHODS =====
-  // Generate image using Dall-E 3 API
-  dynamic dallEResponse() async => http.post(
-    Uri.https('api.openai.com', 'v1/images/generations'),
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ${dotenv.get("OPEN_AI_API_KEY")}',
-    },
-    body: jsonEncode(<String, dynamic>{
-      "model": "dall-e-3",
-      "prompt": this,
-      "n": generatePhotoNumber,
-      "size": "1024x1024",
-      "quality": "standard",
-    }),
-  );
-
-  // Generate image using Vertex AI API
-  dynamic vertexAIResponse(String accessToken) async => http.post(
-  Uri.parse(vertexAIPostUrl),
-    headers: {
-      'Authorization': 'Bearer $accessToken',
-      'Content-Type': 'application/json'
-    },
-    body: jsonEncode(<String, dynamic>{
-      "instances": [
-        {
-          "prompt": this,
-        }
-      ],
-      "parameters": {
-        "sampleCount": generatePhotoNumber,
-        "negativePrompt": vertexAINegativePrompt,
-        "aspectRatio": vertexAIAspectRatio,
-        "personGeneration": vertexAIPersonGeneration,
-      }
-    }),
-  );
 
   /// ===== PLAN CONFIGURATION METHODS =====
   // Plan-related configuration and ticket allocation
-  
   // Get photo list for different plans
   List<int> photosList() => (this == freeID) ?
     [premiumTicketNumber, standardTicketNumber, trialTicketNumber, 0]:
@@ -961,15 +920,9 @@ extension IntExt on int {
   int currentNumber(int currentDate) => (currentDate ~/ 1000000) % 10;
 
   /// ===== AI IMAGE GENERATION PROMPTS =====
-  // Generate Dall-E 3 prompt for train images
-  String dallEPrompt() => [
-    "Realistic Image of a high-speed train called the ${inputTrain()} "
-        "featuring primary ${trainPrimaryColor()} with accents of ${trainAccentColor()}, ",
-    "with ${inputBackGround()[randomNumber()]} in ${inputCountry()} in the background."
-  ].join();
-  // Generate Vertex AI prompt for train images
-  String vertexAIPrompt() => [
-    "Digital art of a high-speed train called the ${inputTrain()}, "
+  // Prompt text only; Cloud Functions holds Vertex/OpenAI credentials.
+  String aiImagePrompt() => [
+    "Realistic Image of a high-speed train called the ${inputTrain()}, "
         "featuring primary ${trainPrimaryColor()} with accents of ${trainAccentColor()}, ",
     "with ${inputBackGround()[randomNumber()]} in ${inputCountry()} in the background."
   ].join();

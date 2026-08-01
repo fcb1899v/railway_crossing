@@ -139,6 +139,7 @@ class PhotoButton extends HookConsumerWidget {
         final newCurrentDate = await getServerDateTime();
         if (tickets > 0 || !lastClaimedDate.isToday(newCurrentDate)) {
           ref.read(loadingProvider.notifier).update(true);
+          await audioManager.stopAll();
           await audioManager.playEffectSound(cameraSound);
           try {
             if (!lastClaimedDate.isToday(newCurrentDate)) {

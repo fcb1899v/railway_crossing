@@ -1,10 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:googleapis_auth/auth_io.dart';
-import 'package:http/http.dart' as http;
 import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -12,6 +12,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'common_widget.dart';
 import 'common_extension.dart';
+import 'constant.dart';
 
 /// ===== PHOTO MANAGER CLASS =====
 // Photo Manager Class - Handles photo generation, sharing, saving, and permissions
@@ -77,75 +78,46 @@ class PhotoManager {
     return [byteData.buffer.asUint8List()];
   }
 
-  /// ===== VERTEX AI AUTHENTICATION =====
-  // Load and authenticate Vertex AI service account credentials
-  Future<String> loadVertexAIToken() async {
-    final jsonString = await DefaultAssetBundle.of(context).loadString('assets/letscrossing-app-804542f853dd.json');
-    final serviceAccountKey =  jsonDecode(jsonString);
-    final accountCredentials = ServiceAccountCredentials.fromJson(serviceAccountKey);
-    final authClient = await clientViaServiceAccount(
-      accountCredentials,
-      ['https://www.googleapis.com/auth/cloud-platform'],
-    );
-    authClient.credentials.accessToken.data.debugPrint();
-    return authClient.credentials.accessToken.data;
-  }
-
-  /// ===== AI PHOTO GENERATION METHODS =====
-  // Generate AI photo using Vertex AI (Google's AI service)
+  /// ===== AI PHOTO GENERATION (Cloud Functions) =====
+  // Secrets stay on the server; client sends prompt + App Check + Auth only.
   Future<List<Uint8List>> getGenerativeAIPhoto(int countryNumber) async {
-    "getGenerateVertexAIPhoto".debugPrint();
-    try {
-      final vertexAIToken = await loadVertexAIToken();
-      final prompt = countryNumber.vertexAIPrompt();
-      "prompt: $prompt".debugPrint();
-      final response = await prompt.vertexAIResponse(vertexAIToken);
-      "responseStatusCode: ${response.statusCode}".debugPrint();
-      if (response.statusCode == 200) {
-        final jsonResponse = jsonDecode(response.body);
-        final responseImageList = List.generate(jsonResponse["predictions"].length, (i) =>
-          base64Decode(jsonResponse["predictions"][i]["bytesBase64Encoded"])
-        );
-        return responseImageList;
-      } else {
-        final errorResponse = jsonDecode(response.body);
-        'code: ${errorResponse['error']['code']}'.debugPrint();
-        'message: ${errorResponse['error']['message']}'.debugPrint();
-        throw Exception('StatusCode is not 200.');
-      }
-    } catch (e) {
-      if (context.mounted) context.photoCaptureFailed().debugPrint();
-      'Failed to generate Vertex AI image: $e'.debugPrint();
-      "getGenerateDallEPhoto".debugPrint();
-      return getGenerateDallEPhoto(countryNumber);
-    }
-  }
-
-  // Generate photo using OpenAI's Dall-E 3 API as fallback
-  Future<List<Uint8List>> getGenerateDallEPhoto(int countryNumber) async {
+    "getGenerateTrainPhotoViaFunctions".debugPrint();
     final common = CommonWidget(context: context);
     try {
-      final prompt = countryNumber.dallEPrompt();
-      "prompt: $prompt".debugPrint();
-      final response = await prompt.dallEResponse();
-      "responseStatusCode: ${response.statusCode}".debugPrint();
-      if (response.statusCode == 200) {
-        final responseJsonData = jsonDecode(utf8.decode(response.bodyBytes).toString());
-        final responseImageList = List.generate(responseJsonData['data'].length, (i) async {
-          final url = await http.get(Uri.parse(responseJsonData['data'][i]['url']));
-          return url.bodyBytes;
-        });
-        return await Future.wait(responseImageList);
-      } else {
-        final errorResponse = jsonDecode(response.body);
-        'code: ${errorResponse['error']['code']}'.debugPrint();
-        'message: ${errorResponse['error']['message']}'.debugPrint();
-        throw Exception('StatusCode is not 200.');
+      if (FirebaseAuth.instance.currentUser == null) {
+        await FirebaseAuth.instance.signInAnonymously();
       }
+      final prompt = countryNumber.aiImagePrompt();
+      "prompt: $prompt".debugPrint();
+      final callable = FirebaseFunctions.instanceFor(region: generateTrainPhotoRegion)
+          .httpsCallable(
+        generateTrainPhotoFunction,
+        options: HttpsCallableOptions(timeout: const Duration(seconds: 120)),
+      );
+      final result = await callable.call(<String, dynamic>{
+        'prompt': prompt,
+        'count': generatePhotoNumber,
+      });
+      final data = result.data;
+      final images = data is Map ? data['images'] : null;
+      if (images is! List || images.isEmpty) {
+        throw Exception('No images returned from Cloud Function.');
+      }
+      return images.map((item) {
+        if (item is! String || item.isEmpty) {
+          throw Exception('Invalid image payload from Cloud Function.');
+        }
+        return base64Decode(item);
+      }).toList();
+    } on FirebaseFunctionsException catch (e) {
+      if (context.mounted) context.photoCaptureFailed().debugPrint();
+      if (context.mounted) common.showSnackBar(context.photoCaptureFailed(), true);
+      'Cloud Function error: ${e.code} ${e.message}'.debugPrint();
+      return [];
     } catch (e) {
       if (context.mounted) context.photoCaptureFailed().debugPrint();
       if (context.mounted) common.showSnackBar(context.photoCaptureFailed(), true);
-      'Failed to generate Dall-E 3 image: $e'.debugPrint();
+      'Failed to generate AI image via Functions: $e'.debugPrint();
       return [];
     }
   }

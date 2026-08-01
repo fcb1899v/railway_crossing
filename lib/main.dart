@@ -1,6 +1,5 @@
-import 'dart:async';
-import 'dart:io';
 import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -16,6 +15,8 @@ import 'firebase_options.dart';
 import 'common_function.dart';
 import 'constant.dart';
 import 'homepage.dart';
+import 'dart:io';
+import 'dart:async';
 
 /// ===== DEBUG CONFIGURATION =====
 // Debug mode configuration for development and testing
@@ -138,9 +139,21 @@ Future<void> main() async {
   final currentDate = await getServerDateTime();
   final savedExpirationDate = 'expiration'.getSharedPrefInt(prefs, defaultIntDateTime);
   final savedLastClaimedDate = 'lastClaim'.getSharedPrefInt(prefs, defaultIntDateTime);
-  /// ===== FIREBASE AND ADS INITIALIZATION =====
-  // Initialize Firebase services and mobile ads
+  /// ===== FIREBASE INITIALIZATION =====
+  // Core Firebase, App Check, then anonymous auth (required by Cloud Functions)
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await FirebaseAppCheck.instance.activate(
+    providerAndroid: androidAppCheckProvider,
+    providerApple: appleAppCheckProvider,
+  );
+  try {
+    if (FirebaseAuth.instance.currentUser == null) {
+      await FirebaseAuth.instance.signInAnonymously();
+    }
+    'Firebase anonymous auth: ${FirebaseAuth.instance.currentUser?.uid}'.debugPrint();
+  } catch (e) {
+    'Firebase anonymous auth failed: $e'.debugPrint();
+  }
   /// ===== REVENUE CAT INITIALIZATION =====
   await initPurchase();
   /// ===== APP LAUNCH =====
@@ -156,12 +169,7 @@ Future<void> main() async {
     child: const MyApp()
   ));
   /// ===== Post-Launch Services =====
-  // Initialize additional services after app launch (Firebase App Check, ads, tracking)
-  await FirebaseAppCheck.instance.activate(
-    providerAndroid: androidAppCheckProvider,
-    providerApple: appleAppCheckProvider,
-  );
-  await MobileAds.instance.initialize();  // Initialize ads
+  await MobileAds.instance.initialize();
   await initATTPlugin();
 }
 

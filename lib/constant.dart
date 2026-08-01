@@ -97,8 +97,13 @@ final revenueCatApiKey = dotenv.get((Platform.isIOS || Platform.isMacOS) ?
   "REVENUE_CAT_ANDROID_API_KEY"
 );
 // Platform-specific App Check providers (non-legacy API)
-final androidAppCheckProvider = const AndroidPlayIntegrityProvider();
-final appleAppCheckProvider = kDebugMode ? const AppleDebugProvider() : const AppleDeviceCheckProvider();
+// Debug token: register the same value in Firebase Console → App Check → Manage debug tokens
+final androidAppCheckProvider = kDebugMode
+    ? AndroidDebugProvider(debugToken: dotenv.env['APPCHECK_DEBUG_TOKEN'])
+    : const AndroidPlayIntegrityProvider();
+final appleAppCheckProvider = kDebugMode
+    ? AppleDebugProvider(debugToken: dotenv.env['APPCHECK_DEBUG_TOKEN'])
+    : const AppleDeviceCheckProvider();
 // Purchase plan configurations
 const List<bool?> isUpgradeAdFreeList = [true, false];
 const List<String> countryCodeList = ["JP", "GB", "CN", "US"];
@@ -137,14 +142,9 @@ const generatePhotoNumber = 2;
 const eulaUrl = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";
 
 /// ===== AI GENERATION SETTINGS =====
-// Vertex AI configuration for image generation
-const projectName = "letscrossing-app";
-const vertexAILocation = "asia-northeast1";
-const vertexAIModel = "imagen-3.0-generate-002"; // "imagen-3.0-fast-generate-001";
-const vertexAIPostUrl = 'https://$vertexAILocation-aiplatform.googleapis.com/v1/projects/$projectName/locations/$vertexAILocation/publishers/google/models/$vertexAIModel:predict';
-const vertexAINegativePrompt = "Wiring, Frame";
-const vertexAIAspectRatio = "1:1";
-const vertexAIPersonGeneration = "dont_allow";
+// Image generation runs on Cloud Functions (secrets stay server-side)
+const generateTrainPhotoFunction = "generateTrainPhoto";
+const generateTrainPhotoRegion = "asia-northeast1";
 
 /// ===== LANDMARK LISTS BY COUNTRY =====
 // Japanese landmarks for AI photo generation
