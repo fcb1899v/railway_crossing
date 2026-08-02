@@ -1,7 +1,7 @@
 name: railroad_crossing
 description: railroad crossing simulator
 publish_to: 'none'
-version: 1.3.6+42
+version: 1.3.7+43
 
 environment:
   sdk: '>=2.18.0 <4.0.0'
@@ -102,10 +102,6 @@ flutter:
     - assets/images/crossing/uk/
     - assets/images/crossing/cn/
     - assets/images/crossing/us/
-    - assets/images/photo/uk/
-    - assets/images/photo/jp/
-    - assets/images/photo/cn/
-    - assets/images/photo/us/
     - assets/images/train/jp/
     - assets/images/train/uk/
     - assets/images/train/cn/

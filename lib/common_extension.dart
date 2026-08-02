@@ -877,11 +877,6 @@ extension IntExt on int {
   List<String> trainImage() => List.generate(6, (i) =>
     "assets/images/train/${countryString()}/${countryTrain()}_${i + 1}.png"
   );
-  // Get photo assets path
-  String photoAssets() => "assets/images/photo/${countryString()}/";
-  // Get country free photo path
-  String countryFreePhoto(int currentDate) =>
-      "${photoAssets()}${countryString()}0${currentNumber(currentDate)}.jpg";
 
   /// ===== AI PROMPT METHODS =====
   // Get train name for AI prompts
@@ -916,8 +911,6 @@ extension IntExt on int {
     "USA";
   // Generate random number for background selection
   int randomNumber() => math.Random().nextInt(inputBackGround().length);
-  // Get current number based on date
-  int currentNumber(int currentDate) => (currentDate ~/ 1000000) % 10;
 
   /// ===== AI IMAGE GENERATION PROMPTS =====
   // Prompt text may change over time; cacheIdentity stays stable for Storage reuse.
