@@ -10,6 +10,7 @@ import 'package:vibration/vibration.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'common_widget.dart';
 import 'common_extension.dart';
+import 'common_function.dart';
 import 'constant.dart';
 import 'main.dart';
 import 'menu.dart';
@@ -49,6 +50,13 @@ class HomePage extends HookConsumerWidget {
     final photoIndex = useState(0);          // Current photo index
     final isSavePhoto = useState(false);     // Photo save state
     final lifecycle = useAppLifecycleState(); // App lifecycle state
+
+    useEffect(() {
+      if (photoImages.isEmpty || photoIndex.value >= photoImages.length) {
+        photoIndex.value = 0;
+      }
+      return null;
+    }, [photoImages]);
 
     /// ===== ANIMATION CONTROLLERS =====
     // Train animation controllers and effects
@@ -122,7 +130,14 @@ class HomePage extends HookConsumerWidget {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         await setNormalState();
         FlutterNativeSplash.remove();
-        // await loadSubscriptionInfo();
+        try {
+          final syncedDate = await getServerDateTime();
+          if (context.mounted) {
+            ref.read(currentProvider.notifier).update(syncedDate);
+          }
+        } catch (e) {
+          'Homepage NTP sync failed: $e'.debugPrint();
+        }
       });
       return null;
     }, const []);
@@ -238,7 +253,11 @@ class HomePage extends HookConsumerWidget {
 
     // Navigate between photo images (next/previous)
     void changeImageIndex(bool isNext) {
-      photoIndex.value = (photoIndex.value + (isNext ? 1: -1)) % generatePhotoNumber;
+      final count = photoImages.isEmpty ? 1 : photoImages.length;
+      photoIndex.value = (photoIndex.value + (isNext ? 1 : -1)) % count;
+      if (photoIndex.value < 0) {
+        photoIndex.value += count;
+      }
       "${isNext ? 'Next': 'Back'} photo image: ${photoIndex.value}".debugPrint();
     }
 

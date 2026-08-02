@@ -6,6 +6,18 @@ They call `generateTrainPhoto` with Firebase Auth + App Check only.
 Primary model: `imagen-4.0-fast-generate-001` (Vertex AI `:predict` in `asia-northeast1`).
 Fallback: OpenAI `gpt-image-2` via Secret Manager.
 
+### Photo cache (Cloud Storage)
+
+Generated JPEGs are stored under:
+`train_photos/{countryHash}/{trainHash}/{spotHash}/`
+
+- While a key has fewer than **9** images: generate **3** new images and store them.
+- Once a key has **9+** images: return **2** random cached images + **1** newly generated image (also stored).
+- Daily free (`mode: "daily"`): return **1** random cached image if any exist; otherwise generate **1** and store it.
+
+Legacy objects under older layouts are still counted/read until moved.
+Changing the English prompt template or train colors does not invalidate existing cache folders.
+
 ## One-time setup
 
 1. Enable billing on the `letscrossing-app` Firebase/GCP project (required for Functions + Vertex AI; free tier still applies for small usage).

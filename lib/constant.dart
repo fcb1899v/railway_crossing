@@ -138,7 +138,7 @@ final Uri subscriptionUri = Uri.parse((Platform.isIOS || Platform.isMacOS) ?
   'https://play.google.com/store/account/subscriptions'
 );
 // Photo generation settings
-const generatePhotoNumber = 2;
+const generatePhotoNumber = 3;
 const eulaUrl = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/";
 
 /// ===== AI GENERATION SETTINGS =====

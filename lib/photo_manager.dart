@@ -71,24 +71,45 @@ class PhotoManager {
   }
 
   /// ===== FREE PHOTO GENERATION =====
-  // Get free photo from bundled assets based on country and date
+  // Daily free photo: prefer 1 cached Storage image; generate 1 if none exist.
   Future<List<Uint8List>> getFreePhoto(int countryNumber) async {
-    "getFreePhoto".debugPrint();
-    final byteData = await rootBundle.load(countryNumber.countryFreePhoto(currentDate));
-    return [byteData.buffer.asUint8List()];
+    "getFreePhoto (daily cache)".debugPrint();
+    return _callGenerateTrainPhoto(
+      countryNumber,
+      mode: 'daily',
+      count: 1,
+    );
   }
 
   /// ===== AI PHOTO GENERATION (Cloud Functions) =====
   // Secrets stay on the server; client sends prompt + App Check + Auth only.
   Future<List<Uint8List>> getGenerativeAIPhoto(int countryNumber) async {
     "getGenerateTrainPhotoViaFunctions".debugPrint();
+    return _callGenerateTrainPhoto(
+      countryNumber,
+      mode: 'standard',
+      count: generatePhotoNumber,
+    );
+  }
+
+  Future<List<Uint8List>> _callGenerateTrainPhoto(
+    int countryNumber, {
+    required String mode,
+    required int count,
+  }) async {
     final common = CommonWidget(context: context);
     try {
       if (FirebaseAuth.instance.currentUser == null) {
         await FirebaseAuth.instance.signInAnonymously();
       }
-      final prompt = countryNumber.aiImagePrompt();
+      final request = countryNumber.aiImageGenerationRequest();
+      final prompt = request['prompt'] as String;
+      final cacheIdentity = Map<String, String>.from(
+        request['cacheIdentity'] as Map,
+      );
+      "mode: $mode".debugPrint();
       "prompt: $prompt".debugPrint();
+      "cacheIdentity: $cacheIdentity".debugPrint();
       final callable = FirebaseFunctions.instanceFor(region: generateTrainPhotoRegion)
           .httpsCallable(
         generateTrainPhotoFunction,
@@ -96,9 +117,18 @@ class PhotoManager {
       );
       final result = await callable.call(<String, dynamic>{
         'prompt': prompt,
-        'count': generatePhotoNumber,
+        'count': count,
+        'mode': mode,
+        'cacheIdentity': cacheIdentity,
       });
       final data = result.data;
+      if (data is Map) {
+        'cacheKey: ${data['cacheKey']}'.debugPrint();
+        'storagePath: ${data['storagePath']}'.debugPrint();
+        'cachedCount: ${data['cachedCount']}'.debugPrint();
+        'usedCache: ${data['usedCache']}'.debugPrint();
+        'mode: ${data['mode']}'.debugPrint();
+      }
       final images = data is Map ? data['images'] : null;
       if (images is! List || images.isEmpty) {
         throw Exception('No images returned from Cloud Function.');

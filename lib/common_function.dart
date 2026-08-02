@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:devicelocale/devicelocale.dart';
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:ntp/ntp.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
@@ -22,7 +23,7 @@ Future<void> initATTPlugin() async {
 /// ===== PURCHASE INITIALIZATION =====
 // Initialize RevenueCat purchase system with configuration and listeners
 Future<void> initPurchase() async {
-  await Purchases.setLogLevel(LogLevel.debug);
+  await Purchases.setLogLevel(kDebugMode ? LogLevel.debug : LogLevel.info);
   await Purchases.configure(PurchasesConfiguration(revenueCatApiKey));
   await Purchases.enableAdServicesAttributionTokenCollection();
   Purchases.addReadyForPromotedProductPurchaseListener((productID, startPurchase) async {
@@ -38,6 +39,9 @@ Future<void> initPurchase() async {
 }
 
 /// ===== SERVER TIME MANAGEMENT =====
+// Prefer device clock at startup; NTP sync can run after first frame.
+int localIntDateTimeNow() => DateTime.now().toLocal().intDateTime();
+
 // Get current DateTime from NTP server for accurate time synchronization
 Future<int> getServerDateTime() async {
   try {
@@ -47,9 +51,21 @@ Future<int> getServerDateTime() async {
     final localIntDateTime = localDateTime.intDateTime();
     'Fetch server local time successfully: $localDateTime'.debugPrint();
     'currentDate: $localIntDateTime'.debugPrint();
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setInt('cachedServerDate', localIntDateTime);
+    prefs.setInt(
+      'cachedServerDateAtMs',
+      DateTime.now().millisecondsSinceEpoch,
+    );
     return localIntDateTime;
   } catch (e) {
     'Failed to fetch time: $e'.debugPrint();
+    final prefs = await SharedPreferences.getInstance();
+    final cached = prefs.getInt('cachedServerDate');
+    if (cached != null) {
+      'Using cached server date: $cached'.debugPrint();
+      return cached;
+    }
     return defaultIntDateTime;
   }
 }

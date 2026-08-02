@@ -9,6 +9,9 @@
 .history
 .svn/
 
+# Local Cursor rules / settings (not shared via Git)
+.cursor/
+
 
 #env
 assets/.env

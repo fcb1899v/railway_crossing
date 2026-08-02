@@ -920,12 +920,32 @@ extension IntExt on int {
   int currentNumber(int currentDate) => (currentDate ~/ 1000000) % 10;
 
   /// ===== AI IMAGE GENERATION PROMPTS =====
-  // Prompt text only; Cloud Functions holds Vertex/OpenAI credentials.
-  String aiImagePrompt() => [
-    "Realistic Image of a high-speed train called the ${inputTrain()}, "
-        "featuring primary ${trainPrimaryColor()} with accents of ${trainAccentColor()}, ",
-    "with ${inputBackGround()[randomNumber()]} in ${inputCountry()} in the background."
-  ].join();
+  // Prompt text may change over time; cacheIdentity stays stable for Storage reuse.
+  Map<String, dynamic> aiImageGenerationRequest() {
+    final train = inputTrain();
+    final primaryColor = trainPrimaryColor();
+    final accentColor = trainAccentColor();
+    final background = inputBackGround()[randomNumber()];
+    final country = inputCountry();
+    final prompt = [
+      "A square realistic scenic photo showing the entire $train train. ",
+      "The train's primary color is $primaryColor and its accent color is $accentColor. ",
+      "$background in $country is clearly visible and is the main subject of this photo.",
+    ].join();
+    return {
+      'prompt': prompt,
+      // Cache by country + train + spot only (prompt wording/colors may change).
+      'cacheIdentity': <String, String>{
+        'country': country,
+        'train': train,
+        'spot': background,
+      },
+    };
+  }
+
+  // Prompt text only (legacy helper).
+  String aiImagePrompt() =>
+      aiImageGenerationRequest()['prompt'] as String;
 
   /// ===== IMAGE ASSET METHODS =====
   // Get flag image path

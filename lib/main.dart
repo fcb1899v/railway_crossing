@@ -131,31 +131,17 @@ Future<void> main() async {
   /// ===== ENVIRONMENT AND DATA LOADING =====
   // Load environment variables and restore user preferences from SharedPreferences
   await dotenv.load(fileName: "assets/.env");
-  // Load saved user preferences and current date
+  // Load saved user preferences (avoid network before first frame)
   final prefs = await SharedPreferences.getInstance();
   final countryCode = await getCountryCode(prefs);
   final savedCountryNumber = countryCode.getCountryNumber();
   final savedTickets = "tickets".getSharedPrefInt(prefs, 0);
-  final currentDate = await getServerDateTime();
+  final currentDate = localIntDateTimeNow();
   final savedExpirationDate = 'expiration'.getSharedPrefInt(prefs, defaultIntDateTime);
   final savedLastClaimedDate = 'lastClaim'.getSharedPrefInt(prefs, defaultIntDateTime);
-  /// ===== FIREBASE INITIALIZATION =====
-  // Core Firebase, App Check, then anonymous auth (required by Cloud Functions)
+  /// ===== FIREBASE CORE =====
+  // Analytics needs Firebase before runApp; App Check / Auth / IAP start after first frame.
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await FirebaseAppCheck.instance.activate(
-    providerAndroid: androidAppCheckProvider,
-    providerApple: appleAppCheckProvider,
-  );
-  try {
-    if (FirebaseAuth.instance.currentUser == null) {
-      await FirebaseAuth.instance.signInAnonymously();
-    }
-    'Firebase anonymous auth: ${FirebaseAuth.instance.currentUser?.uid}'.debugPrint();
-  } catch (e) {
-    'Firebase anonymous auth failed: $e'.debugPrint();
-  }
-  /// ===== REVENUE CAT INITIALIZATION =====
-  await initPurchase();
   /// ===== APP LAUNCH =====
   // Launch app with provider overrides for saved state
   runApp(ProviderScope(
@@ -169,8 +155,35 @@ Future<void> main() async {
     child: const MyApp()
   ));
   /// ===== Post-Launch Services =====
+  // Network / SDK work after UI is up so splash clears faster.
+  unawaited(_bootstrapAfterLaunch());
   await MobileAds.instance.initialize();
   await initATTPlugin();
+}
+
+Future<void> _bootstrapAfterLaunch() async {
+  try {
+    await FirebaseAppCheck.instance.activate(
+      providerAndroid: androidAppCheckProvider,
+      providerApple: appleAppCheckProvider,
+    );
+    if (FirebaseAuth.instance.currentUser == null) {
+      await FirebaseAuth.instance.signInAnonymously();
+    }
+    'Firebase anonymous auth: ${FirebaseAuth.instance.currentUser?.uid}'.debugPrint();
+  } catch (e) {
+    'Firebase App Check / auth bootstrap failed: $e'.debugPrint();
+  }
+  try {
+    await initPurchase();
+  } catch (e) {
+    'RevenueCat bootstrap failed: $e'.debugPrint();
+  }
+  try {
+    await getServerDateTime();
+  } catch (e) {
+    'NTP bootstrap failed: $e'.debugPrint();
+  }
 }
 
 /// ===== Main application widget =====
