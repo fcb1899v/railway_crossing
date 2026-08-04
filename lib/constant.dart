@@ -98,12 +98,15 @@ final revenueCatApiKey = dotenv.get((Platform.isIOS || Platform.isMacOS) ?
 );
 // Platform-specific App Check providers (non-legacy API)
 // Debug token: register the same value in Firebase Console → App Check → Manage debug tokens
+// Release iOS: DeviceCheck is the stable default. App Attest can fail and the native SDK
+// may still return a non-empty placeholder JWT that Cloud Functions reject as INVALID.
 final androidAppCheckProvider = kDebugMode
     ? AndroidDebugProvider(debugToken: dotenv.env['APPCHECK_DEBUG_TOKEN'])
     : const AndroidPlayIntegrityProvider();
 final appleAppCheckProvider = kDebugMode
     ? AppleDebugProvider(debugToken: dotenv.env['APPCHECK_DEBUG_TOKEN'])
     : const AppleDeviceCheckProvider();
+const appCheckTokenTimeout = Duration(seconds: 12);
 // Purchase plan configurations
 const List<bool?> isUpgradeAdFreeList = [true, false];
 const List<String> countryCodeList = ["JP", "GB", "CN", "US"];
@@ -164,7 +167,7 @@ const ukSpot = [
 ];
 // Chinese landmarks for AI photo generation
 const cnSpot = [
-  "Great wall", "Tiananmen Square", "Shanghai", "Guilin", "Stone Forest"
+  "Great wall", "Tiananmen Square", "Shanghai", "Guilin", "Stone Forest",
   "Zhangjiajie", "Potala Palace", "Jiuzhaigou Valley", "Yu Garden", "Forbidden City",
   "Broken Bridge of West Lake", "Terracotta Army", "Lijiang old town", "Mogao Caves", "Jiulong Waterfalls",
   "Sanya Beaches", "Kashga old Town", "Shaolin Temple", "Dazu Rock Carvings", "Longmen Grottoes",

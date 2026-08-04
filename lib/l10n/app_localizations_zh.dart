@@ -170,7 +170,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get photoSavingFailed => '照片保存失败';
 
   @override
-  String get photoAccessPermission => '为了保存火车图片，请在设置中允许对照片的完全访问。';
+  String get photoAccessPermission => '为了保存火车图片，请在设置中允许访问照片。';
 
   @override
   String get buy => '购买';

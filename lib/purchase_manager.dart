@@ -5,6 +5,7 @@ import 'package:railroad_crossing/common_extension.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 // import 'package:url_launcher/url_launcher.dart';
 // import 'common_widget.dart';
+import 'common_function.dart';
 import 'constant.dart';
 
 /// ===== PURCHASE MANAGER CLASS =====
@@ -19,6 +20,7 @@ class PurchaseManager {
   /// ===== OFFERING MANAGEMENT =====
   // Get one-time purchase offerings from RevenueCat
   Future<Offering?> getOnetimeOfferings() async {
+    await ensurePurchaseInitialized();
     final offerings = await Purchases.getOfferings();
     return offerings.getOffering(normalOffering);
   }
@@ -50,6 +52,7 @@ class PurchaseManager {
     required String offering,
     required bool isSubscription
   }) async {
+    await ensurePurchaseInitialized();
     final offerings = await Purchases.getOfferings();
     "offering: $offerings".debugPrint();
     final targetOffering = offerings.getOffering(offering)!;

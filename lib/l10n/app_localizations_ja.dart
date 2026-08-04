@@ -170,7 +170,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get photoSavingFailed => '写真が保存に失敗しました';
 
   @override
-  String get photoAccessPermission => '電車の画像を保存するため、設定画面で写真へのフルアクセスを許可してください。';
+  String get photoAccessPermission => '電車の画像を保存するため、設定画面で写真へのアクセスを許可してください。';
 
   @override
   String get buy => '購入';

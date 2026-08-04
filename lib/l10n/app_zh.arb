@@ -48,7 +48,7 @@
   "photoSaved" : "照片已保存",
   "photoCaptureFailed" : "摄影失败",
   "photoSavingFailed" : "照片保存失败",
-  "photoAccessPermission": "为了保存火车图片，请在设置中允许对照片的完全访问。",
+  "photoAccessPermission": "为了保存火车图片，请在设置中允许访问照片。",
   "buy": "购买",
   "buyOnetimePasses": "购买追加拍摄券",
   "onetime": "追加拍摄券",

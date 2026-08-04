@@ -248,7 +248,7 @@ class HomePage extends HookConsumerWidget {
       "returnHome".debugPrint();
       await audioManager.stopAll();
       ref.read(photoProvider.notifier).update([]);
-      context.pushHomePage();
+      if (context.mounted) context.pushHomePage();
     }
 
     // Navigate between photo images (next/previous)

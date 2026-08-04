@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:devicelocale/devicelocale.dart';
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:ntp/ntp.dart';
@@ -20,9 +23,112 @@ Future<void> initATTPlugin() async {
   }
 }
 
+/// ===== FIREBASE APP CHECK / AUTH =====
+Future<void>? _firebaseReadyFuture;
+
+/// App Check + anonymous Auth. Shared Future; cleared on failure so callers can retry.
+Future<void> ensureFirebaseReady() =>
+    _firebaseReadyFuture ??= _activateFirebaseServices().catchError((Object e) {
+      _firebaseReadyFuture = null;
+      throw e;
+    });
+
+/// Forces a fresh App Check JWT right before protected API calls.
+Future<String> refreshAppCheckToken() async {
+  await ensureFirebaseReady();
+  final token = await _getAppCheckToken(forceRefresh: true);
+  if (!_isValidAppCheckJwt(token)) {
+    throw StateError('App Check token refresh returned invalid JWT');
+  }
+  'App Check token refreshed (length=${token!.length})'.debugPrint();
+  return token;
+}
+
+Future<void> _activateFirebaseServices() async {
+  await FirebaseAppCheck.instance.activate(
+    providerAndroid: androidAppCheckProvider,
+    providerApple: appleAppCheckProvider,
+  );
+  await FirebaseAppCheck.instance.setTokenAutoRefreshEnabled(true);
+
+  final token = await _obtainValidAppCheckToken();
+  'App Check token ready (length=${token.length})'.debugPrint();
+
+  if (FirebaseAuth.instance.currentUser == null) {
+    await FirebaseAuth.instance.signInAnonymously();
+  }
+  'Firebase anonymous auth: ${FirebaseAuth.instance.currentUser?.uid}'.debugPrint();
+}
+
+/// Returns a real App Check JWT, or throws.
+/// Native SDKs can return a non-empty placeholder after attestation failure;
+/// that placeholder is what Cloud Functions logs as "Decoding App Check token failed".
+Future<String> _obtainValidAppCheckToken() async {
+  var token = await _getAppCheckToken(forceRefresh: false);
+  if (_isValidAppCheckJwt(token)) {
+    return token!;
+  }
+  'App Check token missing/invalid; forcing refresh'.debugPrint();
+
+  token = await _getAppCheckToken(forceRefresh: true);
+  if (_isValidAppCheckJwt(token)) {
+    return token!;
+  }
+
+  // Last resort on Apple: explicitly activate DeviceCheck and retry once.
+  if (Platform.isIOS || Platform.isMacOS) {
+    'App Check JWT still invalid; retrying with DeviceCheck provider'.debugPrint();
+    await FirebaseAppCheck.instance.activate(
+      providerAndroid: androidAppCheckProvider,
+      providerApple: const AppleDeviceCheckProvider(),
+    );
+    await FirebaseAppCheck.instance.setTokenAutoRefreshEnabled(true);
+    token = await _getAppCheckToken(forceRefresh: true);
+    if (_isValidAppCheckJwt(token)) {
+      return token!;
+    }
+  }
+
+  throw StateError(
+    'App Check could not obtain a valid JWT '
+    '(got length=${token?.length ?? 0}, parts=${token?.split('.').length ?? 0})',
+  );
+}
+
+Future<String?> _getAppCheckToken({required bool forceRefresh}) async {
+  try {
+    return await FirebaseAppCheck.instance
+        .getToken(forceRefresh)
+        .timeout(appCheckTokenTimeout);
+  } on TimeoutException {
+    'App Check getToken timed out (forceRefresh=$forceRefresh)'.debugPrint();
+    return null;
+  } catch (e) {
+    'App Check getToken failed (forceRefresh=$forceRefresh): $e'.debugPrint();
+    return null;
+  }
+}
+
+bool _isValidAppCheckJwt(String? token) {
+  if (token == null || token.isEmpty) {
+    return false;
+  }
+  // Reject native placeholder / malformed tokens that are non-empty but not JWTs.
+  final parts = token.split('.');
+  return parts.length == 3 && parts.every((part) => part.isNotEmpty);
+}
+
 /// ===== PURCHASE INITIALIZATION =====
-// Initialize RevenueCat purchase system with configuration and listeners
-Future<void> initPurchase() async {
+Future<void>? _purchaseInitFuture;
+
+/// RevenueCat configure. Shared Future across concurrent callers.
+Future<void> ensurePurchaseInitialized() =>
+    _purchaseInitFuture ??= _configurePurchases();
+
+Future<void> _configurePurchases() async {
+  if (await Purchases.isConfigured) {
+    return;
+  }
   await Purchases.setLogLevel(kDebugMode ? LogLevel.debug : LogLevel.info);
   await Purchases.configure(PurchasesConfiguration(revenueCatApiKey));
   await Purchases.enableAdServicesAttributionTokenCollection();
@@ -38,9 +144,26 @@ Future<void> initPurchase() async {
   });
 }
 
+/// Post-runApp bootstrap: await shared Firebase/IAP init, then sync NTP.
+Future<void> bootstrapAfterLaunch() async {
+  try {
+    await ensureFirebaseReady();
+  } catch (e) {
+    'Firebase App Check / auth bootstrap failed: $e'.debugPrint();
+  }
+  try {
+    await ensurePurchaseInitialized();
+  } catch (e) {
+    'RevenueCat bootstrap failed: $e'.debugPrint();
+  }
+  try {
+    await getServerDateTime();
+  } catch (e) {
+    'NTP bootstrap failed: $e'.debugPrint();
+  }
+}
+
 /// ===== SERVER TIME MANAGEMENT =====
-// Prefer device clock at startup; NTP sync can run after first frame.
-int localIntDateTimeNow() => DateTime.now().toLocal().intDateTime();
 
 // Get current DateTime from NTP server for accurate time synchronization
 Future<int> getServerDateTime() async {
@@ -69,29 +192,6 @@ Future<int> getServerDateTime() async {
     return defaultIntDateTime;
   }
 }
-
-/// ===== PRICE LIST MANAGEMENT =====
-// Load and update price list from RevenueCat offerings
-// Future<List<String>> loadPriceList(SharedPreferences prefs) async {
-//   final priceList = prefs.getStringList("price") ?? defaultPriceList;
-//   "Price List: $priceList".debugPrint();
-//   if (priceList[0] == "-") {
-//     final offerings = await Purchases.getOfferings();
-//     final newPriceList = List<String>.from(defaultPriceList);
-//     offerings.all.forEach((key, offering) {
-//       for (var package in offering.availablePackages) {
-//         final storeProduct = package.storeProduct;
-//         final price = storeProduct.priceString;
-//         newPriceList[storeProduct.identifier.planNumber()] = price;
-//       }
-//     });
-//     prefs.setStringList("price", newPriceList);
-//     "Get Price List: $newPriceList".debugPrint();
-//     return newPriceList;
-//   } else {
-//     return priceList;
-//   }
-// }
 
 /// ===== COUNTRY CODE MANAGEMENT =====
 // Get country code with fallback to local device locale

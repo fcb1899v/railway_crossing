@@ -363,6 +363,35 @@ function shuffleImages(images) {
   return [...images].sort(() => Math.random() - 0.5);
 }
 
+/**
+ * Lightweight App Check / Auth probe.
+ * Client waits for this to succeed (server logs app:VALID) before enabling photo capture.
+ */
+exports.pingAppCheck = onCall(
+  {
+    enforceAppCheck: true,
+    timeoutSeconds: 15,
+    memory: "256MiB",
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError(
+          "unauthenticated",
+          "Sign-in required.",
+      );
+    }
+    console.log(
+        `pingAppCheck ok uid=${request.auth.uid} ` +
+        `app=${request.app ? "VALID" : "MISSING"}`,
+    );
+    return {
+      ok: true,
+      uid: request.auth.uid,
+      appCheck: request.app ? "VALID" : "MISSING",
+    };
+  },
+);
+
 exports.generateTrainPhoto = onCall(
   {
     enforceAppCheck: true,

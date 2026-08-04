@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -8,6 +9,7 @@ import 'audio_manager.dart';
 import 'photo_manager.dart';
 import 'common_extension.dart';
 import 'common_function.dart';
+import 'common_widget.dart';
 import 'constant.dart';
 import 'main.dart';
 
@@ -28,6 +30,7 @@ class PhotoButton extends HookConsumerWidget {
     /// ===== PHOTO STATE VARIABLES =====
     // Photo-related state variables for permission and lifecycle management
     final photoPermission = useState(PermissionStatus.denied);
+    final isCameraVisible = useState(false);
     final lifecycle = useAppLifecycleState();
 
     /// ===== ANIMATION CONTROLLERS =====
@@ -77,14 +80,37 @@ class PhotoButton extends HookConsumerWidget {
       return null;
     }, [lifecycle, context.mounted]);
 
-    /// ===== PERMISSION INITIALIZATION =====
-    // Initialize app with photo permissions
+    /// ===== APP CHECK + PERMISSION INITIALIZATION =====
+    // Hide camera until a real App Check JWT is obtained locally.
+    // Do not depend on pingAppCheck (may be undeployed); that blocked the camera forever.
     useEffect(() {
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        photoPermission.value = await photoManager.permitPhotoAccess();
+      var cancelled = false;
+      Future<void> prepareCamera() async {
+        while (!cancelled) {
+          try {
+            await ensureFirebaseReady().timeout(const Duration(seconds: 20));
+            break;
+          } catch (e) {
+            'Waiting for App Check token: $e'.debugPrint();
+            await Future.delayed(const Duration(seconds: 3));
+          }
+        }
+        if (cancelled || !context.mounted) return;
+        if (!Platform.isAndroid) {
+          unawaited(photoManager.permitPhotoAccess().then((status) {
+            if (context.mounted) photoPermission.value = status;
+          }));
+        } else {
+          photoPermission.value = PermissionStatus.granted;
+        }
+        isCameraVisible.value = true;
         blinkController.repeat(reverse: true);
-      });
-      return null;
+        'Camera enabled after App Check token ready'.debugPrint();
+      }
+      prepareCamera();
+      return () {
+        cancelled = true;
+      };
     }, const []);
 
     /// ===== PHOTO GENERATION METHODS =====
@@ -131,30 +157,44 @@ class PhotoButton extends HookConsumerWidget {
     /// ===== CAMERA ACTION HANDLER =====
     // Handle camera button tap - Manages photo capture logic and permissions
     cameraAction() async {
-      if (photoPermission.value != PermissionStatus.granted) {
+      final hasPhotoAccess = photoPermission.value.isGranted ||
+          photoPermission.value.isLimited ||
+          Platform.isAndroid;
+      if (!hasPhotoAccess) {
         "Photo permission".debugPrint();
         photoPermission.value = await photoManager.permitPhotoAccess();
-      } else {
-        "Camera action".debugPrint();
+        return;
+      }
+      "Camera action".debugPrint();
+      ref.read(loadingProvider.notifier).update(true);
+      try {
+        // Ensure App Check/Auth right before calling Cloud Functions.
+        await ensureFirebaseReady();
         final newCurrentDate = await getServerDateTime();
         if (tickets > 0 || !lastClaimedDate.isToday(newCurrentDate)) {
-          ref.read(loadingProvider.notifier).update(true);
           await audioManager.stopAll();
           await audioManager.playEffectSound(cameraSound);
-          try {
-            if (!lastClaimedDate.isToday(newCurrentDate)) {
-              await getFreePhoto();
-            } else if (tickets > 0) {
-              await getGenerativeAIPhoto();
-            }
-          } catch (e) {
-            "Camera action error: $e".debugPrint();
-          } finally {
-            ref.read(loadingProvider.notifier).update(false);
-            "isLoading: $isLoading".debugPrint();
+          if (!lastClaimedDate.isToday(newCurrentDate)) {
+            await getFreePhoto();
+          } else if (tickets > 0) {
+            await getGenerativeAIPhoto();
           }
         }
+      } catch (e) {
+        "Camera action error: $e".debugPrint();
+        if (context.mounted) {
+          CommonWidget(context: context).showSnackBar(
+            context.photoCaptureFailed(),
+            true,
+          );
+        }
+      } finally {
+        ref.read(loadingProvider.notifier).update(false);
+        "isLoading: $isLoading".debugPrint();
       }
+    }
+    if (!isCameraVisible.value) {
+      return const SizedBox.shrink();
     }
     return photo.cameraButton(
       onTap: () => cameraAction(),

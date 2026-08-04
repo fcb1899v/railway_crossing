@@ -49,7 +49,7 @@
   "photoSaved" : "写真を保存しました",
   "photoCaptureFailed" : "撮影に失敗しました",
   "photoSavingFailed" : "写真が保存に失敗しました",
-  "photoAccessPermission" : "電車の画像を保存するため、設定画面で写真へのフルアクセスを許可してください。",
+  "photoAccessPermission" : "電車の画像を保存するため、設定画面で写真へのアクセスを許可してください。",
   "buy": "購入",
   "toBuy": "購入する",
   "toUpgrade": "アップグレードする",

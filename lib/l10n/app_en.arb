@@ -48,7 +48,7 @@
   "photoSaved" : "Photo saved to album.",
   "photoCaptureFailed" : "Photo capture failed.",
   "photoSavingFailed" : "Photo saving failed.",
-  "photoAccessPermission" : "To save train images, please allow photo full access from settings.",
+  "photoAccessPermission" : "To save train images, please allow photo access from settings.",
   "buy": "Buy",
   "toBuy": "Buy",
   "toUpgrade": "Upgrade",

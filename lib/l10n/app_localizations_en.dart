@@ -172,7 +172,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get photoAccessPermission =>
-      'To save train images, please allow photo full access from settings.';
+      'To save train images, please allow photo access from settings.';
 
   @override
   String get buy => 'Buy';

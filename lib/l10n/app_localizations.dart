@@ -397,7 +397,7 @@ abstract class AppLocalizations {
   /// No description provided for @photoAccessPermission.
   ///
   /// In en, this message translates to:
-  /// **'To save train images, please allow photo full access from settings.'**
+  /// **'To save train images, please allow photo access from settings.'**
   String get photoAccessPermission;
 
   /// No description provided for @buy.
