@@ -56,8 +56,13 @@ app.*.map.json
 # Android related
 android/.gradle/
 android/.kotlin/
+android/build/
 android/local.properties
 android/app/.cxx/
+
+# Machine-local / generated
+/local.properties
+/untranslated_messages.txt
 
 # iOS related
 ios/Pods/

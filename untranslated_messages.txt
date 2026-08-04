@@ -1,6 +1,0 @@
-{
-  "zh": [
-    "confirmed",
-    "normally"
-  ]
-}
