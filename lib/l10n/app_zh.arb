@@ -89,5 +89,13 @@
   "paymentPendingMessage": "支付正在等待中。\n请检查商店。",
   "purchaseInvalidMessage": "支付正在等待的项目。\n请检查商店。",
   "purchaseNotAllowedMessage": "无法购买。\n请检查您的支付方式。",
-  "networkErrorMessage": "请连接到互联网。"
+  "networkErrorMessage": "请连接到互联网。",
+  "progressSyncTitle": "恢复拍摄券",
+  "progressSyncMessageIOS": "同步 Game Center 后即可继承拍摄券。",
+  "progressSyncMessageAndroid": "登录 Play 游戏后即可继承拍摄券。",
+  "progressSyncDoNotShowAgain": "不再显示",
+  "progressSyncOpenSettings": "同步",
+  "progressSyncSucceededIOS": "已与 Game Center 同步。",
+  "progressSyncSucceededAndroid": "已与 Play 游戏同步。",
+  "progressSyncFailed": "请在设备设置中登录 Game Center。"
 }

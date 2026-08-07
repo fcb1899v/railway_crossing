@@ -17,6 +17,7 @@ import 'menu.dart';
 import 'audio_manager.dart';
 import 'admob_banner.dart';
 import 'photo_manager.dart';
+import 'ticket_manager.dart';
 
 // Home Page Widget - Main railway crossing simulation interface
 class HomePage extends HookConsumerWidget {
@@ -125,6 +126,9 @@ class HomePage extends HookConsumerWidget {
       await audioManager.stopAll();
     }
 
+    // True after the first games sign-in + ticket pull finishes (blocks resume race).
+    final gamesBootstrapDone = useRef(false);
+
     // Initialize app
     useEffect(() {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -138,13 +142,38 @@ class HomePage extends HookConsumerWidget {
         } catch (e) {
           'Homepage NTP sync failed: $e'.debugPrint();
         }
+        try {
+          final ticketManager = TicketManager();
+          final localTickets = ref.read(ticketsProvider);
+          final localExpiration = ref.read(expirationProvider);
+          final localLastClaimed = ref.read(lastClaimedProvider);
+          // Wait for today's games sign-in attempt to finish, then alert on failure.
+          final signIn = await ticketManager.ensureGamesSignedInOncePerDay();
+          final merged = await ticketManager.pullAndMerge(
+            localTickets: localTickets,
+            localExpiration: localExpiration,
+            localLastClaimed: localLastClaimed,
+          );
+          if (!context.mounted) return;
+          ref.read(ticketsProvider.notifier).update(merged.tickets);
+          ref.read(expirationProvider.notifier).update(merged.expiration);
+          ref.read(lastClaimedProvider.notifier).update(merged.lastClaimed);
+          if (!signIn.isSignedIn) {
+            'Show sync prompt after games sign-in failed'.debugPrint();
+            await ticketManager.showSyncPromptIfNeeded(context);
+          }
+        } catch (e) {
+          'Homepage progress sync failed: $e'.debugPrint();
+        } finally {
+          gamesBootstrapDone.value = true;
+        }
       });
       return null;
     }, const []);
 
 
     /// ===== APP LIFECYCLE MANAGEMENT =====
-    // Handle app lifecycle changes (pause, resume) to stop audio
+    // Handle app lifecycle changes (pause, resume) to stop audio / finish ticket sync
     useEffect(() {
       Future<void> handleLifecycleChange() async {
         if (!context.mounted) return;
@@ -155,6 +184,43 @@ class HomePage extends HookConsumerWidget {
           } catch (e) {
             'Error handling stop for player: $e'.debugPrint();
             setNormalState();
+          }
+        } else if (lifecycle == AppLifecycleState.resumed) {
+          // Cold start also emits resumed; wait until launch bootstrap finished.
+          if (!gamesBootstrapDone.value) return;
+          try {
+            final ticketManager = TicketManager();
+            Future<TicketSnapshot> pullTickets() async {
+              final again = await ticketManager.pullAndMerge(
+                localTickets: ref.read(ticketsProvider),
+                localExpiration: ref.read(expirationProvider),
+                localLastClaimed: ref.read(lastClaimedProvider),
+              );
+              if (context.mounted) {
+                ref.read(ticketsProvider.notifier).update(again.tickets);
+                ref.read(expirationProvider.notifier).update(again.expiration);
+                ref.read(lastClaimedProvider.notifier).update(again.lastClaimed);
+              }
+              return again;
+            }
+
+            await ticketManager.completePendingSyncIfNeeded(
+              pull: pullTickets,
+            );
+
+            // Same once-per-day trigger as cold launch (no-op if already attempted today).
+            final before = await ticketManager.cachedGamePlayerId();
+            final signIn = await ticketManager.ensureGamesSignedInOncePerDay();
+            if (before == null && signIn.isSignedIn) {
+              await pullTickets();
+            }
+            if (!signIn.isSignedIn &&
+                signIn.signInWasAttempted &&
+                context.mounted) {
+              await ticketManager.showSyncPromptIfNeeded(context);
+            }
+          } catch (e) {
+            'Homepage pending ticket sync failed: $e'.debugPrint();
           }
         }
       }

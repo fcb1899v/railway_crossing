@@ -89,5 +89,13 @@
   "paymentPendingMessage": "\nThe payment is pending. Please check the store.",
   "purchaseInvalidMessage": "\nThis is already a pending purchase. Please check the store.",
   "purchaseNotAllowedMessage": "\nThe purchase was not allowed. Please check your payment method.",
-  "networkErrorMessage": "\nPlease connect to internet."
+  "networkErrorMessage": "\nPlease connect to internet.",
+  "progressSyncTitle": "Restore tickets",
+  "progressSyncMessageIOS": "Sync with Game Center to carry over your tickets.",
+  "progressSyncMessageAndroid": "Sign in to Play Games to carry over your tickets.",
+  "progressSyncDoNotShowAgain": "Do not show again",
+  "progressSyncOpenSettings": "Sync",
+  "progressSyncSucceededIOS": "Synced with Game Center.",
+  "progressSyncSucceededAndroid": "Synced with Play Games.",
+  "progressSyncFailed": "Please sign in to Game Center from your device settings."
 }

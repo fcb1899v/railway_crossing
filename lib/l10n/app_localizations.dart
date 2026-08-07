@@ -645,6 +645,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'\nPlease connect to internet.'**
   String get networkErrorMessage;
+
+  /// No description provided for @progressSyncTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore tickets'**
+  String get progressSyncTitle;
+
+  /// No description provided for @progressSyncMessageIOS.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync with Game Center to carry over your tickets.'**
+  String get progressSyncMessageIOS;
+
+  /// No description provided for @progressSyncMessageAndroid.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to Play Games to carry over your tickets.'**
+  String get progressSyncMessageAndroid;
+
+  /// No description provided for @progressSyncDoNotShowAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Do not show again'**
+  String get progressSyncDoNotShowAgain;
+
+  /// No description provided for @progressSyncOpenSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync'**
+  String get progressSyncOpenSettings;
+
+  /// No description provided for @progressSyncSucceededIOS.
+  ///
+  /// In en, this message translates to:
+  /// **'Synced with Game Center.'**
+  String get progressSyncSucceededIOS;
+
+  /// No description provided for @progressSyncSucceededAndroid.
+  ///
+  /// In en, this message translates to:
+  /// **'Synced with Play Games.'**
+  String get progressSyncSucceededAndroid;
+
+  /// No description provided for @progressSyncFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Please sign in to Game Center from your device settings.'**
+  String get progressSyncFailed;
 }
 
 class _AppLocalizationsDelegate

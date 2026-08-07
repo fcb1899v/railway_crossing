@@ -1,9 +1,7 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'audio_manager.dart';
 import 'photo_manager.dart';
@@ -12,6 +10,7 @@ import 'common_function.dart';
 import 'common_widget.dart';
 import 'constant.dart';
 import 'main.dart';
+import 'ticket_manager.dart';
 
 /// Photo Button Widget - Handles photo capture and display functionality
 class PhotoButton extends HookConsumerWidget {
@@ -28,8 +27,7 @@ class PhotoButton extends HookConsumerWidget {
     final isLoading = ref.watch(loadingProvider);
 
     /// ===== PHOTO STATE VARIABLES =====
-    // Photo-related state variables for permission and lifecycle management
-    final photoPermission = useState(PermissionStatus.denied);
+    // Camera visibility waits for App Check; photo library permission is only for save.
     final isCameraVisible = useState(false);
     final lifecycle = useAppLifecycleState();
 
@@ -80,9 +78,10 @@ class PhotoButton extends HookConsumerWidget {
       return null;
     }, [lifecycle, context.mounted]);
 
-    /// ===== APP CHECK + PERMISSION INITIALIZATION =====
+    /// ===== APP CHECK INITIALIZATION =====
     // Hide camera until a real App Check JWT is obtained locally.
     // Do not depend on pingAppCheck (may be undeployed); that blocked the camera forever.
+    // Photo library permission is requested only when the user taps Save.
     useEffect(() {
       var cancelled = false;
       Future<void> prepareCamera() async {
@@ -96,13 +95,6 @@ class PhotoButton extends HookConsumerWidget {
           }
         }
         if (cancelled || !context.mounted) return;
-        if (!Platform.isAndroid) {
-          unawaited(photoManager.permitPhotoAccess().then((status) {
-            if (context.mounted) photoPermission.value = status;
-          }));
-        } else {
-          photoPermission.value = PermissionStatus.granted;
-        }
         isCameraVisible.value = true;
         blinkController.repeat(reverse: true);
         'Camera enabled after App Check token ready'.debugPrint();
@@ -126,6 +118,11 @@ class PhotoButton extends HookConsumerWidget {
           'lastClaim'.setSharedPrefInt(prefs, newCurrentDate);
           ref.read(lastClaimedProvider.notifier).update(newCurrentDate);
           ref.read(currentProvider.notifier).update(newCurrentDate);
+          unawaited(TicketManager().pushProgress(
+            tickets: ref.read(ticketsProvider),
+            expiration: ref.read(expirationProvider),
+            lastClaimed: newCurrentDate,
+          ));
         } else {
           "Free photo error".debugPrint();
         }
@@ -146,6 +143,11 @@ class PhotoButton extends HookConsumerWidget {
           final newTickets = tickets - 1;
           ref.read(ticketsProvider.notifier).update(newTickets);
           'tickets'.setSharedPrefInt(prefs, newTickets);
+          unawaited(TicketManager().pushProgress(
+            tickets: newTickets,
+            expiration: ref.read(expirationProvider),
+            lastClaimed: ref.read(lastClaimedProvider),
+          ));
         } else {
           "Generative AI photo error: empty result".debugPrint();
         }
@@ -155,16 +157,8 @@ class PhotoButton extends HookConsumerWidget {
     }
     
     /// ===== CAMERA ACTION HANDLER =====
-    // Handle camera button tap - Manages photo capture logic and permissions
+    // Handle camera button tap - photo library permission is not required to generate.
     cameraAction() async {
-      final hasPhotoAccess = photoPermission.value.isGranted ||
-          photoPermission.value.isLimited ||
-          Platform.isAndroid;
-      if (!hasPhotoAccess) {
-        "Photo permission".debugPrint();
-        photoPermission.value = await photoManager.permitPhotoAccess();
-        return;
-      }
       "Camera action".debugPrint();
       ref.read(loadingProvider.notifier).update(true);
       try {

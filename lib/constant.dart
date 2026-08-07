@@ -107,6 +107,9 @@ final appleAppCheckProvider = kDebugMode
     ? AppleDebugProvider(debugToken: dotenv.env['APPCHECK_DEBUG_TOKEN'])
     : const AppleDeviceCheckProvider();
 const appCheckTokenTimeout = Duration(seconds: 12);
+// Game Center / Play Games sign-in must not block launch forever when offline.
+const gamesSignInTimeout = Duration(seconds: 10);
+
 // Purchase plan configurations
 const List<bool?> isUpgradeAdFreeList = [true, false];
 const List<String> countryCodeList = ["JP", "GB", "CN", "US"];

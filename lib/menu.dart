@@ -14,6 +14,7 @@ import 'common_widget.dart';
 import 'constant.dart';
 import 'main.dart';
 import 'purchase_manager.dart';
+import 'ticket_manager.dart';
 
 // Menu Button Widget - Handles menu functionality and purchase options
 class MenuButton extends HookConsumerWidget {
@@ -112,11 +113,17 @@ class MenuButton extends HookConsumerWidget {
       final prefs = await SharedPreferences.getInstance();
       final newCurrentDate = await getServerDateTime();
       final addedTickets = tickets + addOnTicketNumber;
+      final newExpiration = newCurrentDate.nextMonth();
       "tickets".setSharedPrefInt(prefs, addedTickets);
-      "expiration".setSharedPrefInt(prefs, newCurrentDate.nextMonth());
+      "expiration".setSharedPrefInt(prefs, newExpiration);
       ref.read(ticketsProvider.notifier).update(addedTickets);
       ref.read(currentProvider.notifier).update(newCurrentDate);
-      ref.read(expirationProvider.notifier).update(newCurrentDate.nextMonth());
+      ref.read(expirationProvider.notifier).update(newExpiration);
+      unawaited(TicketManager().pushProgress(
+        tickets: addedTickets,
+        expiration: newExpiration,
+        lastClaimed: ref.read(lastClaimedProvider),
+      ));
       if (context.mounted) context.pushHomePage();
     }
 

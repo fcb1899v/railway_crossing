@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -71,6 +72,16 @@ extension ContextExt on BuildContext {
   String photoCaptureFailed() => AppLocalizations.of(this)!.photoCaptureFailed;
   String photoSavingFailed() => AppLocalizations.of(this)!.photoSavingFailed;
   String photoAccessPermission() => AppLocalizations.of(this)!.photoAccessPermission;
+  String progressSyncTitle() => AppLocalizations.of(this)!.progressSyncTitle;
+  String progressSyncMessageIOS() => AppLocalizations.of(this)!.progressSyncMessageIOS;
+  String progressSyncMessageAndroid() => AppLocalizations.of(this)!.progressSyncMessageAndroid;
+  String progressSyncMessage() => (Platform.isIOS || Platform.isMacOS) ? progressSyncMessageIOS(): progressSyncMessageAndroid();
+  String progressSyncDoNotShowAgain() => AppLocalizations.of(this)!.progressSyncDoNotShowAgain;
+  String progressSyncOpenSettings() => AppLocalizations.of(this)!.progressSyncOpenSettings;
+  String progressSyncSucceededIOS() => AppLocalizations.of(this)!.progressSyncSucceededIOS;
+  String progressSyncSucceededAndroid() => AppLocalizations.of(this)!.progressSyncSucceededAndroid;
+  String progressSyncSucceeded() => (Platform.isIOS || Platform.isMacOS) ? progressSyncSucceededIOS(): progressSyncSucceededAndroid();
+  String progressSyncFailed() => AppLocalizations.of(this)!.progressSyncFailed;
 
   /// ===== MENU LOCALIZATION METHODS =====
   // Menu-related localized strings

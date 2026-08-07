@@ -308,4 +308,28 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get networkErrorMessage => '请连接到互联网。';
+
+  @override
+  String get progressSyncTitle => '恢复拍摄券';
+
+  @override
+  String get progressSyncMessageIOS => '同步 Game Center 后即可继承拍摄券。';
+
+  @override
+  String get progressSyncMessageAndroid => '登录 Play 游戏后即可继承拍摄券。';
+
+  @override
+  String get progressSyncDoNotShowAgain => '不再显示';
+
+  @override
+  String get progressSyncOpenSettings => '同步';
+
+  @override
+  String get progressSyncSucceededIOS => '已与 Game Center 同步。';
+
+  @override
+  String get progressSyncSucceededAndroid => '已与 Play 游戏同步。';
+
+  @override
+  String get progressSyncFailed => '请在设备设置中登录 Game Center。';
 }

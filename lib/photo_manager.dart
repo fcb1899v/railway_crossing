@@ -59,6 +59,7 @@ class PhotoManager {
       if (!Platform.isAndroid) {
         final permission = await permitPhotoAccess();
         if (!permission.isGranted && !permission.isLimited) {
+          if (context.mounted) await _showPhotoPermissionDialog();
           return false;
         }
       }
@@ -77,8 +78,33 @@ class PhotoManager {
     }
   }
 
+  // Ask the user to open Settings only after they try to save without photo access.
+  Future<void> _showPhotoPermissionDialog() async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          content: Text(context.photoAccessPermission()),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(context.cancel()),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.of(dialogContext).pop();
+                await openAppSettings();
+              },
+              child: Text(context.progressSyncOpenSettings()),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   /// ===== FREE PHOTO GENERATION =====
-  // Daily free photo: prefer 1 cached Storage image; generate 1 if none exist.
+  // Daily free photo: generate until Storage has 9+ for the key; then use cache.
   Future<List<Uint8List>> getFreePhoto(int countryNumber) async {
     "getFreePhoto (daily cache)".debugPrint();
     return _callGenerateTrainPhoto(
@@ -229,6 +255,7 @@ class PhotoManager {
   /// ===== PERMISSION MANAGEMENT =====
   // iOS: request add-only photo access for saving.
   // Android: no gallery-read permission; MediaStore save does not need it.
+  // Never opens Settings automatically; the save flow shows a dialog instead.
   Future<PermissionStatus> permitPhotoAccess() async {
     if (Platform.isAndroid) {
       final androidSDK = await getAndroidSDK();
@@ -243,7 +270,6 @@ class PhotoManager {
       return PermissionStatus.granted;
     }
 
-    final common = CommonWidget(context: context);
     final permission = Permission.photosAddOnly;
     final current = await permission.status;
     "photoPermission: $current".debugPrint();
@@ -253,15 +279,9 @@ class PhotoManager {
     try {
       final updated = await permission.request();
       "updatedPermission: $updated".debugPrint();
-      if (!updated.isGranted && !updated.isLimited && context.mounted) {
-        common.showSnackBar(context.photoAccessPermission(), true);
-        Future.delayed(const Duration(seconds: 3), () async => await openAppSettings());
-      }
       return updated;
     } on PlatformException catch (e) {
       "photoPermissionError: $e".debugPrint();
-      if (context.mounted) common.showSnackBar(context.photoAccessPermission(), true);
-      Future.delayed(const Duration(seconds: 3), () async => await openAppSettings());
       return current;
     }
   }

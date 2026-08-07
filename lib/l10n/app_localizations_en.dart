@@ -315,4 +315,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get networkErrorMessage => '\nPlease connect to internet.';
+
+  @override
+  String get progressSyncTitle => 'Restore tickets';
+
+  @override
+  String get progressSyncMessageIOS =>
+      'Sync with Game Center to carry over your tickets.';
+
+  @override
+  String get progressSyncMessageAndroid =>
+      'Sign in to Play Games to carry over your tickets.';
+
+  @override
+  String get progressSyncDoNotShowAgain => 'Do not show again';
+
+  @override
+  String get progressSyncOpenSettings => 'Sync';
+
+  @override
+  String get progressSyncSucceededIOS => 'Synced with Game Center.';
+
+  @override
+  String get progressSyncSucceededAndroid => 'Synced with Play Games.';
+
+  @override
+  String get progressSyncFailed =>
+      'Please sign in to Game Center from your device settings.';
 }

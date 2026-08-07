@@ -309,4 +309,28 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get networkErrorMessage => '\nインターネットに接続してください。';
+
+  @override
+  String get progressSyncTitle => 'チケットの引き継ぎ';
+
+  @override
+  String get progressSyncMessageIOS => 'Game Centerに同期するとチケットの引き継ぎができます。';
+
+  @override
+  String get progressSyncMessageAndroid => 'Play ゲームにログインするとチケットの引き継ぎができます。';
+
+  @override
+  String get progressSyncDoNotShowAgain => '今後は表示しない';
+
+  @override
+  String get progressSyncOpenSettings => '同期する';
+
+  @override
+  String get progressSyncSucceededIOS => 'Game Centerと同期しました。';
+
+  @override
+  String get progressSyncSucceededAndroid => 'Play ゲームと同期しました。';
+
+  @override
+  String get progressSyncFailed => '端末の設定でGame Centerにサインインしてください。';
 }

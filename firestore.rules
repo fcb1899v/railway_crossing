@@ -1,0 +1,25 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /tickets/{ticketId} {
+      allow read: if request.auth != null
+        && ticketId.matches('^(device|player)_(ios|android)_[A-Za-z0-9_-]+$');
+
+      allow create, update: if request.auth != null
+        && ticketId.matches('^(device|player)_(ios|android)_[A-Za-z0-9_-]+$')
+        && request.resource.data.keys().hasOnly([
+          'tickets', 'expiration', 'lastClaimed', 'platform', 'updatedAtMs'
+        ])
+        && request.resource.data.tickets is int
+        && request.resource.data.tickets >= 0
+        && request.resource.data.expiration is int
+        && request.resource.data.lastClaimed is int
+        && request.resource.data.lastClaimed >= 0
+        && request.resource.data.updatedAtMs is int
+        && request.resource.data.updatedAtMs >= 0
+        && request.resource.data.platform in ['ios', 'android'];
+
+      allow delete: if false;
+    }
+  }
+}

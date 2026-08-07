@@ -90,5 +90,13 @@
   "paymentPendingMessage": "\nお支払いが保留中です。\nストアをご確認ください。",
   "purchaseInvalidMessage": "\nお支払いが保留中の商品です。\nストアをご確認ください。",
   "purchaseNotAllowedMessage": "\n購入できませんでした。\nお支払い方法をご確認ください。",
-  "networkErrorMessage": "\nインターネットに接続してください。"
+  "networkErrorMessage": "\nインターネットに接続してください。",
+  "progressSyncTitle": "チケットの引き継ぎ",
+  "progressSyncMessageIOS": "Game Centerに同期するとチケットの引き継ぎができます。",
+  "progressSyncMessageAndroid": "Play ゲームにログインするとチケットの引き継ぎができます。",
+  "progressSyncDoNotShowAgain": "今後は表示しない",
+  "progressSyncOpenSettings": "同期する",
+  "progressSyncSucceededIOS": "Game Centerと同期しました。",
+  "progressSyncSucceededAndroid": "Play ゲームと同期しました。",
+  "progressSyncFailed": "端末の設定でGame Centerにサインインしてください。"
 }

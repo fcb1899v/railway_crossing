@@ -6,8 +6,8 @@
  * - Images are stored in Cloud Storage under a prompt-derived cache key.
  * - Until a key has 9 cached images, every request generates 3 new images.
  * - Once a key has 9+, return 2 from Storage + 1 newly generated image.
- * - Daily free (mode=daily): return 1 random cached image if any exist;
- *   otherwise generate 1 and store it.
+ * - Daily free (mode=daily): until 9 cached images, generate 1 and store it;
+ *   once 9+, return 1 random cached image (no generation).
  */
 const {onCall, HttpsError} = require("firebase-functions/v2/https");
 const {defineSecret} = require("firebase-functions/params");
@@ -445,13 +445,18 @@ exports.generateTrainPhoto = onCall(
     let usedCache = false;
 
     if (mode === "daily") {
-      // Daily free: prefer 1 cached image; generate 1 only when none exist.
-      if (cachedCount > 0) {
+      // Daily free: build cache until 9; then return 1 cached image only.
+      const useDailyCache = cachedCount >= CACHE_READY_COUNT;
+      usedCache = useDailyCache;
+      console.log(
+          `Daily: path=${pathInfo.storagePath} cached=${cachedCount} ` +
+          `useCache=${useDailyCache} threshold=${CACHE_READY_COUNT}`,
+      );
+      if (useDailyCache) {
         images = await loadRandomCachedImages(cachedFiles, 1);
-        usedCache = true;
         console.log(
             `Daily cache hit: path=${pathInfo.storagePath} ` +
-            `cached=${cachedCount} picked=${images.length}`,
+            `picked=${images.length}`,
         );
       } else {
         const generated = await generateImages(
@@ -467,7 +472,8 @@ exports.generateTrainPhoto = onCall(
         );
         images = generated.slice(0, 1);
         console.log(
-            `Daily cache miss: path=${pathInfo.storagePath} generated=1`,
+            `Daily cache building: path=${pathInfo.storagePath} ` +
+            `before=${cachedCount} generated=1`,
         );
       }
     } else {
