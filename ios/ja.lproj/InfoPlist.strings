@@ -1,0 +1,11 @@
+/* 
+  InfoPlist.strings
+  Runner
+
+  Created by 中島正雄 on 2022/05/15.
+  
+*/
+
+CFBundleDisplayName = "レッツ・カンカン";
+NSUserTrackingUsageDescription = "個人開発のこのアプリは広告収入により運営されています。ご賛同いただける方は「許可」をタップしてください。お好みに合った広告が表示されます。";
+NSPhotoLibraryUsageDescription = "「すべての写真へのアクセスを許可」をタップして下さい。アプリで生成した撮り鉄画像が保存、閲覧、利用、シェアができるようになります。アクセス権は設定からいつでも変更できます。";

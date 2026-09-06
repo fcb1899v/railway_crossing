@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -165,6 +166,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get photoCaptureFailed => '摄影失败';
+
+  @override
+  String get photoNeedsConnection => '无法拍照。请检查网络连接。';
 
   @override
   String get photoSavingFailed => '照片保存失败';

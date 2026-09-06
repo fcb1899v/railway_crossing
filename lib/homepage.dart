@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:typed_data';
 import 'package:fab_circular_menu_plus/fab_circular_menu_plus.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -47,6 +47,9 @@ class HomePage extends HookConsumerWidget {
     final isEmergency = useState(false);     // Emergency mode state
     final isPossibleEmergency = useState(true); // Emergency button availability
     final isPossiblePhoto = useState(false); // Photo capture availability
+    // Set once bootstrapAfterLaunch resolves; false means the Cloud Function
+    // behind the camera cannot be reached
+    final isAppCheckReady = useValueListenable(appCheckReady);
     final changeTime = useState(0);          // Animation duration
     final photoIndex = useState(0);          // Current photo index
     final isSavePhoto = useState(false);     // Photo save state
@@ -98,6 +101,11 @@ class HomePage extends HookConsumerWidget {
       currentDate: currentDate,
     ));
     final common = CommonWidget(context: context);
+    // Coming back from background is the one moment the network is likely to
+    // have changed without the app touching anything
+    useOnAppLifecycleStateChange((previous, current) {
+      if (current == AppLifecycleState.resumed) unawaited(retryAppCheckIfNeeded());
+    });
     final home = HomeWidget(
       context: context, 
       countryNumber: countryNumber,
@@ -158,7 +166,9 @@ class HomePage extends HookConsumerWidget {
           ref.read(ticketsProvider.notifier).update(merged.tickets);
           ref.read(expirationProvider.notifier).update(merged.expiration);
           ref.read(lastClaimedProvider.notifier).update(merged.lastClaimed);
-          if (!signIn.isSignedIn) {
+          // Alert only when today's sign-in was attempted and failed
+          // (not on every cold start after that).
+          if (!signIn.isSignedIn && signIn.signInWasAttempted) {
             'Show sync prompt after games sign-in failed'.debugPrint();
             await ticketManager.showSyncPromptIfNeeded(context);
           }
@@ -208,15 +218,11 @@ class HomePage extends HookConsumerWidget {
               pull: pullTickets,
             );
 
-            // Same once-per-day trigger as cold launch (no-op if already attempted today).
-            final before = await ticketManager.cachedGamePlayerId();
+            // Sign-in UI at most once/day; session check runs every resume.
             final signIn = await ticketManager.ensureGamesSignedInOncePerDay();
-            if (before == null && signIn.isSignedIn) {
+            if (signIn.isSignedIn) {
               await pullTickets();
-            }
-            if (!signIn.isSignedIn &&
-                signIn.signInWasAttempted &&
-                context.mounted) {
+            } else if (signIn.signInWasAttempted && context.mounted) {
               await ticketManager.showSyncPromptIfNeeded(context);
             }
           } catch (e) {
@@ -387,6 +393,10 @@ class HomePage extends HookConsumerWidget {
     // Handle left button press - Start left side railway crossing sequence
     pushLeftButton() {
       "pushLeftButton".debugPrint();
+      // This run ends in a photo the Cloud Function cannot produce while App
+      // Check is down, so try to recover here and say so if it is still down
+      unawaited(retryAppCheckIfNeeded());
+      if (!isAppCheckReady) common.showSnackBar(context.photoNeedsConnection(), true);
       if (!isLeftOn.value && !isEmergency.value) {
         isLeftOn.value = true;
         changeTime.value = barUpDownTime;
@@ -443,6 +453,10 @@ class HomePage extends HookConsumerWidget {
     // Handle right button press - Start right side railway crossing sequence
     pushRightButton() {
       "pushRightButton".debugPrint();
+      // This run ends in a photo the Cloud Function cannot produce while App
+      // Check is down, so try to recover here and say so if it is still down
+      unawaited(retryAppCheckIfNeeded());
+      if (!isAppCheckReady) common.showSnackBar(context.photoNeedsConnection(), true);
       if (!isRightWait.value && !isEmergency.value) {
         isRightOn.value = true;
         changeTime.value = barUpDownTime;
@@ -560,8 +574,9 @@ class HomePage extends HookConsumerWidget {
             ]
           ),
           // ===== MENU AND UTILITY COMPONENTS =====
-          // Menu button with conditional visibility
-          IgnorePointer(
+          // Hidden while App Check is down: the menu sells tickets, and the
+          // camera those tickets pay for needs the Cloud Function behind it
+          if (isAppCheckReady) IgnorePointer(
             ignoring: (isYellow.value || isRightWait.value || isLeftWait.value || isLoading),
             child: Opacity(
               opacity: (!isYellow.value && !isRightWait.value && !isLeftWait.value && !isLoading) ? 1.0 : 0.0,
@@ -627,10 +642,11 @@ class HomeWidget {
 
   /// ===== BACKGROUND COMPONENTS =====
   // Background image for railway crossing scene
+  // The fill behind the 16:9 art is what shows as the letterbox bars
   Widget backGroundImage() => Container(
     width: context.mediaWidth(),
     height: context.mediaHeight(),
-    color: blackColor,
+    color: grayColor,
     child: Container(
       margin: EdgeInsets.symmetric(horizontal: context.sideMargin()),
       width: context.height() / aspectRatio,
@@ -918,12 +934,12 @@ class HomeWidget {
   // Vertical spacer for layout adjustment
   Widget upDownSpacer() => Column(children: [
     Container(
-      color: blackColor,
+      color: grayColor,
       height: context.upDownMargin(),
     ),
     const Spacer(),
     Container(
-      color: blackColor,
+      color: grayColor,
       height: context.upDownMargin(),
     ),
   ]);
@@ -931,12 +947,12 @@ class HomeWidget {
   // Horizontal spacer for layout adjustment
   Widget sideSpacer() => Row(children: [
     Container(
-      color: blackColor,
+      color: grayColor,
       width: context.sideMargin(),
     ),
     const Spacer(),
     Container(
-      color: blackColor,
+      color: grayColor,
       width: context.sideMargin(),
     ),
   ]);

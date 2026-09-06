@@ -49,8 +49,9 @@ It features realistic visuals, authentic sounds, photo galleries, train illustra
 
 ## 📋 Prerequisites
 
-- Flutter 3.3.0+
-- Dart 2.18.0+
+- Flutter 3.47.0+ (required by Android Gradle Plugin 9: earlier versions
+  force the Kotlin Gradle Plugin onto modules that AGP 9 compiles itself)
+- Dart 3.13.0+
 - Android Studio / Xcode
 - Firebase project (App Check, Analytics, Vertex AI)
 - RevenueCat account for in-app purchases
@@ -95,10 +96,7 @@ AI credentials (OpenAI / Vertex) must **not** be in the app. Store them with Clo
 # Android
 flutter run
 
-# iOS
-cd ios
-pod install
-cd ..
+# iOS (Swift Package Manager: there is no Podfile to install)
 flutter run
 ```
 
@@ -169,8 +167,15 @@ flutter analyze
 ```
 
 ### Run Tests
+
+There are none. The `flutter create` counter test was removed on 2026-09-02
+because it asserted on a widget this app does not have and could only ever fail,
+which made a red `flutter test` indistinguishable from a real failure.
+
+`flutter analyze` is the check that runs clean and is expected to stay that way.
+
 ```bash
-flutter test
+flutter analyze   # expected: No issues found!
 ```
 
 ### Build

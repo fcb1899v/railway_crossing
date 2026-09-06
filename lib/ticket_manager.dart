@@ -23,6 +23,7 @@ const ticketUpdatedAtMsKey = 'ticketUpdatedAtMs';
 const ticketCloudCheckedKey = 'ticketCloudChecked';
 const ticketSyncPendingKey = 'ticketSyncPendingAfterSettings';
 const ticketGamesSignInAttemptDateKey = 'ticketGamesSignInAttemptDate';
+const ticketSyncPromptShownDateKey = 'ticketSyncPromptShownDate';
 
 const _ticketCollection = 'tickets';
 const _settingsChannel = MethodChannel('railway_crossing/settings');
@@ -156,19 +157,41 @@ class TicketManager {
     );
   }
 
+  Future<bool> _alreadyShownSyncPromptToday() async {
+    final prefs = await SharedPreferences.getInstance();
+    return ticketSyncPromptShownDateKey.getSharedPrefInt(prefs, 0) ==
+        _todayLocalIntDate();
+  }
+
+  Future<void> _markSyncPromptShownToday() async {
+    final prefs = await SharedPreferences.getInstance();
+    ticketSyncPromptShownDateKey.setSharedPrefInt(
+      prefs,
+      _todayLocalIntDate(),
+    );
+  }
+
+  Future<void> _clearCachedPlayerId() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(ticketPlayerIdKey);
+  }
+
   // Reads the current Game Center / Play Games session (never shows sign-in UI).
+  // Call on launch, resume, pull, and before push (purchase / spend / daily claim).
   Future<String?> resolveGamePlayerId() async {
     try {
       final signedIn =
           await GameAuth.isSignedIn.timeout(gamesSignInTimeout);
       if (!signedIn) {
         'Games services not signed in'.debugPrint();
+        await _clearCachedPlayerId();
         return null;
       }
       final playerId =
           await Player.getPlayerID().timeout(gamesSignInTimeout);
       if (playerId == null || playerId.isEmpty) {
         'Games services player id empty'.debugPrint();
+        await _clearCachedPlayerId();
         return null;
       }
       'Games services player id ready (length=${playerId.length})'.debugPrint();
@@ -192,7 +215,8 @@ class TicketManager {
     return playerId;
   }
 
-  /// Sole trigger for Game Center / Play Games sign-in UI (at most once per day).
+  /// Requests Game Center / Play Games sign-in UI at most once per local day,
+  /// then always re-checks the current session (no UI).
   /// Call from homepage launch / resume only.
   Future<GamesSignInOutcome> ensureGamesSignedInOncePerDay() async {
     var signInWasAttempted = false;
@@ -446,7 +470,7 @@ class TicketManager {
   }
 
   // Pulls cloud tickets (player then device), merges by updatedAtMs, mirrors both docs.
-  // Does not show games sign-in UI; call [ensureGamesSignedInOncePerDay] first when needed.
+  // Re-checks games session (no sign-in UI). Call [ensureGamesSignedInOncePerDay] for UI.
   Future<TicketSnapshot> pullAndMerge({
     required int localTickets,
     required int localExpiration,
@@ -560,8 +584,7 @@ class TicketManager {
   }
 
   // Pushes local tickets/expiration/lastClaimed after purchase, spend, or daily claim.
-  // Cloud write runs only when a Play Games / Game Center player ID is already cached
-  // from launch (never prompts for sign-in here).
+  // Re-checks the games session first (no sign-in UI). Cloud write only when signed in.
   Future<void> pushProgress({
     required int tickets,
     required int expiration,
@@ -575,9 +598,9 @@ class TicketManager {
       'expiration'.setSharedPrefInt(prefs, expiration);
       'lastClaim'.setSharedPrefInt(prefs, lastClaimed);
 
-      final playerId = await cachedGamePlayerId();
+      final playerId = await resolveGamePlayerId();
       if (playerId == null) {
-        'Ticket push skipped: games services not signed in at launch'.debugPrint();
+        'Ticket push skipped: games services not signed in'.debugPrint();
         return;
       }
 
@@ -608,10 +631,15 @@ class TicketManager {
     await pull();
   }
 
-  // Shows the restore prompt after Game Center / Play Games sign-in failed.
+  // Shows the restore prompt after today's Game Center / Play Games sign-in failed.
+  // At most once per local day (also respects "do not show again").
   Future<void> showSyncPromptIfNeeded(BuildContext context) async {
     final hidden = await isSyncPromptHidden();
     if (hidden) return;
+    if (await _alreadyShownSyncPromptToday()) return;
+    // Both awaits happen before the mounted check, so the check still covers
+    // every gap between here and showDialog. Marking after it would reopen one.
+    await _markSyncPromptShownToday();
     if (!context.mounted) return;
 
     var doNotShowAgain = false;

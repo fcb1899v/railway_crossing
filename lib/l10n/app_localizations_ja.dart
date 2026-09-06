@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -165,6 +166,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get photoCaptureFailed => '撮影に失敗しました';
+
+  @override
+  String get photoNeedsConnection => '写真は撮影できません。通信を確認してください。';
 
   @override
   String get photoSavingFailed => '写真が保存に失敗しました';

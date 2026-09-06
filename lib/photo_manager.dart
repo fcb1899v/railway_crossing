@@ -165,9 +165,6 @@ class PhotoManager {
     required String mode,
     required int count,
   }) async {
-    // Obtain a fresh valid App Check JWT before callable (enforceAppCheck).
-    final appCheckToken = await refreshAppCheckToken();
-    'Calling generateTrainPhoto with App Check JWT length=${appCheckToken.length}'.debugPrint();
     final request = countryNumber.aiImageGenerationRequest();
     final prompt = request['prompt'] as String;
     final cacheIdentity = Map<String, String>.from(

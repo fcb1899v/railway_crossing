@@ -59,7 +59,7 @@ class CommonWidget {
       ),
       backgroundColor: isAlert ? redColor: whiteColor,
       behavior: SnackBarBehavior.floating,
-      duration: const Duration(seconds: 2),
+      duration: const Duration(seconds: 4),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(context.snackBarBorderRadius()),
       ),
@@ -67,10 +67,11 @@ class CommonWidget {
         horizontal: 0,
         vertical: context.snackBarPadding(),
       ), // Content padding
-      margin: EdgeInsets.symmetric(
-        horizontal: context.snackBarSideMargin(textPainter),
-        vertical: context.snackBarBottomMargin(),
-      ), // Center positioning
+      margin: EdgeInsets.only(
+        left: context.snackBarSideMargin(textPainter),
+        right: context.snackBarSideMargin(textPainter),
+        bottom: context.snackBarTopMargin(),
+      ), // Top of the screen, clear of the banner in the bottom right
     );
     "showSnackBar: $text".debugPrint();
     ScaffoldMessenger.of(context).showSnackBar(snackBar);

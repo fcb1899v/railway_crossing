@@ -4,7 +4,10 @@
  *
  * Cache policy:
  * - Images are stored in Cloud Storage under a prompt-derived cache key.
- * - Until a key has 9 cached images, every request generates 3 new images.
+ * - Until a key has 9 cached images, every request asks for 3 new images.
+ *   Gemini answers one request per image, so 1 to 3 may come back; the count
+ *   is not guaranteed the way Imagen's sampleCount was. A ticket is spent for
+ *   any non-empty result (lib/photo.dart:140-145).
  * - Once a key has 9+, return 2 from Storage + 1 newly generated image.
  * - Daily free (mode=daily): until 9 cached images, generate 1 and store it;
  *   once 9+, return 1 random cached image (no generation).
@@ -27,11 +30,42 @@ setGlobalOptions({
 const openAiApiKey = defineSecret("OPEN_AI_API_KEY");
 
 const PROJECT_ID = process.env.GCLOUD_PROJECT || "letscrossing-app";
+// Kept for reference only: generateImages() no longer calls Imagen. The model
+// was discontinued on 2026-06-30, so every request returned "was not found or
+// your project does not have access to it" no matter the region or the IAM role
+// (us-central1 was tried on 2026-09-03 and failed identically).
 const IMAGEN_LOCATION = "asia-northeast1";
 const IMAGEN_MODEL = "imagen-4.0-fast-generate-001";
 const IMAGEN_URL =
   `https://${IMAGEN_LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}` +
   `/locations/${IMAGEN_LOCATION}/publishers/google/models/${IMAGEN_MODEL}:predict`;
+// Imagen 4 Fast was discontinued on 2026-06-30, which is why every call above
+// returns "was not found or your project does not have access to it" regardless
+// of region or IAM. Google's stated replacement for all Imagen 4 endpoints is
+// gemini-2.5-flash-image, reached through generateContent rather than predict.
+// https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-flash-image
+const GEMINI_MODEL = "gemini-2.5-flash-image";
+// Measured on 2026-09-03: two requests, both 404 at asia-northeast1 and both
+// generated in us-central1. Two is not "always", but it is every observation
+// there is. Which regions carry the model could not be read from the docs:
+// the model page and docs/learn/locations return navigation with no body,
+// though other pages on that site (the Imagen 4 Fast model page) do return
+// theirs. Tokyo stays first so that the day it lands there, generation moves
+// home without a deploy. Each attempt costs `count` requests that are likely
+// to fail, which is why a failure here must not stop the loop by itself
+// (see generateWithGemini).
+const GEMINI_LOCATIONS = ["asia-northeast1", "us-central1"];
+
+/**
+ * @param {string} location
+ * @return {string}
+ */
+function geminiUrlFor(location) {
+  return `https://${location}-aiplatform.googleapis.com/v1/projects/` +
+    `${PROJECT_ID}/locations/${location}/publishers/google/models/` +
+    `${GEMINI_MODEL}:generateContent`;
+}
+
 const MAX_IMAGES = 3;
 const RETURN_IMAGE_COUNT = 3;
 const CACHE_READY_COUNT = 9;
@@ -147,6 +181,123 @@ async function generateWithImagen(prompt, count) {
 }
 
 /**
+ * Generate one image with Vertex AI Gemini 2.5 Flash Image.
+ *
+ * Unlike Imagen's :predict, generateContent returns a conversation turn, and
+ * the image arrives as an inline part next to whatever text the model wrote.
+ * One call yields one image, so the caller asks for several in parallel.
+ *
+ * The response shape below could not be confirmed against the documentation on
+ * 2026-09-03: the model pages render client-side and returned navigation only.
+ * So a call that finds no image logs the parts it did receive. That turns a
+ * second failure into a fix instead of another guess.
+ *
+ * @param {string} prompt
+ * @param {string} location
+ * @return {Promise<string>} base64 image data
+ */
+async function generateOneWithGemini(prompt, location) {
+  const token = await getGoogleAccessToken();
+
+  const response = await fetch(geminiUrlFor(location), {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      contents: [{role: "user", parts: [{text: prompt}]}],
+      generationConfig: {responseModalities: ["TEXT", "IMAGE"]},
+    }),
+  });
+
+  const body = await response.json();
+  if (!response.ok) {
+    const message = body?.error?.message || `Gemini HTTP ${response.status}`;
+    const error = new Error(message);
+    error.httpStatus = response.status;
+    throw error;
+  }
+
+  const parts = body?.candidates?.[0]?.content?.parts || [];
+  for (const part of parts) {
+    const inline = part?.inlineData || part?.inline_data;
+    const data = inline?.data;
+    if (typeof data === "string" && data.length > 0) {
+      // saveImagesToCache() writes every object as .jpg with contentType
+      // image/jpeg, and no output format is requested above because the
+      // generateContent body has no equivalent of Imagen's outputOptions.
+      // If this line ever reports image/png, those objects are mislabelled
+      // for the year their cacheControl keeps them. Nothing breaks visibly:
+      // Image.memory decodes by content, so the defect is silent.
+      console.log(
+          `Gemini image: mimeType=${inline?.mimeType || inline?.mime_type} ` +
+          `base64Length=${data.length}`,
+      );
+      return data;
+    }
+  }
+
+  console.error(
+      "Gemini returned no image. parts=",
+      JSON.stringify(parts).slice(0, 1000),
+  );
+  throw new Error("No image in Gemini response");
+}
+
+/**
+ * @param {string} prompt
+ * @param {number} count
+ * @return {Promise<string[]>} base64 image data list
+ */
+async function generateWithGemini(prompt, count) {
+  let lastError = null;
+
+  for (const location of GEMINI_LOCATIONS) {
+    const startedAt = Date.now();
+    const results = await Promise.allSettled(
+        Array.from({length: count},
+            () => generateOneWithGemini(prompt, location)),
+    );
+
+    const images = results
+        .filter((result) => result.status === "fulfilled")
+        .map((result) => result.value);
+
+    if (images.length > 0) {
+      console.log(
+          `Gemini ok: location=${location} count=${images.length}/${count} ` +
+          `elapsedMs=${Date.now() - startedAt}`,
+      );
+      return images;
+    }
+
+    const failed = results.find((result) => result.status === "rejected");
+    lastError = failed?.reason || new Error("Gemini generation failed");
+    console.error(
+        `Gemini failed at ${location}:`, lastError.message || lastError,
+    );
+
+    // Stop only when the server gave a definite answer that is not "no such
+    // model here" — a quota, a safety block or a bad request would fail the
+    // same way in the next region, so trying it would just delay OpenAI.
+    //
+    // httpStatus is set only where response.ok is false (see above), so a
+    // transport error, a non-JSON body that breaks response.json(), and
+    // "No image in Gemini response" all arrive with it undefined. Those must
+    // fall through: asia-northeast1 does not serve this model at all, so a
+    // stray network error there would otherwise skip the one region that
+    // works and send the request to OpenAI at several times the cost.
+    const decided = typeof lastError.httpStatus === "number";
+    if (decided && lastError.httpStatus !== 404) {
+      break;
+    }
+  }
+
+  throw lastError || new Error("Gemini generation failed");
+}
+
+/**
  * @param {string} prompt
  * @param {number} count
  * @param {string} apiKey
@@ -202,10 +353,14 @@ async function generateWithOpenAI(prompt, count, apiKey) {
  * @return {Promise<string[]>}
  */
 async function generateImages(prompt, count, apiKey) {
+  // Gemini first, OpenAI second. Imagen is no longer tried: the model was
+  // discontinued on 2026-06-30, so calling it only adds a round trip that is
+  // certain to fail before every fallback. Between 2026-08-31 and 2026-09-03
+  // that path failed 141 times out of 141.
   try {
-    return await generateWithImagen(prompt, count);
+    return await generateWithGemini(prompt, count);
   } catch (error) {
-    console.error("Imagen generation failed:", error?.message || error);
+    console.error("Gemini generation failed:", error?.message || error);
     try {
       return await generateWithOpenAI(prompt, count, apiKey);
     } catch (fallbackError) {
@@ -217,7 +372,7 @@ async function generateImages(prompt, count, apiKey) {
           "internal",
           "Image generation failed.",
           {
-            imagen: String(error?.message || error),
+            gemini: String(error?.message || error),
             openai: String(fallbackError?.message || fallbackError),
           },
       );

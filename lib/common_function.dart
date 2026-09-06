@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:devicelocale/devicelocale.dart';
-import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -12,18 +11,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'common_extension.dart';
 import 'constant.dart';
 
-/// ===== APP TRACKING TRANSPARENCY =====
-// Initialize App Tracking Transparency for iOS privacy compliance
-Future<void> initATTPlugin() async {
-  if (Platform.isIOS || Platform.isMacOS) {
-    final status = await AppTrackingTransparency.trackingAuthorizationStatus;
-    if (status == TrackingStatus.notDetermined) {
-      await AppTrackingTransparency.requestTrackingAuthorization();
-    }
-  }
-}
 
 /// ===== FIREBASE APP CHECK / AUTH =====
+/// Whether App Check cleared at launch. The purchase menu hangs off this: a
+/// ticket bought while this is false buys a camera that cannot run
+final appCheckReady = ValueNotifier<bool>(false);
+
 Future<void>? _firebaseReadyFuture;
 
 /// App Check + anonymous Auth. Shared Future; cleared on failure so callers can retry.
@@ -33,7 +26,21 @@ Future<void> ensureFirebaseReady() =>
       throw e;
     });
 
-/// Forces a fresh App Check JWT right before protected API calls.
+/// Retries the launch bootstrap, and only while it is still down. Nothing else
+/// re-runs it, so a session that started offline stayed broken until a restart
+Future<void> retryAppCheckIfNeeded() async {
+  if (appCheckReady.value) return;
+  try {
+    await ensureFirebaseReady();
+    appCheckReady.value = true;
+    'App Check recovered on retry'.debugPrint();
+  } catch (e) {
+    'App Check retry failed: $e'.debugPrint();
+  }
+}
+
+/// Forces a fresh App Check JWT. For the retry after a rejection: the Functions
+/// SDK attaches the token itself, so nothing has to be fetched before a call
 Future<String> refreshAppCheckToken() async {
   await ensureFirebaseReady();
   final token = await _getAppCheckToken(forceRefresh: true);
@@ -148,7 +155,9 @@ Future<void> _configurePurchases() async {
 Future<void> bootstrapAfterLaunch() async {
   try {
     await ensureFirebaseReady();
+    appCheckReady.value = true;
   } catch (e) {
+    appCheckReady.value = false;
     'Firebase App Check / auth bootstrap failed: $e'.debugPrint();
   }
   try {

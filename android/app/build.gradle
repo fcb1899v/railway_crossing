@@ -7,7 +7,7 @@ plugins {
 }
 //apply plugin: 'kotlin-parcelize'
 
-def kotlin_version = "2.2.0"
+// kotlin-stdlib comes from AGP 9 built in Kotlin; no version pinned here
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
@@ -32,18 +32,21 @@ if (keystorePropertiesFile.exists()) {
 
 android {
 
+    // compileSdk and targetSdk are written out, not taken from flutter.*:
+    // Flutter 3.47.2 still defaults both to 36 (FlutterExtension.kt:23,34) and
+    // referencing it would move this app back a level.
     compileSdkVersion 37
     // NDK r28+ aligns native libs for 16 KB page-size devices by default
-    ndkVersion "28.2.13676358"
+    ndkVersion flutter.ndkVersion   // 28.2.13676358 in Flutter 3.47.2
     namespace "nakajimamasao.appstudio.railwaycrossing"
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = '17'
     }
 
     lintOptions {
@@ -97,8 +100,9 @@ flutter {
 }
 
 // Exclude deprecated play-services-safetynet; use Play Integrity API instead
+
 configurations.all {
-    exclude group: 'com.google.android.gms', module: 'play-services-safetynet'
+    // No safetynet exclude: that module is not in the 19.x App Check POM at all
     // shared_preferences pulls datastore 1.2.0 whose .so fails 16KB RELRO; 1.2.1 fixes it
     resolutionStrategy {
         force 'androidx.datastore:datastore:1.2.1'
@@ -113,16 +117,7 @@ configurations.all {
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    implementation "androidx.core:core-ktx:1.17.0"
-    implementation platform('com.google.firebase:firebase-bom:34.10.0')
-    implementation 'com.google.firebase:firebase-analytics-ktx:22.5.0'
-    implementation("com.google.firebase:firebase-appcheck:19.0.2") {
-        exclude group: "com.google.firebase", module: "firebase-appcheck-safetynet"
-    }
-    implementation "com.google.firebase:firebase-appcheck-debug:19.0.2"
-    implementation "com.google.firebase:firebase-appcheck-ktx:18.0.0"
-    implementation "com.google.firebase:firebase-appcheck-playintegrity:19.0.2"
+    implementation "androidx.core:core:1.19.0"
     implementation 'com.google.android.play:integrity:1.6.0'
 }
 

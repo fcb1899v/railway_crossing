@@ -97,14 +97,23 @@ final revenueCatApiKey = dotenv.get((Platform.isIOS || Platform.isMacOS) ?
   "REVENUE_CAT_ANDROID_API_KEY"
 );
 // Platform-specific App Check providers (non-legacy API)
-// Debug token: register the same value in Firebase Console → App Check → Manage debug tokens
-// Release iOS: DeviceCheck is the stable default. App Attest can fail and the native SDK
-// may still return a non-empty placeholder JWT that Cloud Functions reject as INVALID.
+//
+// The debug tokens come from .env, not from source. This repository is public,
+// and a registered debug token lets anyone mint a valid App Check token for this
+// app, which is exactly what App Check exists to prevent. kDebugMode keeps the
+// value out of the shipped binary, but it does not keep it out of the published
+// source.
+//
+// Android and iOS are separate App Check apps and each has its own token, so one
+// shared constant would have left the iOS debug build failing App Check.
+// Register both under Firebase Console -> App Check -> Manage debug tokens, or:
+//   firebase appcheck:debugtokens:create <token> --app <appId> --display-name <name>
+// The values are recorded in the private company repo, not here.
 final androidAppCheckProvider = kDebugMode
-    ? AndroidDebugProvider(debugToken: dotenv.env['APPCHECK_DEBUG_TOKEN'])
+    ? AndroidDebugProvider(debugToken: dotenv.env['APPCHECK_DEBUG_TOKEN_ANDROID'])
     : const AndroidPlayIntegrityProvider();
 final appleAppCheckProvider = kDebugMode
-    ? AppleDebugProvider(debugToken: dotenv.env['APPCHECK_DEBUG_TOKEN'])
+    ? AppleDebugProvider(debugToken: dotenv.env['APPCHECK_DEBUG_TOKEN_IOS'])
     : const AppleDeviceCheckProvider();
 const appCheckTokenTimeout = Duration(seconds: 12);
 // Game Center / Play Games sign-in must not block launch forever when offline.
@@ -188,3 +197,64 @@ const usSpot = [
 /// ===== STORE FRONT URL =====
 // Method channel URL for store front integration
 const storeFrontUrl = 'nakajimamasao.appstudio.railwaycrossing/storefront';
+
+// --- AdMob demo ad units ---
+//
+// Google publishes these and they are the same for every developer, so they are
+// constants here rather than .env entries: they are not secret, and keeping them
+// in source means a missing .env key can no longer break a debug build.
+// Production unit IDs stay in .env, because those are ours.
+// Gap above a snackbar, as a share of the drawn height. The bar is pushed up
+// from the bottom, so this is what decides how far down from the top it lands
+const double snackBarTopGap = 0.08;
+
+// The banner sits bottom right and must stop short of the centre, where the
+// road crosses the tracks. 42% of the SCREEN width leaves that gap and clears
+// the control row on the left, which needs 0.75h of the 1.778h drawn width when
+// the emergency button is showing.
+//
+// Landscape locked, so MediaQuery's size.width is the device's long side: this
+// is 42% of that, and it is the banner width.
+//
+// Of the screen, not of width(): width() drops the side margins, and 40% of it
+// lands under 320 on a phone, below the narrowest standard creative.
+const double bannerWidthRatio = 0.42;
+
+// The narrowest standard creative is 320x50. A slot under it cannot be filled
+// by one, so the auction falls back on whatever else fits and the fill is
+// likely to drop. On an iPhone SE in landscape (667x375) the ratio alone gives
+// 266, so a floor is needed to hold this.
+//
+// This is about fill, not about the SDK refusing. Google documents INVALID as
+// returned "if the context is null or the device height cannot be determined
+// from the context" and says nothing about a minimum width, so a narrow slot
+// returning null is NOT a documented behaviour and must not be claimed as one.
+//
+// 320 still keeps its distance on the smallest supported device: 320/667 is 48%
+// of the screen, the banner starts at 347 and the control row ends at 281.
+const double minBannerWidth = 320;
+
+// The widest standard creative is the leaderboard, 728x90 (AdSize.leaderboard,
+// ad_containers.dart). Past that width no further standard size becomes
+// eligible, so a wider slot costs screen and returns nothing. That makes 728
+// the point where widening stops paying, not a number picked for looks.
+//
+// NOT from Google's documentation. Google says only that adaptive banners
+// "select creatives for maximum performance" and publishes no breakdown, so
+// treat this as the reasoning behind the value, not a measured fact.
+const double maxBannerWidth = 728;
+
+// Ceiling handed to the inline adaptive request, and the cap on the box. Only
+// inline takes one; anchored derives its height from the slot width instead
+const double maxBannerHeight = 60;
+
+// https://developers.google.com/admob/android/test-ads
+// https://developers.google.com/admob/ios/test-ads  (checked 2026-09-02)
+// Adaptive banners have their own demo unit. The fixed size ones (6300978111,
+// 2934735716) only serve 320x50, making every adaptive size look like 320x50
+const String androidBannerTestId = "ca-app-pub-3940256099942544/9214589741";
+const String iosBannerTestId = "ca-app-pub-3940256099942544/2435281174";
+const String androidRewardedTestId = "ca-app-pub-3940256099942544/5224354917";
+const String iosRewardedTestId = "ca-app-pub-3940256099942544/1712485313";
+const String androidInterstitialTestId = "ca-app-pub-3940256099942544/1033173712";
+const String iosInterstitialTestId = "ca-app-pub-3940256099942544/4411468910";

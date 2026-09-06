@@ -26,9 +26,15 @@ class PhotoButton extends HookConsumerWidget {
     final lastClaimedDate = ref.watch(lastClaimedProvider);
     final isLoading = ref.watch(loadingProvider);
 
+    // Today's free shot is unused, or paid tickets are left. App Check is only
+    // asked for when this holds: it guards the Cloud Function that spends one
+    final canSpend = tickets > 0 || !lastClaimedDate.isToday(currentDate);
+
     /// ===== PHOTO STATE VARIABLES =====
-    // Camera visibility waits for App Check; photo library permission is only for save.
-    final isCameraVisible = useState(false);
+    // Photo library permission is only asked for on save, not here.
+    // Shown only once App Check has cleared: the Cloud Function behind the
+    // shutter needs it, and retryAppCheckIfNeeded runs on every train call
+    final isAppCheckReady = useValueListenable(appCheckReady);
     final lifecycle = useAppLifecycleState();
 
     /// ===== ANIMATION CONTROLLERS =====
@@ -78,31 +84,12 @@ class PhotoButton extends HookConsumerWidget {
       return null;
     }, [lifecycle, context.mounted]);
 
-    /// ===== APP CHECK INITIALIZATION =====
-    // Hide camera until a real App Check JWT is obtained locally.
-    // Do not depend on pingAppCheck (may be undeployed); that blocked the camera forever.
-    // Photo library permission is requested only when the user taps Save.
+    /// ===== BLINK =====
+    // The button is always shown. App Check is not asked for to decide that:
+    // cameraAction reports it if the Cloud Function turns out to be unreachable
     useEffect(() {
-      var cancelled = false;
-      Future<void> prepareCamera() async {
-        while (!cancelled) {
-          try {
-            await ensureFirebaseReady().timeout(const Duration(seconds: 20));
-            break;
-          } catch (e) {
-            'Waiting for App Check token: $e'.debugPrint();
-            await Future.delayed(const Duration(seconds: 3));
-          }
-        }
-        if (cancelled || !context.mounted) return;
-        isCameraVisible.value = true;
-        blinkController.repeat(reverse: true);
-        'Camera enabled after App Check token ready'.debugPrint();
-      }
-      prepareCamera();
-      return () {
-        cancelled = true;
-      };
+      blinkController.repeat(reverse: true);
+      return null;
     }, const []);
 
     /// ===== PHOTO GENERATION METHODS =====
@@ -160,6 +147,9 @@ class PhotoButton extends HookConsumerWidget {
     // Handle camera button tap - photo library permission is not required to generate.
     cameraAction() async {
       "Camera action".debugPrint();
+      // Nothing to spend: no App Check, no server time, no loading flag. Raising
+      // that flag first blinked the screen through a load that could not finish
+      if (!canSpend) return;
       ref.read(loadingProvider.notifier).update(true);
       try {
         // Ensure App Check/Auth right before calling Cloud Functions.
@@ -187,9 +177,7 @@ class PhotoButton extends HookConsumerWidget {
         "isLoading: $isLoading".debugPrint();
       }
     }
-    if (!isCameraVisible.value) {
-      return const SizedBox.shrink();
-    }
+    if (!isAppCheckReady) return const SizedBox.shrink();
     return photo.cameraButton(
       onTap: () => cameraAction(),
       animation: blinkAnimation,

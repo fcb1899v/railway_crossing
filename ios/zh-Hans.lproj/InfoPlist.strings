@@ -1,0 +1,11 @@
+/* 
+  InfoPlist.strings
+  Runner
+
+  Created by 中島正雄 on 2022/05/15.
+  
+*/
+
+CFBundleDisplayName = "操作乐趣铁路道口";
+NSUserTrackingUsageDescription = "此应用完全依靠广告收入运营，因为它是由个人开发的。如果您同意，请点击“允许”以授权。您将看到适合您偏好的广告。";
+NSPhotoLibraryUsageDescription = "点击“允许访问所有照片”，即可保存、查看、使用和分享由应用生成的铁路摄影图片。您可以随时在设备设置中更改权限。";

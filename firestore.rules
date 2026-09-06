@@ -1,25 +1,133 @@
 rules_version = '2';
+
+// LETS CROSSING (railway_crossing) — tickets and ad-free expiration
+//
+// Sign-in is anonymous (lib/common_function.dart:46-47). The document id is
+// NOT the Firebase uid: it is device_<platform>_<deviceId> or
+// player_<platform>_<playerId> (lib/ticket_manager.dart:133-138), so that a
+// balance survives a reinstall, which resets the anonymous uid.
+//
+// That design decides what these rules can and cannot do:
+//
+//   CAN     reject malformed documents, impossible values, back-dated writes,
+//           deletes, and anything outside /tickets
+//   CANNOT  prove a ticket count was earned. The client picks the number, and
+//           no rule can tell a purchase from an edit.
+//
+// The second point is the one that costs money. Closing it means moving the
+// spend into functions/index.js so the server owns the count.
+// See 03_Developer/technical/2026-09-03_railway_ticket_rules.md.
+
 service cloud.firestore {
   match /databases/{database}/documents {
+
     match /tickets/{ticketId} {
-      allow read: if request.auth != null
-        && ticketId.matches('^(device|player)_(ios|android)_[A-Za-z0-9_-]+$');
+      allow read: if isSignedIn() && isWellFormedId(ticketId);
 
-      allow create, update: if request.auth != null
-        && ticketId.matches('^(device|player)_(ios|android)_[A-Za-z0-9_-]+$')
-        && request.resource.data.keys().hasOnly([
-          'tickets', 'expiration', 'lastClaimed', 'platform', 'updatedAtMs'
-        ])
-        && request.resource.data.tickets is int
-        && request.resource.data.tickets >= 0
-        && request.resource.data.expiration is int
-        && request.resource.data.lastClaimed is int
-        && request.resource.data.lastClaimed >= 0
-        && request.resource.data.updatedAtMs is int
-        && request.resource.data.updatedAtMs >= 0
-        && request.resource.data.platform in ['ios', 'android'];
+      allow create: if isSignedIn()
+        && isWellFormedId(ticketId)
+        && isWellFormedPayload(ticketId);
 
+      // resource is the document as it stands, so the daily claim can be held
+      // to moving forward only. That check is not available on create.
+      allow update: if isSignedIn()
+        && isWellFormedId(ticketId)
+        && isWellFormedPayload(ticketId)
+        && request.resource.data.lastClaimed >= resource.data.lastClaimed;
+
+      // The app never deletes. Leaving this open would let one request throw
+      // away a paid balance.
       allow delete: if false;
     }
+
+    // Rules do not cascade, so an unmatched path is denied already. Stating it
+    // means a later edit that adds a broad match has to remove this on purpose.
+    match /{document=**} {
+      allow read, write: if false;
+    }
   }
+}
+
+// Anonymous sign-in counts. It is not proof of identity — everyone gets a uid.
+// It only keeps out callers that never went through the app at all.
+function isSignedIn() {
+  return request.auth != null;
+}
+
+// device_ios_… / device_android_… / player_ios_… / player_android_…
+function isWellFormedId(ticketId) {
+  return ticketId.matches('^(device|player)_(ios|android)_[A-Za-z0-9_-]{1,128}$');
+}
+
+function isWellFormedPayload(ticketId) {
+  return hasExactlyTheExpectedFields()
+    && typesAreRight()
+    && platformMatchesId(ticketId)
+    && withinBounds()
+    && isNotPostDated();
+}
+
+function hasExactlyTheExpectedFields() {
+  return request.resource.data.keys().hasOnly([
+      'tickets', 'expiration', 'lastClaimed', 'platform', 'updatedAtMs'
+    ])
+    && request.resource.data.keys().hasAll([
+      'tickets', 'expiration', 'lastClaimed', 'platform', 'updatedAtMs'
+    ]);
+}
+
+function typesAreRight() {
+  return request.resource.data.tickets is int
+    && request.resource.data.expiration is int
+    && request.resource.data.lastClaimed is int
+    && request.resource.data.updatedAtMs is int
+    && request.resource.data.platform in ['ios', 'android'];
+}
+
+// The id already says which platform wrote the document. A mismatch means the
+// write did not come from the code path that builds these ids.
+function platformMatchesId(ticketId) {
+  return (request.resource.data.platform == 'ios'
+          && ticketId.matches('^(device|player)_ios_.*'))
+      || (request.resource.data.platform == 'android'
+          && ticketId.matches('^(device|player)_android_.*'));
+}
+
+// None of this proves a balance was earned. What it does is cap the damage:
+// 999 against an app whose largest single grant is 72 (onetimeTicketLimitNumber,
+// lib/constant.dart:144). A number nobody can reach by playing is refused, and
+// everything under the cap still has to pass the checks above.
+//
+// The three integers are NOT the same kind of number. Mixing them up here would
+// lock every user out of writing:
+//
+//   expiration   yyyyMMddHHmmss, e.g. 20260903120000
+//                (lib/constant.dart:29 defaultIntDateTime = 20240101000000)
+//   lastClaimed  the same yyyyMMddHHmmss shape (main.dart:141 intDateTime())
+//   updatedAtMs  epoch milliseconds (ticket_manager.dart:595
+//                DateTime.now().millisecondsSinceEpoch)
+//
+// The bounds below use 1_0000_0000_0000 (year 1000) as a floor and
+// 3000_0000_0000_00 (year 3000) as a ceiling for the two date-shaped fields.
+// They reject a value from the wrong scale and anything centuries out, without
+// pinning a date this app has to keep up with.
+function withinBounds() {
+  return request.resource.data.tickets >= 0
+    && request.resource.data.tickets <= 999
+    && isDateShaped(request.resource.data.lastClaimed)
+    && isDateShaped(request.resource.data.expiration)
+    && request.resource.data.updatedAtMs >= 0;
+}
+
+// yyyyMMddHHmmss as an int. 0 is allowed: it is the "never claimed" value.
+function isDateShaped(value) {
+  return value == 0
+    || (value >= 10000000000000 && value <= 30000000000000);
+}
+
+// updatedAtMs decides local-vs-cloud on the next launch (ticket_manager.dart).
+// A document stamped in the future would win that comparison from then on.
+// Five minutes absorbs clock skew.
+function isNotPostDated() {
+  return request.resource.data.updatedAtMs <= request.time.toMillis() + 300000;
 }

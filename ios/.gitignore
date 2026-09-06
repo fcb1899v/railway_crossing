@@ -4,9 +4,17 @@
 *.moved-aside
 *.pbxuser
 *.perspectivev3
-*.strings
-*.plist
-*.entitlements
+# Not *.strings: Runner/*.lproj/*.strings are the app's own localizations.
+# Not *.plist: that also hid Runner/Info.plist and Flutter/AppFrameworkInfo.plist,
+# both of which the build needs. Name the one that should stay out.
+# Not google-services.json / GoogleService-Info.plist: every app here applies
+# the com.google.gms.google-services Gradle plugin, which fails the Android
+# build when the json is absent, and six of the eight Xcode projects list the plist
+# in their Resources build phase. Both files hold the same identifiers as
+# lib/firebase_options.dart and ship inside the app, so excluding them hid
+# nothing and cost two apps their copy (kawaii and letswashlet, 2026-09-02).
+# Not *.entitlements: Runner/Runner.entitlements carries the Game Center and
+# push capabilities. Without it the app will not sign.
 **/*sync/
 .sconsign.dblite
 .tags*

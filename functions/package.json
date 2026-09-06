@@ -2,7 +2,7 @@
   "name": "railway-crossing-functions",
   "description": "Secure AI image generation proxy for LETS CROSSING",
   "engines": {
-    "node": "20"
+    "node": "22"
   },
   "main": "index.js",
   "scripts": {
