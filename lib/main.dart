@@ -105,11 +105,8 @@ final lastClaimedProvider = NotifierProvider<LastClaimedNotifier, int>(LastClaim
 final loadingProvider = NotifierProvider<LoadingNotifier, bool>(LoadingNotifier.new);
 final photoProvider = NotifierProvider<PhotoNotifier, List<Uint8List>>(PhotoNotifier.new);
 
-/// Main application entry point
-// No ATT call here. On iOS the UMP form shows Google's IDFA explainer and then
-// raises the system ATT prompt itself, so asking again from the app put a second
-// explainer in front of a user who had already answered. Removed in NEO first;
-// see 03_Developer/technical/2026-08-25_elevatorneo_att_gate_removal.md
+/// Main application entry point. No ATT call here: on iOS the UMP form raises
+/// the system ATT prompt itself, so asking again would show a second explainer
 Future<void> main() async {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
@@ -141,9 +138,8 @@ Future<void> main() async {
   final currentDate = DateTime.now().toLocal().intDateTime();
   final savedExpirationDate = 'expiration'.getSharedPrefInt(prefs, defaultIntDateTime);
   final savedLastClaimedDate = 'lastClaim'.getSharedPrefInt(prefs, defaultIntDateTime);
-  /// ===== FIREBASE CORE =====
-  // Analytics needs Firebase before runApp.
-  // Start App Check/Auth immediately so the camera gate clears during first paint.
+  /// ===== FIREBASE CORE ===== Analytics needs Firebase before runApp; App Check/Auth
+  /// start immediately so the camera gate clears during first paint
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   unawaited(ensureFirebaseReady());
   unawaited(ensurePurchaseInitialized());

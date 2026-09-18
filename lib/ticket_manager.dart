@@ -1,6 +1,5 @@
-// Ticket sync: tickets + ad-free expiration via SharedPreferences + Firestore.
-// Game Center / Play Games supplies PlayerID (identity); Firestore stores the data.
-// Lookup: player doc -> device doc -> new. Writes mirror to both when possible.
+// Ticket sync: tickets + ad-free expiration in SharedPreferences + Firestore, keyed by
+// Game Center / Play Games PlayerID. Lookup: player doc -> device doc -> new; writes to both.
 
 import 'dart:async';
 import 'dart:io';
@@ -215,9 +214,8 @@ class TicketManager {
     return playerId;
   }
 
-  /// Requests Game Center / Play Games sign-in UI at most once per local day,
-  /// then always re-checks the current session (no UI).
-  /// Call from homepage launch / resume only.
+  /// Requests Game Center / Play Games sign-in UI at most once per local day, then
+  /// always re-checks the current session (no UI). Call from homepage launch / resume only.
   Future<GamesSignInOutcome> ensureGamesSignedInOncePerDay() async {
     var signInWasAttempted = false;
     try {

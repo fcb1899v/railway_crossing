@@ -30,10 +30,8 @@ class PhotoButton extends HookConsumerWidget {
     // asked for when this holds: it guards the Cloud Function that spends one
     final canSpend = tickets > 0 || !lastClaimedDate.isToday(currentDate);
 
-    /// ===== PHOTO STATE VARIABLES =====
-    // Photo library permission is only asked for on save, not here.
-    // Shown only once App Check has cleared: the Cloud Function behind the
-    // shutter needs it, and retryAppCheckIfNeeded runs on every train call
+    /// ===== PHOTO STATE VARIABLES ===== Photo permission is asked on save, not here.
+    /// The shutter shows only once App Check has cleared (retried on every train call)
     final isAppCheckReady = useValueListenable(appCheckReady);
     final lifecycle = useAppLifecycleState();
 
@@ -84,9 +82,8 @@ class PhotoButton extends HookConsumerWidget {
       return null;
     }, [lifecycle, context.mounted]);
 
-    /// ===== BLINK =====
-    // The button is always shown. App Check is not asked for to decide that:
-    // cameraAction reports it if the Cloud Function turns out to be unreachable
+    /// ===== BLINK ===== The button is always shown; cameraAction reports it
+    /// if the Cloud Function turns out to be unreachable
     useEffect(() {
       blinkController.repeat(reverse: true);
       return null;

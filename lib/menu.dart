@@ -38,7 +38,8 @@ class MenuButton extends HookConsumerWidget {
 
     /// ===== PURCHASE STATE VARIABLES =====
     // Purchase-related state variables for in-app purchases
-    final passesPrice = useState(defaultPrice);
+    // The live store price, empty while unknown; listened to, so a late price shows the button
+    final passesPrice = useValueListenable(PurchaseManager.onetimePrice);
     // final priceList = useState(defaultPriceList);
     // final currentPlan = useState(freeID);
     // final activePlan = useState<List<String>>([]);
@@ -81,8 +82,7 @@ class MenuButton extends HookConsumerWidget {
     // Initialize app state and load saved preferences
     initState() async {
       "initState".debugPrint();
-      final prefs = await SharedPreferences.getInstance();
-      passesPrice.value = await purchaseManager.loadOnetimePrice(prefs);
+      // The price is prefetched by the home screen after launch work, not here at first frame
       // currentPlan.value = "plan".getSharedPrefString(prefs, freeID);
       // activePlan.value = "activePlan".getSharedPrefListString(prefs, []);
       // priceList.value = await loadPriceList(prefs);
@@ -103,6 +103,8 @@ class MenuButton extends HookConsumerWidget {
       // if (isLoadedSubscriptionInfo.value) {
         audioManager.playEffectSound(openSound);
         isMenuOpen.value = !isMenuOpen.value;
+        // Opened before the prefetch, or after it found nothing: try again, joining any fetch
+        if (isMenuOpen.value && passesPrice.isEmpty) unawaited(PurchaseManager.loadOnetimePrice());
       // }
     }
 
@@ -144,11 +146,14 @@ class MenuButton extends HookConsumerWidget {
 
     // Show one-time purchase dialog or snackbar
      void toBuyOnetime() {
+      // No live price, no purchase dialog. Read at tap time: a refetch can clear it between frames
+      final price = PurchaseManager.onetimePrice.value;
+      if (price.isEmpty) return;
       isMenuOpen.value = false;
       "isMenuOpen: ${isMenuOpen.value}".debugPrint();
       (tickets > onetimeTicketLimitNumber) ?
       common.showSnackBar(context.useTickets(onetimeTicketLimitNumber), true):
-      menu.buyOnetimeDialog(price: passesPrice.value, onTap: () => buyOnetimeAction());
+      menu.buyOnetimeDialog(price: price, onTap: () => buyOnetimeAction());
     }
 
     /// ===== CURRENTLY NOT USE FUNCTIONS =====
@@ -454,7 +459,7 @@ class MenuButton extends HookConsumerWidget {
     // Main UI layout with menu components
     return Stack(alignment: Alignment.centerLeft,
       children: [
-        if (isMenuOpen.value && !isLoading) menu.onetimeMenuWidget(onTap: () => toBuyOnetime()),
+        if (isMenuOpen.value && !isLoading) menu.onetimeMenuWidget(price: passesPrice, onTap: () => toBuyOnetime()),
         menu.menuButton(onTap: () => openMenu()),
         // if (isMenuOpen.value) menuWidget(context, currentPlan.value, tickets.value, countryNumber.value, currentDate.value.intDateTime(), lastClaimedDate.value, expirationDate.value, toBuyOnetime, toUpgradePlan, toPurchase, toCancel, toRestore),
         // if (isMyPurchase.value) purchaseTable(context, currentPlan.value, tickets.value, priceList.value, buyPremium, buyStandard, buyTrial),
@@ -519,17 +524,22 @@ class MenuWidget {
 
   /// ===== ONETIME MENU COMPONENTS =====
   /// One-time purchase menu widget with purchase options
+  /// The menu stays for its status and links; only the purchase button needs a live price
   Widget onetimeMenuWidget({
+    required String price,
     required void Function() onTap,
   }) => Container(
     alignment: Alignment.centerLeft,
+    // Without the button the panel ends where its rows do; the space moves below it so the top stays put
     margin: EdgeInsets.only(
       left: context.menuSideMargin(),
-      bottom: context.onetimeMenuMarginBottom(),
+      bottom: context.onetimeMenuMarginBottom()
+        + (price.isEmpty ? context.onetimeMenuPurchaseButtonExtent() : 0),
     ),
     padding: EdgeInsets.symmetric(vertical: context.menuPaddingTop()),
     width: context.menuWidth(),
-    height: context.onetimeMenuHeight(),
+    height: context.onetimeMenuHeight()
+      - (price.isEmpty ? context.onetimeMenuPurchaseButtonExtent() : 0),
     decoration: BoxDecoration(
       color: transpWhiteColor,
       borderRadius: BorderRadius.circular(context.menuCornerRadius())
@@ -540,7 +550,7 @@ class MenuWidget {
       menuDivider(),
       onetimeMenuAdFreeStatus(),
       menuDivider(),
-      onetimeMenuPurchaseButton(onTap),
+      if (price.isNotEmpty) onetimeMenuPurchaseButton(onTap),
       Row(children: [
         creditsButton(),
         Spacer(),
@@ -804,6 +814,7 @@ class MenuWidget {
 
   // One-time menu purchase button widget
   Widget onetimeMenuPurchaseButton(void Function() onTap) => GestureDetector(
+    key: const Key("onetimePurchaseButton"),
     onTap: onTap,
     child: Container(
       width: context.menuPurchaseButtonWidth(),
