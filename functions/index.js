@@ -453,8 +453,9 @@ exports.generateTrainPhoto = onCall(
   {
     enforceAppCheck: true,
     timeoutSeconds: 120,
+    // No minInstances: a warm instance is billed per second whether or not it is
+    // called, which costs more than the images it serves at this traffic level.
     memory: "1GiB",
-    minInstances: 1,
   },
   async (request) => {
     if (!request.auth) {
