@@ -92,8 +92,7 @@ A release built without this file falls back to the debug signing config, which 
    The Blaze plan is required for Cloud Functions and for the image model.
 2. Run `flutterfire configure`.
    It writes `google-services.json`, `GoogleService-Info.plist`, `lib/firebase_options.dart` and the `flutter` section of `firebase.json`.
-   **None of those are in git**: anything regenerable stays out, and these are the files GitHub's secret scanner flags.
-   Pushing `lib/firebase_options.dart` on 2026-09-06 was reported to Google and the project was suspended two days later.
+   **None of those are in git**: anything regenerable stays out, and these are the files GitHub's secret scanner flags, which reports what it finds to the provider.
 3. Add the sections `flutterfire configure` does not write back to `firebase.json` — `firestore`, `storage` and `functions`.
    `functions/README.md` shows the whole file, and is where the rest of the backend setup lives.
 4. Enable Anonymous Authentication.
