@@ -92,7 +92,7 @@ A release built without this file falls back to the debug signing config, which 
    The Blaze plan is required for Cloud Functions and for the image model.
 2. Run `flutterfire configure`.
    It writes `google-services.json`, `GoogleService-Info.plist`, `lib/firebase_options.dart` and the `flutter` section of `firebase.json`.
-   **None of those are in git**: anything regenerable stays out, and these are the files GitHub's secret scanner flags, which reports what it finds to the provider.
+   **None of those are in git**, so run it after a fresh clone.
 3. Add the sections `flutterfire configure` does not write back to `firebase.json` — `firestore`, `storage` and `functions`.
    `functions/README.md` shows the whole file, and is where the rest of the backend setup lives.
 4. Enable Anonymous Authentication.
@@ -123,11 +123,8 @@ Filling in the API keys is not enough: the code asks for one offering by name.
 
 ### 7. Run the Application
 ```bash
-# Android
-flutter run
-
-# iOS (Swift Package Manager: there is no Podfile to install)
-flutter run
+flutter devices                 # take the id of the one you want
+flutter run -d <device-id>      # iOS needs no pod install: there is no Podfile
 ```
 
 ## 🎮 Application Structure
@@ -163,28 +160,9 @@ assets/
 └── icon/                    # App icons
 ```
 
-## 🎨 Customization
-
-### Crossing Styles
-- Multiple countries: Japan, China, UK, US
-- Each with unique visuals, sounds, and warning patterns
-- Realistic train animations and sound effects
-
-### Visual Themes
-- Realistic backgrounds and crossing equipment
-- Photo galleries and train illustrations
-- AI-generated railway crossing photos
-- Interactive UI elements with blinking animations
-- Credits dialog for sound attribution
-
-### Audio Features
-- Authentic warning sounds for each country
-- Train passing sounds with proper looping
-- Emergency sound effects
-
 ## 📱 Supported Platforms
 
-- **Android**: API 24+ (`flutter.minSdkVersion`)
+- **Android**: API 24+ (`flutter.minSdkVersion`), compiled and targeted at API 37
 - **iOS**: iOS 15.0+ (`IPHONEOS_DEPLOYMENT_TARGET`)
 
 ## 🔧 Development
@@ -199,37 +177,10 @@ flutter analyze   # expected: No issues found!
 flutter test      # expected: All tests passed! (21 tests)
 ```
 
-Three files cover the parts most likely to break: banner geometry, the menu's purchase button wiring, and what the button does while the price is still loading.
-
 ### Firebase plugin versions are pinned on purpose
 
-Every Firebase plugin requires its own `firebase-ios-sdk` with `exact:`.
-One plugin drifting to a newer version stops Swift Package Manager from resolving, and the iOS build fails outright.
-All six are pinned without a caret in `pubspec.yaml`: bump them together, then check they still agree.
-
-```bash
-flutter pub get   # the check reads .dart_tool/package_config.json
-python3 - <<'PY'
-import json, pathlib, re
-cfg = json.load(open(".dart_tool/package_config.json"))
-found = 0
-for p in cfg["packages"]:
-    if not re.match(r"(firebase_|cloud_)", p["name"]):
-        continue
-    root = pathlib.Path(p["rootUri"].replace("file://", ""))
-    for sw in root.glob("ios/*/Package.swift"):
-        for line in sw.read_text().splitlines():
-            if "let firebaseSdkVersion" in line:
-                found += 1
-                print(f'{p["name"]:22} {line.split(chr(34))[1]}')
-print(f"{found} plugins reported a version")
-PY
-```
-
-Expect six lines carrying one distinct version.
-Two or more versions means the iOS build will fail; fewer than six lines means the check itself broke and says nothing about the project.
-
-Reading the versions out of `~/.pub-cache` instead does not work: every version ever fetched is still there, so a healthy project looks broken.
+Every Firebase plugin requires its own `firebase-ios-sdk` with `exact:`, and one plugin on a different version stops Swift Package Manager from resolving.
+All six are pinned without a caret in `pubspec.yaml`, so bump them together.
 
 ### Build
 ```bash
@@ -258,12 +209,6 @@ Pull requests are not accepted, because the code is not licensed for redistribut
 ## 📞 Support
 
 If you have any problems or questions, please create an issue on GitHub.
-
----
-
-<div align="center">
-  <strong>LETS CROSSING</strong> - Experience the world of railway crossings!
-</div>
 
 ## Licenses & Credits
 
