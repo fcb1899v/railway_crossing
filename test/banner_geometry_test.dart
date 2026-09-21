@@ -1,5 +1,5 @@
-// The banner slot must clear the control row, stop short of the centre crossing and
-// stay >= 320 (narrowest standard creative). Landscape only; sizes are logical pixels.
+// The banner slot must clear the control row, stop short of the centre crossing and stay >= 320.
+// Landscape only; sizes are logical pixels.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -46,8 +46,8 @@ Future<void> withDevice(
   );
 }
 
-// bannerSlotWidth() is the expression admob_banner.dart uses. Restating it here
-// would let this file pass while the widget is broken.
+// bannerSlotWidth() is the expression admob_banner.dart uses.
+// Restating it here would let this file pass while the widget is broken.
 
 /// Where the control row ends: the left margin plus five 0.12h buttons with 0.03h
 /// margins. Five is the count with the emergency button showing, the widest the row gets.
@@ -92,8 +92,8 @@ void main() {
     }
 
     test('the height ceiling stays inside what a banner can be', () {
-      // 50 is the shortest standard creative; 150 is the tallest AdMob will
-      // serve an adaptive banner at, so the ceiling has to sit between them
+      // 50 is the shortest standard creative, and 150 is the tallest AdMob serves an adaptive banner at.
+      // The ceiling has to sit between them.
       expect(maxBannerHeight, greaterThanOrEqualTo(50));
       expect(maxBannerHeight, lessThanOrEqualTo(150));
     });

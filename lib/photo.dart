@@ -26,8 +26,8 @@ class PhotoButton extends HookConsumerWidget {
     final lastClaimedDate = ref.watch(lastClaimedProvider);
     final isLoading = ref.watch(loadingProvider);
 
-    // Today's free shot is unused, or paid tickets are left. App Check is only
-    // asked for when this holds: it guards the Cloud Function that spends one
+    // Today's free shot is unused, or paid tickets are left.
+    // App Check is asked for only when this holds: it guards the Cloud Function that spends one.
     final canSpend = tickets > 0 || !lastClaimedDate.isToday(currentDate);
 
     /// ===== PHOTO STATE VARIABLES ===== Photo permission is asked on save, not here.
@@ -144,8 +144,8 @@ class PhotoButton extends HookConsumerWidget {
     // Handle camera button tap - photo library permission is not required to generate.
     cameraAction() async {
       "Camera action".debugPrint();
-      // Nothing to spend: no App Check, no server time, no loading flag. Raising
-      // that flag first blinked the screen through a load that could not finish
+      // Nothing to spend: no App Check, no server time, no loading flag.
+      // Raising the flag first blinked the screen through a load that could not finish.
       if (!canSpend) return;
       ref.read(loadingProvider.notifier).update(true);
       try {

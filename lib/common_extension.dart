@@ -656,8 +656,7 @@ extension ContextExt on BuildContext {
       (width() * 0.9 - textPainter.size.width) / 2;
   double snackBarBottomMargin() =>
       height() * ((isMediaWide() || !isAdmobEnoughUpdDownSpace()) ? 0.02 : 0.2);
-  // A floating snackbar anchors to the bottom, so the top of the screen is the
-  // screen height less the bar itself and the gap left above it
+  // A floating snackbar anchors to the bottom, so the top margin is screen height less the bar and its gap.
   double snackBarHeight() => snackBarFontSize() * 1.4 + snackBarPadding() * 2;
   double snackBarTopMargin() =>
       (mediaHeight() - snackBarHeight() - height() * snackBarTopGap)

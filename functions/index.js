@@ -17,12 +17,12 @@ setGlobalOptions({
 const PROJECT_ID = process.env.GCLOUD_PROJECT || "railway-crossing-9fca7";
 // Imagen 4 Fast was discontinued 2026-06-30; we moved off it on 2026-09-03.
 const GEMINI_MODEL = "gemini-3.1-flash-lite-image";
-// Verified 2026-09-17: this model answers only on the global endpoint;
+// Verified 2026-09-17: this model answers only on the global endpoint.
 // us-central1 returns "not found" for both 3.1 image models.
 const GEMINI_LOCATIONS = ["global"];
 
-// The server owns the prompt wording; anything not listed here is rejected. Spots
-// mirror lib/constant.dart; countries, trains, colors lib/common_extension.dart.
+// The server owns the prompt wording, so anything not listed here is rejected.
+// Spots mirror lib/constant.dart; countries, trains and colors mirror lib/common_extension.dart.
 const PROMPT_CATALOG = {
   "Japan": {
     train: "Shinkansen N700S",
@@ -246,8 +246,8 @@ async function generateOneWithGemini(prompt, location) {
     const inline = part?.inlineData || part?.inline_data;
     const data = inline?.data;
     if (typeof data === "string" && data.length > 0) {
-      // saveImagesToCache() stores everything as image/jpeg; if this reports
-      // image/png the cached objects are silently mislabelled for a year.
+      // saveImagesToCache() stores everything as image/jpeg.
+      // If this reports image/png, the cached objects are silently mislabelled for a year.
       console.log(
           `Gemini image: mimeType=${inline?.mimeType || inline?.mime_type} ` +
           `base64Length=${data.length}`,
@@ -292,8 +292,8 @@ async function generateWithGemini(prompt, count) {
         `Gemini failed at ${location}:`, lastError.message || lastError,
     );
 
-    // Stop only on a definite HTTP answer other than 404 (quota, safety, bad request
-    // would repeat in the next region); transport/parse errors fall through to it.
+    // Stop only on a definite non-404 HTTP answer: quota, safety and bad request repeat in the next region.
+    // Transport and parse errors fall through to it.
     const decided = typeof lastError.httpStatus === "number";
     if (decided && lastError.httpStatus !== 404) {
       break;
@@ -452,8 +452,7 @@ exports.generateTrainPhoto = onCall(
   {
     enforceAppCheck: true,
     timeoutSeconds: 120,
-    // No minInstances: a warm instance is billed per second whether or not it is
-    // called, which costs more than the images it serves at this traffic level.
+    // No minInstances: an idle warm instance is billed and costs more than the images it serves at this traffic.
     memory: "1GiB",
   },
   async (request) => {
@@ -464,8 +463,8 @@ exports.generateTrainPhoto = onCall(
       );
     }
 
-    // The client's own prompt is ignored; the server rebuilds it from the
-    // identity so an arbitrary string cannot reach Gemini under our project.
+    // The client's own prompt is ignored.
+    // The server rebuilds it from the identity so no arbitrary string reaches Gemini under our project.
     const cacheIdentity = request.data?.cacheIdentity;
     const prompt = buildPromptFromIdentity(cacheIdentity);
     if (!prompt) {

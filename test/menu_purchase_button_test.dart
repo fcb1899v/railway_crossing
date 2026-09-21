@@ -1,5 +1,5 @@
-// The one-time menu panel: the purchase button is drawn only from a live store price, and
-// without it the panel shrinks by exactly that space. Wiring: menu_button_wiring_test.dart
+// The one-time menu panel draws the purchase button only from a live store price, else it shrinks by that space.
+// Wiring is covered by menu_button_wiring_test.dart.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,8 +14,8 @@ Future<void> pumpPanel(WidgetTester tester, String price) async {
   tester.view.physicalSize = const Size(956, 440);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.reset);
-  // The test font's square glyphs overflow the fixed-size menu. Both layouts overflow
-  // alike, so the geometry below is compared between them, not against the panel alone
+  // The test font's square glyphs overflow the fixed-size menu.
+  // Both layouts overflow alike, so the geometry below is compared between them, not against the panel alone.
   final onError = FlutterError.onError;
   FlutterError.onError = (details) {
     if (!details.toString().contains("overflowed")) onError?.call(details);

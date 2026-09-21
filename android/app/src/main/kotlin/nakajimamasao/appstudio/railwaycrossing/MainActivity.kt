@@ -71,8 +71,8 @@ class MainActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        // Avoid deprecated Window.setStatusBarColor/setNavigationBarColor on API 35+;
-        // edge-to-edge with transparent bars is default on Android 15 when targeting SDK 35.
+        // Avoid deprecated Window.setStatusBarColor/setNavigationBarColor on API 35+.
+        // Edge-to-edge with transparent bars is default on Android 15 when targeting SDK 35.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && Build.VERSION.SDK_INT < 35) {
             @Suppress("DEPRECATION")
             window.statusBarColor = android.graphics.Color.TRANSPARENT

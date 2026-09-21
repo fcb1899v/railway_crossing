@@ -32,8 +32,8 @@ if (keystorePropertiesFile.exists()) {
 
 android {
 
-    // compileSdk and targetSdk are written out, not taken from flutter.*, which
-    // still defaults both to 36 and would move this app back a level.
+    // compileSdk and targetSdk are written out, not taken from flutter.*.
+    // The flutter.* default is still 36 and would move this app back a level.
     compileSdkVersion 37
     // NDK r28+ aligns native libs for 16 KB page-size devices by default
     ndkVersion flutter.ndkVersion   // 28.2.13676358 in Flutter 3.47.2
@@ -101,8 +101,8 @@ flutter {
 // Exclude deprecated play-services-safetynet; use Play Integrity API instead
 
 configurations.all {
-    // No safetynet exclude: that module is not in the 19.x App Check POM at all
-    // shared_preferences pulls datastore 1.2.0 whose .so fails 16KB RELRO; 1.2.1 fixes it
+    // No safetynet exclude: that module is not in the 19.x App Check POM at all.
+    // shared_preferences pulls datastore 1.2.0 whose .so fails 16KB RELRO, so force 1.2.1.
     resolutionStrategy {
         force 'androidx.datastore:datastore:1.2.1'
         force 'androidx.datastore:datastore-android:1.2.1'

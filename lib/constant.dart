@@ -187,28 +187,28 @@ const usSpot = [
 // Method channel URL for store front integration
 const storeFrontUrl = 'nakajimamasao.appstudio.railwaycrossing/storefront';
 
-// Gap above a snackbar, as a share of the drawn height. The bar is pushed up
-// from the bottom, so this is what decides how far down from the top it lands
+// Gap above a snackbar, as a share of the drawn height.
+// The bar is pushed up from the bottom, so this sets how far down from the top it lands.
 const double snackBarTopGap = 0.08;
 
-// Banner width as a share of the SCREEN width (not width(), which drops the side
-// margins): stops short of the centre crossing and clears the control row.
+// Banner width as a share of the SCREEN width, not width() which drops the side margins.
+// It stops short of the centre crossing and clears the control row.
 const double bannerWidthRatio = 0.42;
 
-// Floor at the narrowest standard creative (320x50); the ratio alone falls under
-// it on an iPhone SE. This is about fill, not a documented SDK refusal.
+// Floor at the narrowest standard creative (320x50), since the ratio alone falls under it on an iPhone SE.
+// This is about fill, not a documented SDK refusal.
 const double minBannerWidth = 320;
 
-// Cap at the widest standard creative (728x90 leaderboard); past it no further
-// standard size becomes eligible. Reasoning, not a Google-documented fact.
+// Cap at the widest standard creative (728x90 leaderboard), past which no further standard size is eligible.
+// This is reasoning, not a Google-documented fact.
 const double maxBannerWidth = 728;
 
-// Ceiling handed to the inline adaptive request, and the cap on the box. Only
-// inline takes one; anchored derives its height from the slot width instead
+// Ceiling handed to the inline adaptive request, and the cap on the box.
+// Only inline takes one; anchored derives its height from the slot width instead.
 const double maxBannerHeight = 60;
 
-// Google's public demo units, kept in source rather than .env so a missing key cannot
-// break a debug build. Adaptive banners have their own unit; fixed size ones only serve 320x50
+// Google's public demo units, kept in source rather than .env so a missing key cannot break a debug build.
+// Adaptive banners have their own unit; fixed size ones only serve 320x50.
 const String androidBannerTestId = "ca-app-pub-3940256099942544/9214589741";
 const String iosBannerTestId = "ca-app-pub-3940256099942544/2435281174";
 const String androidRewardedTestId = "ca-app-pub-3940256099942544/5224354917";

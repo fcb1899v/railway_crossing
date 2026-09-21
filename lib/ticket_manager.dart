@@ -414,8 +414,8 @@ class TicketManager {
     }
   }
 
-  // Chooses local vs cloud tickets using cloudChecked + updatedAtMs;
-  // lastClaimed always takes the later timestamp (daily free claim is monotonic).
+  // Chooses local vs cloud tickets using cloudChecked + updatedAtMs.
+  // lastClaimed always takes the later timestamp, since the daily free claim is monotonic.
   _ResolvedTickets _resolveTickets({
     required bool cloudChecked,
     required int localTickets,
@@ -635,8 +635,8 @@ class TicketManager {
     final hidden = await isSyncPromptHidden();
     if (hidden) return;
     if (await _alreadyShownSyncPromptToday()) return;
-    // Both awaits happen before the mounted check, so the check still covers
-    // every gap between here and showDialog. Marking after it would reopen one.
+    // Both awaits precede the mounted check, so it still covers every gap up to showDialog.
+    // Marking after the check would reopen one.
     await _markSyncPromptShownToday();
     if (!context.mounted) return;
 

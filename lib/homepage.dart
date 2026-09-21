@@ -48,8 +48,8 @@ class HomePage extends HookConsumerWidget {
     final isEmergency = useState(false);     // Emergency mode state
     final isPossibleEmergency = useState(true); // Emergency button availability
     final isPossiblePhoto = useState(false); // Photo capture availability
-    // Set once bootstrapAfterLaunch resolves; false means the Cloud Function
-    // behind the camera cannot be reached
+    // Set once bootstrapAfterLaunch resolves.
+    // False means the Cloud Function behind the camera cannot be reached.
     final isAppCheckReady = useValueListenable(appCheckReady);
     final changeTime = useState(0);          // Animation duration
     final photoIndex = useState(0);          // Current photo index
@@ -102,8 +102,7 @@ class HomePage extends HookConsumerWidget {
       currentDate: currentDate,
     ));
     final common = CommonWidget(context: context);
-    // Coming back from background is the one moment the network is likely to
-    // have changed without the app touching anything
+    // Resuming from background is when the network is likely to have changed unnoticed.
     useOnAppLifecycleStateChange((previous, current) {
       if (current == AppLifecycleState.resumed) unawaited(retryAppCheckIfNeeded());
     });
@@ -169,8 +168,7 @@ class HomePage extends HookConsumerWidget {
           ref.read(ticketsProvider.notifier).update(merged.tickets);
           ref.read(expirationProvider.notifier).update(merged.expiration);
           ref.read(lastClaimedProvider.notifier).update(merged.lastClaimed);
-          // Alert only when today's sign-in was attempted and failed
-          // (not on every cold start after that).
+          // Alert only when today's sign-in was attempted and failed, not on every later cold start.
           if (!signIn.isSignedIn && signIn.signInWasAttempted) {
             'Show sync prompt after games sign-in failed'.debugPrint();
             await ticketManager.showSyncPromptIfNeeded(context);
@@ -574,8 +572,8 @@ class HomePage extends HookConsumerWidget {
               emergencyOff,
             ]
           ),
-          // ===== MENU AND UTILITY COMPONENTS ===== Hidden while App Check is down:
-          // the menu sells tickets, and the camera they pay for needs the Cloud Function
+          // ===== MENU AND UTILITY COMPONENTS ===== Hidden while App Check is down.
+          // The menu sells tickets, and the camera they pay for needs the Cloud Function.
           if (isAppCheckReady) IgnorePointer(
             ignoring: (isYellow.value || isRightWait.value || isLeftWait.value || isLoading),
             child: Opacity(

@@ -1,5 +1,5 @@
-// MenuButton itself: its purchase button follows PurchaseManager.onetimePrice while the
-// menu is open, and a tap after the price was cleared opens no purchase dialog.
+// MenuButton itself: its purchase button follows PurchaseManager.onetimePrice while the menu is open.
+// A tap after the price was cleared opens no purchase dialog.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

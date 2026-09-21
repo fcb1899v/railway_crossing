@@ -1,9 +1,7 @@
 rules_version = '2';
 
-// The bucket holds generated train photos, written and read only by
-// functions/index.js through the Admin SDK, which bypasses these rules.
-// The app never touches Storage directly (no firebase_storage dependency),
-// so every client request is denied.
+// Only functions/index.js reads and writes the generated train photos, through the Admin SDK, which bypasses these rules.
+// The app has no firebase_storage dependency, so every client request is denied.
 service firebase.storage {
   match /b/{bucket}/o {
     match /{allPaths=**} {
