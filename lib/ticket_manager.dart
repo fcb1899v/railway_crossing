@@ -1,5 +1,5 @@
-// Ticket sync: tickets + ad-free expiration in SharedPreferences + Firestore, keyed by
-// Game Center / Play Games PlayerID. Lookup: player doc -> device doc -> new; writes to both.
+// Ticket and ad-free expiry sync (SharedPreferences and Firestore), keyed by the Game Center / Play Games PlayerID.
+// Lookup: player doc, then device doc, then new; writes go to both.
 
 import 'dart:async';
 import 'dart:io';

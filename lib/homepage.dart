@@ -394,8 +394,8 @@ class HomePage extends HookConsumerWidget {
     // Handle left button press - Start left side railway crossing sequence
     pushLeftButton() {
       "pushLeftButton".debugPrint();
-      // This run ends in a photo the Cloud Function cannot produce while App
-      // Check is down, so try to recover here and say so if it is still down
+      // This run ends in a photo the Cloud Function cannot make while App Check is down.
+      // So try to recover here, and say so if it is still down.
       unawaited(retryAppCheckIfNeeded());
       if (!isAppCheckReady) common.showSnackBar(context.photoNeedsConnection(), true);
       if (!isLeftOn.value && !isEmergency.value) {
@@ -454,8 +454,8 @@ class HomePage extends HookConsumerWidget {
     // Handle right button press - Start right side railway crossing sequence
     pushRightButton() {
       "pushRightButton".debugPrint();
-      // This run ends in a photo the Cloud Function cannot produce while App
-      // Check is down, so try to recover here and say so if it is still down
+      // This run ends in a photo the Cloud Function cannot make while App Check is down.
+      // So try to recover here, and say so if it is still down.
       unawaited(retryAppCheckIfNeeded());
       if (!isAppCheckReady) common.showSnackBar(context.photoNeedsConnection(), true);
       if (!isRightWait.value && !isEmergency.value) {
