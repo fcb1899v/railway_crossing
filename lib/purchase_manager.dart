@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:railroad_crossing/common_extension.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 // import 'package:url_launcher/url_launcher.dart';
 // import 'common_widget.dart';
 import 'common_function.dart';
@@ -17,34 +16,43 @@ class PurchaseManager {
     required this.context,
   });
 
-  /// ===== OFFERING MANAGEMENT =====
-  // Get one-time purchase offerings from RevenueCat
-  Future<Offering?> getOnetimeOfferings() async {
-    await ensurePurchaseInitialized();
-    final offerings = await Purchases.getOfferings();
-    return offerings.getOffering(normalOffering);
-  }
-
   /// ===== PRICE LOADING METHODS =====
-  // Load and cache one-time purchase price from RevenueCat
-  Future<String> loadOnetimePrice(SharedPreferences prefs) async {
-    final price = "onetime_price".getSharedPrefString(prefs, defaultPrice);
-    if (price == defaultPrice) {
-      try {
-        final targetOffering = await getOnetimeOfferings();
-        final package = targetOffering!.availablePackages[0];
-        final storeProduct = package.storeProduct;
-        final newPrice = storeProduct.priceString;
-        "onetime_price".setSharedPrefString(prefs, newPrice);
-        return newPrice;
-      } catch (e) {
-        "default_price: $defaultOnetimePrice".debugPrint();
-        return defaultOnetimePrice;
-      }
-    } else {
+  /// The live store price, empty while unknown. Purchase entry points are drawn only
+  /// from it: never from a stored price or a fixed fallback, which may not be what is charged
+  static final ValueNotifier<String> onetimePrice = ValueNotifier("");
+  /// The fetch in flight, joined by a second caller instead of starting another
+  static Future<String?>? _pricing;
+  /// The one prefetch per process, however often the home screen is rebuilt
+  static Future<String?>? _prefetch;
+
+  /// Fetches the price once, a few seconds after launch work, so the menu opens with it
+  static Future<String?> prefetchOnetimePrice() =>
+    _prefetch ??= Future.delayed(pricePrefetchDelay, loadOnetimePrice);
+
+  /// The known price, else the fetch in flight, else a new fetch
+  static Future<String?> loadOnetimePrice() async => onetimePrice.value.isNotEmpty
+    ? onetimePrice.value
+    : await (_pricing ??= _fetchOnetimePrice().whenComplete(() => _pricing = null));
+
+  static Future<String?> _fetchOnetimePrice() async {
+    try {
+      await ensurePurchaseInitialized();
+      final offerings = await Purchases.getOfferings();
+      final price = onetimePackage(offerings, normalOffering)?.storeProduct.priceString;
+      "onetime price: $price".debugPrint();
+      onetimePrice.value = price ?? "";
       return price;
+    } catch (e) {
+      "onetime price unavailable: $e".debugPrint();
+      onetimePrice.value = "";
+      return null;
     }
   }
+
+  /// The one-time package: both the displayed price and the purchase come from it,
+  /// so what is shown is what is charged. Null means nothing to sell
+  static Package? onetimePackage(Offerings offerings, String offering) =>
+    offerings.getOffering(offering)?.lifetime;
 
   /// ===== PURCHASE EXECUTION METHODS =====
   // Execute purchase transaction with specified offering and subscription type
@@ -55,8 +63,11 @@ class PurchaseManager {
     await ensurePurchaseInitialized();
     final offerings = await Purchases.getOfferings();
     "offering: $offerings".debugPrint();
-    final targetOffering = offerings.getOffering(offering)!;
-    final package = isSubscription ? targetOffering.monthly! : targetOffering.lifetime!;
+    final package = isSubscription
+      ? offerings.getOffering(offering)?.monthly
+      : onetimePackage(offerings, offering);
+    // Caught by the caller's error dialog, instead of a null check crashing the flow
+    if (package == null) throw StateError("No package to purchase in $offering");
     final purchaseResult = await Purchases.purchase(PurchaseParams.package(package));
     "purchaseResult: $purchaseResult".debugPrint();
     return purchaseResult.customerInfo;
@@ -83,8 +94,7 @@ class PurchaseManager {
   }
 
   /// ===== UNUSED FUNCTIONS (COMMENTED OUT) =====
-  // Note: The following functions are commented out and not currently used
-  // They provide subscription management functionality for future use
+  // Subscription management kept for future use
   
   // Restore purchase information from app stores
   // Future<CustomerInfo> getRestoreInfo() async {

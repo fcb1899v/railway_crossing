@@ -1,19 +1,5 @@
-// The banner slot has to satisfy three things at once, and all three were got
-// wrong at least once on 2026-09-04:
-//
-//   1. it must not sit on the control row in the bottom left
-//   2. it must stop short of the centre, where the road crosses the tracks
-//   3. it must stay at or above 320, the narrowest standard creative
-//
-// Three is the one with no visible symptom: a slot under 320 has no standard
-// creative that fits it, so the fill drops without anything failing. The first
-// draft used width() instead of mediaWidth() and gave 285 on an iPhone 16 Pro;
-// the ratio alone still gives 266 on an iPhone SE, which is why there is a
-// floor. Google states no minimum width, so this is about fill, not about the
-// SDK refusing.
-//
-// The app is locked to landscape (main.dart), so only landscape sizes are
-// listed. Sizes are logical pixels, the unit both Flutter and AdSize use.
+// The banner slot must clear the control row, stop short of the centre crossing and
+// stay >= 320 (narrowest standard creative). Landscape only; sizes are logical pixels.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -61,12 +47,10 @@ Future<void> withDevice(
 }
 
 // bannerSlotWidth() is the expression admob_banner.dart uses. Restating it here
-// would let this file pass while the widget is broken, which is the failure the
-// 2026-09-02 review caught in another test.
+// would let this file pass while the widget is broken.
 
-/// Where the control row ends: the left margin plus five buttons, each a
-/// 0.12h square with a 0.03h margin. Five is the count with the emergency
-/// button showing (homepage.dart), which is the widest the row ever gets.
+/// Where the control row ends: the left margin plus five 0.12h buttons with 0.03h
+/// margins. Five is the count with the emergency button showing, the widest the row gets.
 double controlsRightEdge(BuildContext context) =>
     context.sideMargin() + 5 * (context.operationButtonSize() + context.buttonSpace());
 

@@ -275,16 +275,8 @@ extension ContextExt on BuildContext {
   bool isAdmobEnoughSideSpace() => (isMediaWide() && sideMargin() > 60);
   bool isAdmobEnoughUpdDownSpace() => (!isMediaWide() && upDownMargin() > 100);
   bool isAdmobEnoughSpace() => isAdmobEnoughSideSpace() || isAdmobEnoughUpdDownSpace();
-  // The width the banner slot asks the SDK for, and the width of its box:
-  // anchored adaptive hands the width straight back (ad_containers.dart:522-526)
-  // and only picks the height. Lives here, not inline in admob_banner.dart, so
-  // the test can exercise the same expression the widget uses instead of
-  // restating it and passing on a broken one.
-  //
-  //   ratio            keeps the banner off the centre, where the road crosses
-  //   minBannerWidth   320x50 is the narrowest standard creative; the ratio
-  //                    alone gives 266 on an iPhone SE in landscape
-  //   maxBannerWidth   nothing standard is wider than the 728 leaderboard
+  // Banner slot width (adaptive keeps the width and only picks the height).
+  // Lives here so the test exercises the same expression the widget uses.
   double bannerSlotWidth() => (mediaWidth() * bannerWidthRatio)
       .clamp(minBannerWidth, maxBannerWidth);
 
@@ -613,6 +605,9 @@ extension ContextExt on BuildContext {
   double menuPurchaseButtonCornerRadius() => menuPurchaseButtonHeight() / 2;
   double menuPurchaseButtonBorderWidth() => height() * 0.005;
   double menuPurchaseButtonMarginBottom() => height() * 0.04;
+  /// Vertical space the purchase button takes in the one-time menu, margins included
+  double onetimeMenuPurchaseButtonExtent() =>
+      menuPurchaseButtonMargin() + menuPurchaseButtonHeight() + menuPurchaseButtonMarginBottom();
   double menuUpdatedDateMarginBottom() => height() * 0.02;
   double menuUpdatedDateMarginRight() => height() * 0.1;
   double menuUpdatedDateFontSize() => height() * 0.045;
@@ -679,9 +674,7 @@ extension StringExt on String {
     if (kDebugMode) print(this);
   }
 
-  /// ===== SHAREDPREFERENCES HELPERS =====
-  // Comprehensive set of methods for storing and retrieving data from SharedPreferences
-  // All methods include debug logging for development tracking
+  /// ===== SHAREDPREFERENCES HELPERS ===== (all methods log in debug builds)
   void setSharedPrefString(SharedPreferences prefs, String value) {
     "${replaceAll("Key", "")}: $value".debugPrint();
     prefs.setString(this, value);
@@ -761,9 +754,7 @@ extension StringExt on String {
     return countryNumber;
   }
 
-  /// ===== PLAN CONFIGURATION METHODS =====
-  // Plan-related configuration and ticket allocation
-  // Get photo list for different plans
+  /// ===== PLAN CONFIGURATION METHODS ===== (ticket allocation per plan)
   List<int> photosList() => (this == freeID) ?
     [premiumTicketNumber, standardTicketNumber, trialTicketNumber, 0]:
     [premiumTicketNumber, standardTicketNumber, 0];

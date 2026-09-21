@@ -12,9 +12,8 @@ import 'common_extension.dart';
 import 'constant.dart';
 
 
-/// ===== FIREBASE APP CHECK / AUTH =====
-/// Whether App Check cleared at launch. The purchase menu hangs off this: a
-/// ticket bought while this is false buys a camera that cannot run
+/// ===== FIREBASE APP CHECK / AUTH ===== Whether App Check cleared at launch.
+/// The purchase menu hangs off this: a ticket bought while false buys a camera that cannot run
 final appCheckReady = ValueNotifier<bool>(false);
 
 Future<void>? _firebaseReadyFuture;
@@ -67,9 +66,8 @@ Future<void> _activateFirebaseServices() async {
   'Firebase anonymous auth: ${FirebaseAuth.instance.currentUser?.uid}'.debugPrint();
 }
 
-/// Returns a real App Check JWT, or throws.
-/// Native SDKs can return a non-empty placeholder after attestation failure;
-/// that placeholder is what Cloud Functions logs as "Decoding App Check token failed".
+/// Returns a real App Check JWT, or throws. Native SDKs can return a non-empty
+/// placeholder after attestation failure ("Decoding App Check token failed" server side).
 Future<String> _obtainValidAppCheckToken() async {
   var token = await _getAppCheckToken(forceRefresh: false);
   if (_isValidAppCheckJwt(token)) {

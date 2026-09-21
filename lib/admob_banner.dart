@@ -36,14 +36,8 @@ class AdBannerWidget extends HookWidget {
         (!kDebugMode) ? dotenv.get("ANDROID_BANNER_UNIT_ID"):
         androidBannerTestId;
 
-    /// ===== AD LOADING METHODS =====
-    // Load banner ad with error handling. The 30 second re-request below never
-    // fires: adFailedLoading is set right before it and the guard requires it
-    // to be false. Left as it was rather than switched on here, because making
-    // it live changes how often this app asks Google for an ad
-    // slotWidth comes from LayoutBuilder, so it is the width this slot really
-    // gets, capped below. MediaQuery would be the whole screen, which is not
-    // what the banner occupies
+    /// ===== AD LOADING METHODS ===== (the 30 s re-request below never fires: the guard
+    /// requires adFailedLoading false; slotWidth is the LayoutBuilder width, not the screen)
     Future<void> loadAdBanner(int slotWidth) async {
       // Anchored derives the height from the slot width and cannot be capped;
       // inline takes maxBannerHeight as the ceiling and Google picks under it
@@ -81,12 +75,8 @@ class AdBannerWidget extends HookWidget {
       bannerAd.value = adBanner;
     }
 
-    /// ===== CONSENT GATE =====
-    // The single gate for the ad request. canRequestAds is the SDK's own
-    // verdict: it already weighs the region, the TCF consent string and
-    // Additional Consent, so the app must not read ConsentStatus and decide for
-    // itself. A false answer also covers "the SDK could not tell", and letting
-    // that through is exactly what serving without consent looks like in the EEA
+    /// ===== CONSENT GATE ===== canRequestAds is the SDK's own verdict (region, TCF,
+    /// Additional Consent); the app must not read ConsentStatus and decide for itself
     Future<void> requestAdIfAllowed(int slotWidth) async {
       if (isAdRequested.value) return;
       // Say so. Stopping here is silent otherwise, and it looks identical to an
@@ -95,21 +85,15 @@ class AdBannerWidget extends HookWidget {
         'Ad: consent gate closed, no request made'.debugPrint();
         return;
       }
-      // The two callers cannot both run: requestConsentInfoUpdate calls either
-      // its success or its failure listener, never both
-      // (user_messaging_channel.dart), and the form callback fires once
-      // (consent_form.dart). So this is one request per launch and the double
-      // check never decides anything today. It is kept as the guard a third
-      // caller would need, since claiming happens with no await in between
+      // Today only one caller runs per launch; this guard is kept for a third
+      // caller, since claiming the request happens with no await in between
       if (isAdRequested.value) return;
       isAdRequested.value = true;
       await loadAdBanner(slotWidth);
     }
 
-    /// ===== CONSENT AND AD INITIALIZATION =====
-    // The slot width is only known inside LayoutBuilder, which runs during
-    // build. The consent flow must start once, not on every layout pass, so the
-    // width lands in a ref and the effect waits for the first non zero value
+    /// ===== CONSENT AND AD INITIALIZATION ===== The slot width is only known in
+    /// LayoutBuilder, so it lands in a ref and the effect waits for the first non zero value
     final slotWidthRef = useRef<int>(0);
     final hasWidth = useState(false);
 
@@ -123,10 +107,8 @@ class AdBannerWidget extends HookWidget {
         //   testIdentifiers: testIdentifiers,
         // ),
       ), () async {
-        // The SDK decides whether a form is required, loads it and presents it.
-        // The old flow called loadAdBanner from the consent form callback, which
-        // fires when the form closes no matter what the user chose, so a user
-        // who declined still got an ad request
+        // The SDK decides whether a form is required. Do not load the ad from the
+        // form callback: it fires on close no matter what the user chose
         await ConsentForm.loadAndShowConsentFormIfRequired((formError) async {
           if (formError != null) {
             "formError: ${formError.errorCode}: ${formError.message}".debugPrint();
@@ -134,9 +116,8 @@ class AdBannerWidget extends HookWidget {
           await requestAdIfAllowed(slotWidth);
         });
       }, (FormError error) async {
-        // The update failed, but consent given in an earlier session still
-        // stands and canRequestAds can still say yes. Stopping here would throw
-        // away impressions the SDK would have allowed
+        // The update failed, but consent from an earlier session still stands
+        // and canRequestAds can still say yes, so do not stop here
         "error: ${error.errorCode}: ${error.message}".debugPrint();
         await requestAdIfAllowed(slotWidth);
       });
@@ -144,55 +125,11 @@ class AdBannerWidget extends HookWidget {
       return () => bannerAd.value?.dispose();      // Dispose ad on unmount
     }, [hasWidth.value]);
 
-    /// ===== AD DISPLAY WIDGET =====
-    // sizeReady exists only to rebuild once the size resolves. useState
-    // subscribes on its own (flutter_hooks primitives.dart), so bumping it is
-    // enough and there is nothing to read here
+    /// ===== AD DISPLAY WIDGET ===== sizeReady exists only to rebuild once the size
+    /// resolves; useState subscribes on its own, so there is nothing to read here
     return LayoutBuilder(builder: (context, constraints) {
-      // This widget sits straight in the home Stack (homepage.dart:571), so the
-      // constraint is the whole screen and the cap has to come from the art.
-      // Three limits apply, and the tightest one wins:
-      //
-      //   bannerWidthRatio       screen width * 0.40   stops short of the
-      //                                                centre, where the road
-      //                                                crosses the tracks
-      //   clear of the controls  see below              the row must not be
-      //                                                covered
-      //   maxBannerWidth         728                   past the leaderboard no
-      //                                                further standard size
-      //                                                becomes eligible
-      //
-      // The control row and the banner are measured in screen coordinates, not
-      // in width(), or the two numbers would not be comparable:
-      //
-      //   controls end at   sideMargin() + 5 * 0.15h    five buttons at 0.12h
-      //                                                 each plus a 0.03h
-      //                                                 margin, emergency
-      //                                                 showing
-      //   banner starts at  mediaWidth() * 0.60
-      //
-      // On an iPhone 16 Pro in landscape (874x402) that is 79.7 + 301.5 = 381
-      // against 525, so 144 apart.
-      //
-      // The ratio is of the screen, not of width(): width() takes off the side
-      // margins, and 40% of that gives 285 on an iPhone 16 Pro where the screen
-      // gives 349. minBannerWidth then holds the floor at 320, which the ratio
-      // alone misses on the smallest supported device - an iPhone SE in
-      // landscape (667x375) works out at 266.
-      //
-      // 320x50 is the narrowest standard creative, so a slot under it has none
-      // to fill it and the fill rate is likely to suffer. That is the whole
-      // claim: Google documents INVALID as returned "if the context is null or
-      // the device height cannot be determined from the context" and states no
-      // minimum width, so a narrow slot returning null is not a documented
-      // behaviour. The log line above will say if it ever happens.
-      //
-      // The ratio binds on nearly every device, so in practice the slot lands
-      // under 728 and the leaderboard cannot fill it. That is the price of
-      // keeping the banner off the centre of the crossing.
-      //
-      // Google only optimizes the height: whatever width goes in comes back out
-      // unchanged (ad_containers.dart:522-526), so this is the box width too.
+      // The constraint is the whole screen, so the cap comes from the art: a screen
+      // ratio clamped to [320, 728]. Google keeps the width, so this is the box width too.
       final free = context.bannerSlotWidth();
       final available =
           constraints.maxWidth > free ? free : constraints.maxWidth;

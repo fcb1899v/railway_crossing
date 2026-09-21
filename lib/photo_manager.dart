@@ -249,10 +249,8 @@ class PhotoManager {
     }
   }
 
-  /// ===== PERMISSION MANAGEMENT =====
-  // iOS: request add-only photo access for saving.
-  // Android: no gallery-read permission; MediaStore save does not need it.
-  // Never opens Settings automatically; the save flow shows a dialog instead.
+  /// ===== PERMISSION MANAGEMENT ===== iOS: add-only photo access; Android: none
+  /// (MediaStore save needs no permission). Never opens Settings; the save flow shows a dialog
   Future<PermissionStatus> permitPhotoAccess() async {
     if (Platform.isAndroid) {
       final androidSDK = await getAndroidSDK();

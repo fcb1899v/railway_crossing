@@ -17,6 +17,7 @@ import 'menu.dart';
 import 'audio_manager.dart';
 import 'admob_banner.dart';
 import 'photo_manager.dart';
+import 'purchase_manager.dart';
 import 'ticket_manager.dart';
 
 // Home Page Widget - Main railway crossing simulation interface
@@ -142,6 +143,8 @@ class HomePage extends HookConsumerWidget {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         await setNormalState();
         FlutterNativeSplash.remove();
+        // Price prefetch after launch work plus a delay; configure stays where main() puts it
+        unawaited(PurchaseManager.prefetchOnetimePrice());
         try {
           final syncedDate = await getServerDateTime();
           if (context.mounted) {
@@ -523,9 +526,7 @@ class HomePage extends HookConsumerWidget {
       }
     }
 
-    /// ===== MAIN UI LAYOUT =====
-    // Main UI layout with railway crossing components
-    // Components are layered from background to foreground using Stack widget
+    /// ===== MAIN UI LAYOUT ===== (layered background to foreground in a Stack)
     return Scaffold(
       body: Stack(alignment: Alignment.centerLeft,
         children: [
@@ -573,9 +574,8 @@ class HomePage extends HookConsumerWidget {
               emergencyOff,
             ]
           ),
-          // ===== MENU AND UTILITY COMPONENTS =====
-          // Hidden while App Check is down: the menu sells tickets, and the
-          // camera those tickets pay for needs the Cloud Function behind it
+          // ===== MENU AND UTILITY COMPONENTS ===== Hidden while App Check is down:
+          // the menu sells tickets, and the camera they pay for needs the Cloud Function
           if (isAppCheckReady) IgnorePointer(
             ignoring: (isYellow.value || isRightWait.value || isLeftWait.value || isLoading),
             child: Opacity(
@@ -640,9 +640,7 @@ class HomeWidget {
     required this.photoImages,
   });
 
-  /// ===== BACKGROUND COMPONENTS =====
-  // Background image for railway crossing scene
-  // The fill behind the 16:9 art is what shows as the letterbox bars
+  /// ===== BACKGROUND COMPONENTS ===== (the fill behind the 16:9 art is the letterbox)
   Widget backGroundImage() => Container(
     width: context.mediaWidth(),
     height: context.mediaHeight(),

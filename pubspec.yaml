@@ -1,7 +1,7 @@
 name: railroad_crossing
 description: railroad crossing simulator
 publish_to: 'none'
-version: 1.4.5+53
+version: 1.4.6+54
 
 environment:
   # 3.47 is the floor, not 3.3: Android Gradle Plugin 9 rejects the Kotlin
@@ -18,12 +18,12 @@ dependencies:
   webview_flutter_android: ^4.14.1
   webview_flutter: ^4.14.1
   # Firebase
-  firebase_core: ^4.14.0
-  firebase_analytics: ^12.5.0
-  firebase_app_check: ^0.4.7
-  firebase_auth: ^6.6.1
-  cloud_firestore: ^6.9.0
-  cloud_functions: ^6.4.0
+  firebase_core: 4.14.0
+  firebase_analytics: 12.5.0
+  firebase_app_check: 0.4.7
+  firebase_auth: 6.6.1
+  cloud_firestore: 6.9.0
+  cloud_functions: 6.4.0
   # App Icon
   cupertino_icons: ^1.0.9
   flutter_launcher_icons: ^0.14.4
@@ -37,9 +37,8 @@ dependencies:
   # Floating Button
   fab_circular_menu_plus: ^0.0.4
   # Admob
-  # 8+ adds Swift Package Manager support (required for hybrid SPM with webview).
   google_mobile_ads: ^9.1.0
-  # Device locale (0.9+ has iOS SPM support)
+  # Device locale
   devicelocale: ^0.9.1
   # OS version
   device_info_plus: ^13.2.0
@@ -48,7 +47,7 @@ dependencies:
   #env
   flutter_dotenv: ^6.0.1
   # Revenue Cat
-  purchases_flutter: ^10.11.0
+  purchases_flutter: ^10.13.1
   # HyperLink
   url_launcher: ^6.3.2
   # Launches raw URL strings; Uri.parse lowercases schemes like App-prefs:
@@ -61,7 +60,6 @@ dependencies:
   #Server Time
   ntp: ^2.0.0
   #Save Image
-  # 13+ pulls permission_handler_apple with iOS SPM support
   permission_handler: ^13.0.2
   path_provider: ^2.1.6
   image_gallery_saver_plus: ^5.1.1
