@@ -8,7 +8,7 @@ import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:railroad_crossing/audio_manager.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'common_extension.dart';
+import 'extension.dart';
 import 'common_function.dart';
 import 'common_widget.dart';
 import 'constant.dart';

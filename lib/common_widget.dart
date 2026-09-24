@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'common_extension.dart';
+import 'extension.dart';
 import 'constant.dart';
 
 /// ===== COMMON WIDGET CLASS =====

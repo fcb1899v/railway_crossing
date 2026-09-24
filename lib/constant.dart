@@ -3,7 +3,7 @@ import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:railroad_crossing/common_extension.dart';
+import 'package:railroad_crossing/extension.dart';
 
 /// ===== GENERAL PARAMETERS =====
 // Core application parameters and configuration
@@ -215,3 +215,8 @@ const String androidRewardedTestId = "ca-app-pub-3940256099942544/5224354917";
 const String iosRewardedTestId = "ca-app-pub-3940256099942544/1712485313";
 const String androidInterstitialTestId = "ca-app-pub-3940256099942544/1033173712";
 const String iosInterstitialTestId = "ca-app-pub-3940256099942544/4411468910";
+
+/// Banner retry: capped attempts with exponential backoff.
+const int bannerMaxRetry = 5;
+const int bannerRetryBaseSec = 30;
+const int bannerRetryMaxSec = 300;

@@ -102,7 +102,8 @@ flutter {
 
 configurations.all {
     // No safetynet exclude: that module is not in the 19.x App Check POM at all.
-    // shared_preferences pulls datastore 1.2.0 whose .so fails 16KB RELRO, so force 1.2.1.
+    // shared_preferences resolves datastore to 1.1.7 with or without this force, and ELF analysis found no defect at that version.
+    // Keep the force unless the dependency graph changes, or re-verify at the ELF level before removing it.
     resolutionStrategy {
         force 'androidx.datastore:datastore:1.2.1'
         force 'androidx.datastore:datastore-android:1.2.1'

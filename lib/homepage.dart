@@ -9,7 +9,7 @@ import 'package:railroad_crossing/photo.dart';
 import 'package:vibration/vibration.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'common_widget.dart';
-import 'common_extension.dart';
+import 'extension.dart';
 import 'common_function.dart';
 import 'constant.dart';
 import 'main.dart';

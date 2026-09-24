@@ -3,7 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:railroad_crossing/common_extension.dart';
+import 'package:railroad_crossing/extension.dart';
 import 'package:railroad_crossing/constant.dart';
 import 'package:railroad_crossing/l10n/app_localizations.dart';
 import 'package:railroad_crossing/menu.dart';

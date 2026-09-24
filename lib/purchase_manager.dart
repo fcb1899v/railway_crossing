@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
-import 'package:railroad_crossing/common_extension.dart';
+import 'package:railroad_crossing/extension.dart';
 // import 'package:url_launcher/url_launcher.dart';
 // import 'common_widget.dart';
 import 'common_function.dart';

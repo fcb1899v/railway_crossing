@@ -3,7 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:railroad_crossing/common_extension.dart';
+import 'package:railroad_crossing/extension.dart';
 import 'package:railroad_crossing/constant.dart';
 
 /// The narrowest standard creative is 320x50. A slot under it cannot be filled

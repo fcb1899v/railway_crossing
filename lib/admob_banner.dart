@@ -1,9 +1,10 @@
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'common_extension.dart';
+import 'extension.dart';
 import 'dart:io';
 import 'constant.dart';
 
@@ -17,7 +18,7 @@ class AdBannerWidget extends HookWidget {
     /// ===== AD STATE MANAGEMENT =====
     // State variables for ad loading and display
     final adLoaded = useState(false);
-    final adFailedLoading = useState(false);
+    final retryAttempt = useRef(0);
     final bannerAd = useState<BannerAd?>(null);
     // The size Google served, not the one asked for.
     // Inline adaptive reports height 0 until the ad lands, so only getPlatformAdSize knows the box.
@@ -35,8 +36,8 @@ class AdBannerWidget extends HookWidget {
         (!kDebugMode) ? dotenv.get("ANDROID_BANNER_UNIT_ID"):
         androidBannerTestId;
 
-    /// ===== AD LOADING METHODS ===== (the 30 s re-request below never fires: the guard
-    /// requires adFailedLoading false; slotWidth is the LayoutBuilder width, not the screen)
+    /// ===== AD LOADING METHODS =====
+    /// slotWidth is the LayoutBuilder width, not the screen.
     Future<void> loadAdBanner(int slotWidth) async {
       // Anchored derives the height from the slot width and cannot be capped.
       // Inline takes maxBannerHeight as the ceiling and Google picks under it.
@@ -59,13 +60,20 @@ class AdBannerWidget extends HookWidget {
             adSize.value = served;
             sizeReady.value++;
           },
+          /// Retries with exponential backoff, capped attempts.
           onAdFailedToLoad: (ad, error) {
-            ad.dispose();
             'Ad: $ad failed to load: $error'.debugPrint();
-            if (!context.mounted) return;
-            adFailedLoading.value = true;
-            Future.delayed(const Duration(seconds: 30), () {
-              if (!adLoaded.value && !adFailedLoading.value) loadAdBanner(slotWidth);
+            if (!context.mounted || adLoaded.value) return;
+            ad.dispose();
+            retryAttempt.value += 1;
+            if (retryAttempt.value > bannerMaxRetry) return;
+            final backoffSec = math.min(
+              bannerRetryBaseSec * (1 << (retryAttempt.value - 1)),
+              bannerRetryMaxSec,
+            );
+            Future.delayed(Duration(seconds: backoffSec), () {
+              if (adLoaded.value || !context.mounted) return;
+              loadAdBanner(slotWidth);
             });
           },
         ),

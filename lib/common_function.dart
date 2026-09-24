@@ -8,7 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:ntp/ntp.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'common_extension.dart';
+import 'extension.dart';
 import 'constant.dart';
 
 

@@ -5,7 +5,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'audio_manager.dart';
 import 'photo_manager.dart';
-import 'common_extension.dart';
+import 'extension.dart';
 import 'common_function.dart';
 import 'common_widget.dart';
 import 'constant.dart';

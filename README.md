@@ -137,7 +137,9 @@ lib/
 ├── photo.dart               # Photo capture and gallery functionality
 ├── common_widget.dart       # Common widgets
 ├── common_function.dart     # Common functions
-├── common_extension.dart    # Extensions: prompts, localisation helpers, layout maths
+├── extension.dart           # Extension functions
+├── l10n_extension.dart      # Localization helpers, part of extension.dart
+├── size_extension.dart      # Responsive sizing helpers, part of extension.dart
 ├── constant.dart            # Constant definitions
 ├── audio_manager.dart       # Audio playback
 ├── purchase_manager.dart    # RevenueCat purchases and the price notifier

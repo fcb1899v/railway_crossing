@@ -1,5 +1,5 @@
 import 'package:just_audio/just_audio.dart';
-import 'package:railroad_crossing/common_extension.dart';
+import 'package:railroad_crossing/extension.dart';
 import 'constant.dart';
 
 /// ===== AUDIO MANAGER CLASS =====

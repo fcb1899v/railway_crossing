@@ -10,7 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:games_services/games_services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
-import 'common_extension.dart';
+import 'extension.dart';
 import 'common_function.dart';
 import 'constant.dart';
 

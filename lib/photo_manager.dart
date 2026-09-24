@@ -11,7 +11,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'common_function.dart';
 import 'common_widget.dart';
-import 'common_extension.dart';
+import 'extension.dart';
 import 'constant.dart';
 
 /// ===== PHOTO MANAGER CLASS =====
