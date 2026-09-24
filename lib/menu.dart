@@ -129,9 +129,10 @@ class MenuButton extends HookConsumerWidget {
       if (context.mounted) context.pushHomePage();
     }
 
-    // Buy one-time passes through RevenueCat
+    // Buy one-time passes through RevenueCat.
+    // Reads the provider live, not the `isLoading` snapshot, since the onTap closure outlives its frame and a stale snapshot would let a fast double-tap start two purchases.
     Future<void> buyOnetimeAction() async {
-      if (!isLoading) {
+      if (!ref.read(loadingProvider)) {
         ref.read(loadingProvider.notifier).update(true);
         try {
           final CustomerInfo? purchaseInfo = await purchaseManager.buyOnetime();

@@ -214,9 +214,17 @@ class TicketManager {
     return playerId;
   }
 
+  /// One native sign-in at a time, shared across launch and resume: on Android a
+  /// second concurrent call replaces the first, whose result then never arrives.
+  static Future<GamesSignInOutcome>? _signInInFlight;
+
   /// Requests Game Center / Play Games sign-in UI at most once per local day, then
   /// always re-checks the current session (no UI). Call from homepage launch / resume only.
-  Future<GamesSignInOutcome> ensureGamesSignedInOncePerDay() async {
+  Future<GamesSignInOutcome> ensureGamesSignedInOncePerDay() =>
+    _signInInFlight ??= _ensureGamesSignedInOncePerDay()
+      .whenComplete(() => _signInInFlight = null);
+
+  Future<GamesSignInOutcome> _ensureGamesSignedInOncePerDay() async {
     var signInWasAttempted = false;
     try {
       if (!await _alreadyAttemptedGamesSignInToday()) {
