@@ -6,7 +6,6 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:railroad_crossing/audio_manager.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'extension.dart';
 import 'common_function.dart';
@@ -14,7 +13,6 @@ import 'common_widget.dart';
 import 'constant.dart';
 import 'main.dart';
 import 'purchase_manager.dart';
-import 'ticket_manager.dart';
 
 // Menu Button Widget - Handles menu functionality and purchase options
 class MenuButton extends HookConsumerWidget {
@@ -111,21 +109,7 @@ class MenuButton extends HookConsumerWidget {
     /// ===== PURCHASE MANAGEMENT METHODS =====
     // Set one-time purchase plan and update user state
     onetimeSetPlan() async {
-      "onetimeSetPlan".debugPrint();
-      final prefs = await SharedPreferences.getInstance();
-      final newCurrentDate = await getServerDateTime();
-      final addedTickets = tickets + addOnTicketNumber;
-      final newExpiration = newCurrentDate.nextMonth();
-      "tickets".setSharedPrefInt(prefs, addedTickets);
-      "expiration".setSharedPrefInt(prefs, newExpiration);
-      ref.read(ticketsProvider.notifier).update(addedTickets);
-      ref.read(currentProvider.notifier).update(newCurrentDate);
-      ref.read(expirationProvider.notifier).update(newExpiration);
-      unawaited(TicketManager().pushProgress(
-        tickets: addedTickets,
-        expiration: newExpiration,
-        lastClaimed: ref.read(lastClaimedProvider),
-      ));
+      await grantOnetimePlan(ref.container);
       if (context.mounted) context.pushHomePage();
     }
 

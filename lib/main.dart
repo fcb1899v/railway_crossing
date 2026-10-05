@@ -105,6 +105,9 @@ final lastClaimedProvider = NotifierProvider<LastClaimedNotifier, int>(LastClaim
 final loadingProvider = NotifierProvider<LoadingNotifier, bool>(LoadingNotifier.new);
 final photoProvider = NotifierProvider<PhotoNotifier, List<Uint8List>>(PhotoNotifier.new);
 
+/// The app's provider state. Held here so a store-started purchase can grant tickets with no widget alive
+late final ProviderContainer appContainer;
+
 /// Main application entry point. No ATT call here: on iOS the UMP form raises
 /// the system ATT prompt itself, so asking again would show a second explainer
 Future<void> main() async {
@@ -138,6 +141,13 @@ Future<void> main() async {
   final currentDate = DateTime.now().toLocal().intDateTime();
   final savedExpirationDate = 'expiration'.getSharedPrefInt(prefs, defaultIntDateTime);
   final savedLastClaimedDate = 'lastClaim'.getSharedPrefInt(prefs, defaultIntDateTime);
+  appContainer = ProviderContainer(overrides: [
+    countryProvider.overrideWith(() => _OverrideCountryNotifier(savedCountryNumber)),
+    ticketsProvider.overrideWith(() => _OverrideTicketsNotifier(savedTickets)),
+    currentProvider.overrideWith(() => _OverrideCurrentNotifier(currentDate)),
+    expirationProvider.overrideWith(() => _OverrideExpirationNotifier(savedExpirationDate)),
+    lastClaimedProvider.overrideWith(() => _OverrideLastClaimedNotifier(savedLastClaimedDate)),
+  ]);
   /// ===== FIREBASE CORE ===== Analytics needs Firebase before runApp; App Check/Auth
   /// start immediately so the camera gate clears during first paint
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -145,16 +155,7 @@ Future<void> main() async {
   unawaited(ensurePurchaseInitialized());
   /// ===== APP LAUNCH =====
   // Launch app with provider overrides for saved state
-  runApp(ProviderScope(
-    overrides: [
-      countryProvider.overrideWith(() => _OverrideCountryNotifier(savedCountryNumber)),
-      ticketsProvider.overrideWith(() => _OverrideTicketsNotifier(savedTickets)),
-      currentProvider.overrideWith(() => _OverrideCurrentNotifier(currentDate)),
-      expirationProvider.overrideWith(() => _OverrideExpirationNotifier(savedExpirationDate)),
-      lastClaimedProvider.overrideWith(() => _OverrideLastClaimedNotifier(savedLastClaimedDate)),
-    ],
-    child: const MyApp()
-  ));
+  runApp(UncontrolledProviderScope(container: appContainer, child: const MyApp()));
   /// ===== Post-Launch Services =====
   // Remaining network work after UI is up; App Check future is already in flight.
   unawaited(bootstrapAfterLaunch());

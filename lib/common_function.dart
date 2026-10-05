@@ -5,11 +5,14 @@ import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:ntp/ntp.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'extension.dart';
 import 'constant.dart';
+import 'main.dart';
+import 'ticket_manager.dart';
 
 
 /// ===== FIREBASE APP CHECK / AUTH ===== Whether App Check cleared at launch.
@@ -131,22 +134,56 @@ Future<void> ensurePurchaseInitialized() =>
     _purchaseInitFuture ??= _configurePurchases();
 
 Future<void> _configurePurchases() async {
+  // Before any await, and not by a widget: an event with no listener is dropped, and the store can fire one right at launch
+  Purchases.addReadyForPromotedProductPurchaseListener(
+    (productID, startPurchase) => handlePromotedPurchase(appContainer, productID, startPurchase),
+  );
   if (await Purchases.isConfigured) {
     return;
   }
   await Purchases.setLogLevel(kDebugMode ? LogLevel.debug : LogLevel.info);
   await Purchases.configure(PurchasesConfiguration(revenueCatApiKey));
   await Purchases.enableAdServicesAttributionTokenCollection();
-  Purchases.addReadyForPromotedProductPurchaseListener((productID, startPurchase) async {
-    'productID: $productID'.debugPrint();
-    try {
-      final purchaseResult = await startPurchase.call();
-      'productID: ${purchaseResult.productIdentifier}'.debugPrint();
-      'customerInfo: ${purchaseResult.customerInfo}'.debugPrint();
-    } catch (e) {
-      'Error: $e'.debugPrint();
-    }
-  });
+}
+
+typedef ProgressPusher = Future<void> Function({required int tickets, required int expiration, required int lastClaimed});
+
+/// Adds the one-time pass tickets and ad-free month. Reads the state after its awaits, then writes without one, so a grant adds to the tickets the previous one left
+Future<void> grantOnetimePlan(ProviderContainer container, {
+  Future<int> Function() serverTime = getServerDateTime,
+  ProgressPusher? pushProgress,
+}) async {
+  "grantOnetimePlan".debugPrint();
+  final prefs = await SharedPreferences.getInstance();
+  final newCurrentDate = await serverTime();
+  final addedTickets = container.read(ticketsProvider) + addOnTicketNumber;
+  final newExpiration = newCurrentDate.nextMonth();
+  "tickets".setSharedPrefInt(prefs, addedTickets);
+  "expiration".setSharedPrefInt(prefs, newExpiration);
+  container.read(ticketsProvider.notifier).update(addedTickets);
+  container.read(currentProvider.notifier).update(newCurrentDate);
+  container.read(expirationProvider.notifier).update(newExpiration);
+  unawaited((pushProgress ?? TicketManager().pushProgress)(
+    tickets: addedTickets,
+    expiration: newExpiration,
+    lastClaimed: container.read(lastClaimedProvider),
+  ));
+}
+
+/// A purchase started from the App Store product page: the store has charged once it succeeds, so the pass is granted exactly once
+Future<void> handlePromotedPurchase(
+  ProviderContainer container,
+  String productID,
+  Future<PromotedPurchaseResult> Function() startPurchase, {
+  Future<void> Function(ProviderContainer) grant = grantOnetimePlan,
+}) async {
+  'promoted productID: $productID'.debugPrint();
+  try {
+    final result = await startPurchase();
+    if (result.customerInfo.allPurchasedProductIdentifiers.isNotEmpty) await grant(container);
+  } catch (e) {
+    'promoted purchase error: $e'.debugPrint();
+  }
 }
 
 /// Post-runApp bootstrap: await shared Firebase/IAP init, then sync NTP.
