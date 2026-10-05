@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:railroad_crossing/analytics_manager.dart';
 import 'package:railroad_crossing/l10n/app_localizations.dart';
 import 'package:railroad_crossing/menu.dart';
 import 'package:railroad_crossing/purchase_manager.dart';
@@ -52,14 +53,22 @@ void main() {
   });
 
   testWidgets("control: with a price, tapping the button opens the purchase dialog", (tester) async {
+    final events = <String>[];
+    AnalyticsManager.testSink = (name, params) async => events.add(name);
+    addTearDown(() => AnalyticsManager.testSink = null);
     PurchaseManager.onetimePrice.value = "¥500";
     await openMenu(tester);
     await tester.tap(find.byKey(purchaseKey));
     await tester.pump(const Duration(seconds: 1));
     expect(find.byType(AlertDialog), findsOneWidget);
+    // Showing the dialog is the only thing that offers the purchase
+    expect(events, ["upgrade_offered"]);
   });
 
   testWidgets("price cleared before the tap is handled: no purchase dialog", (tester) async {
+    final events = <String>[];
+    AnalyticsManager.testSink = (name, params) async => events.add(name);
+    addTearDown(() => AnalyticsManager.testSink = null);
     PurchaseManager.onetimePrice.value = "¥500";
     await openMenu(tester);
     // Cleared without a rebuild, as a refetch finding nothing between frames would
@@ -67,5 +76,6 @@ void main() {
     await tester.tap(find.byKey(purchaseKey));
     await tester.pump(const Duration(seconds: 1));
     expect(find.byType(AlertDialog), findsNothing);
+    expect(events, isEmpty);
   });
 }

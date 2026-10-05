@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'analytics_manager.dart';
 import 'audio_manager.dart';
 import 'photo_manager.dart';
 import 'extension.dart';
@@ -94,7 +95,10 @@ class PhotoButton extends HookConsumerWidget {
     Future<void> getFreePhoto() async {
       "getFreePhoto".debugPrint();
       try {
-        final photoResult = await photoManager.getFreePhoto(countryNumber);
+        final result = await trackFreePhoto(
+          () => photoManager.getFreePhoto(countryNumber),
+        );
+        final photoResult = result.images;
         ref.read(photoProvider.notifier).update(photoResult);
         if (photoResult.isNotEmpty) {
           final prefs = await SharedPreferences.getInstance();
@@ -119,7 +123,10 @@ class PhotoButton extends HookConsumerWidget {
     Future<void> getGenerativeAIPhoto() async {
       try {
         "getGenerativeAIPhoto".debugPrint();
-        final aiPhoto = await photoManager.getGenerativeAIPhoto(countryNumber);
+        final result = await trackTicketPhoto(
+          () => photoManager.getGenerativeAIPhoto(countryNumber),
+        );
+        final aiPhoto = result.images;
         "photoImage: $aiPhoto".debugPrint();
         if (aiPhoto.isNotEmpty) {
           ref.read(photoProvider.notifier).update(aiPhoto);
@@ -149,9 +156,15 @@ class PhotoButton extends HookConsumerWidget {
       if (!canSpend) return;
       ref.read(loadingProvider.notifier).update(true);
       try {
-        // Ensure App Check/Auth right before calling Cloud Functions.
-        await ensureFirebaseReady();
-        final newCurrentDate = await getServerDateTime();
+        final int newCurrentDate;
+        try {
+          // Ensure App Check/Auth right before calling Cloud Functions.
+          await ensureFirebaseReady();
+          newCurrentDate = await getServerDateTime();
+        } catch (e) {
+          unawaited(AnalyticsManager.photoNotReady());
+          rethrow;
+        }
         if (tickets > 0 || !lastClaimedDate.isToday(newCurrentDate)) {
           await audioManager.stopAll();
           await audioManager.playEffectSound(cameraSound);

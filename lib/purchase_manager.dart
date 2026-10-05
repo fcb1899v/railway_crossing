@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:railroad_crossing/extension.dart';
 // import 'package:url_launcher/url_launcher.dart';
 // import 'common_widget.dart';
+import 'analytics_manager.dart';
 import 'common_function.dart';
 import 'constant.dart';
 
@@ -73,23 +75,20 @@ class PurchaseManager {
     return purchaseResult.customerInfo;
   }
 
-  // Execute one-time purchase transaction
-  Future<CustomerInfo?> buyOnetime() async {
+  /// Execute the one-time purchase and report purchased, cancelled or failed
+  /// Cancelled and failed are told apart so the caller can count them separately
+  /// Exceptions other than PlatformException (e.g. StateError) propagate to the caller
+  Future<OnetimePurchaseResult> buyOnetime() async {
     try {
       "buyOnetime".debugPrint();
       final purchaseResult = await getPurchaseResult(
         offering: normalOffering,
         isSubscription: false
       );
-      if (purchaseResult.allPurchasedProductIdentifiers.isNotEmpty) {
-        return purchaseResult;
-      } else {
-        "onetimePurchaseError".debugPrint();
-        return null;
-      }
+      return onetimeResultOf(purchaseResult.allPurchasedProductIdentifiers, purchaseResult);
     } on PlatformException catch (e) {
       "onetimePurchaseError: $e".debugPrint();
-      return null;
+      return onetimeResultOfError(e);
     }
   }
 
@@ -273,3 +272,77 @@ class PurchaseManager {
 }
 
 
+
+
+/// The outcome of one one-time purchase attempt
+enum OnetimePurchaseStatus { purchased, cancelled, failed }
+
+class OnetimePurchaseResult {
+  final OnetimePurchaseStatus status;
+  /// Set for purchased only
+  final CustomerInfo? customerInfo;
+  /// Set for failed only: PurchasesErrorCode.name, store_unavailable, empty_result or other
+  final String? reason;
+
+  const OnetimePurchaseResult._(this.status, this.customerInfo, this.reason);
+  const OnetimePurchaseResult.purchased([CustomerInfo? info]) : this._(OnetimePurchaseStatus.purchased, info, null);
+  const OnetimePurchaseResult.cancelled() : this._(OnetimePurchaseStatus.cancelled, null, null);
+  const OnetimePurchaseResult.failed(String reason) : this._(OnetimePurchaseStatus.failed, null, reason);
+
+  bool get isPurchased => status == OnetimePurchaseStatus.purchased;
+}
+
+/// Purchased when the store reports a purchased product, else failed with empty_result
+OnetimePurchaseResult onetimeResultOf(Iterable<String> purchasedProductIds, CustomerInfo? info) =>
+  purchasedProductIds.isNotEmpty
+    ? OnetimePurchaseResult.purchased(info)
+    : const OnetimePurchaseResult.failed("empty_result");
+
+/// Cancelled for purchaseCancelledError, else failed with the error code name
+OnetimePurchaseResult onetimeResultOfError(PlatformException e) {
+  final code = purchaseErrorCode(e);
+  return code == PurchasesErrorCode.purchaseCancelledError
+    ? const OnetimePurchaseResult.cancelled()
+    : OnetimePurchaseResult.failed(code.name);
+}
+
+/// The RevenueCat error code of a PlatformException, unknownError when its code is not a number
+PurchasesErrorCode purchaseErrorCode(PlatformException e) {
+  try {
+    return PurchasesErrorHelper.getErrorCode(e);
+  } on FormatException {
+    return PurchasesErrorCode.unknownError;
+  }
+}
+
+/// The short fixed `reason` for an exception thrown out of the purchase
+String onetimeFailureReason(Object e) {
+  if (e is PlatformException) return purchaseErrorCode(e).name;
+  if (e is StateError) return "store_unavailable";
+  return "other";
+}
+
+/// Run a purchase and log its outcome: purchased, cancelled or failed, once each
+/// Only the purchase call is inside the catch, so work done after it cannot be counted as a failure
+Future<OnetimePurchaseResult> trackOnetimePurchase(
+  Future<OnetimePurchaseResult> Function() buy, {
+  required String source,
+}) async {
+  final OnetimePurchaseResult result;
+  try {
+    result = await buy();
+  } catch (e) {
+    final reason = onetimeFailureReason(e);
+    unawaited(AnalyticsManager.upgradeFailed(source: source, flow: "purchase", reason: reason));
+    return OnetimePurchaseResult.failed(reason);
+  }
+  switch (result.status) {
+    case OnetimePurchaseStatus.purchased:
+      unawaited(AnalyticsManager.upgradePurchased(source));
+    case OnetimePurchaseStatus.cancelled:
+      unawaited(AnalyticsManager.upgradeCancelled(source));
+    case OnetimePurchaseStatus.failed:
+      unawaited(AnalyticsManager.upgradeFailed(source: source, flow: "purchase", reason: result.reason ?? "other"));
+  }
+  return result;
+}

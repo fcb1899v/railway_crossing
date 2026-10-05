@@ -4,15 +4,32 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:railroad_crossing/audio_manager.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'analytics_manager.dart';
 import 'extension.dart';
 import 'common_function.dart';
 import 'common_widget.dart';
 import 'constant.dart';
 import 'main.dart';
 import 'purchase_manager.dart';
+
+/// The `source` of the purchase events: the menu is the only entry to the purchase dialog
+const _purchaseSource = "menu";
+
+/// Over the ticket limit only the snackbar shows; otherwise the dialog shows and the purchase is offered
+void offerOnetime({
+  required int tickets,
+  required void Function() showTicketLimit,
+  required void Function() showDialog,
+}) {
+  if (tickets > onetimeTicketLimitNumber) {
+    showTicketLimit();
+  } else {
+    showDialog();
+    unawaited(AnalyticsManager.upgradeOffered(_purchaseSource));
+  }
+}
 
 // Menu Button Widget - Handles menu functionality and purchase options
 class MenuButton extends HookConsumerWidget {
@@ -118,9 +135,11 @@ class MenuButton extends HookConsumerWidget {
     Future<void> buyOnetimeAction() async {
       if (!ref.read(loadingProvider)) {
         ref.read(loadingProvider.notifier).update(true);
+        unawaited(AnalyticsManager.upgradeStarted(_purchaseSource));
         try {
-          final CustomerInfo? purchaseInfo = await purchaseManager.buyOnetime();
-          (purchaseInfo == null) ? menu.onetimePurchaseErrorDialog(): await onetimeSetPlan();
+          final result = await trackOnetimePurchase(purchaseManager.buyOnetime, source: _purchaseSource);
+          // Granting the plan is outside the tracked call: its failure is not a purchase failure
+          result.isPurchased ? await onetimeSetPlan(): menu.onetimePurchaseErrorDialog();
           ref.read(loadingProvider.notifier).update(false);
         } catch (e) {
           menu.onetimePurchaseErrorDialog();
@@ -136,9 +155,11 @@ class MenuButton extends HookConsumerWidget {
       if (price.isEmpty) return;
       isMenuOpen.value = false;
       "isMenuOpen: ${isMenuOpen.value}".debugPrint();
-      (tickets > onetimeTicketLimitNumber) ?
-      common.showSnackBar(context.useTickets(onetimeTicketLimitNumber), true):
-      menu.buyOnetimeDialog(price: price, onTap: () => buyOnetimeAction());
+      offerOnetime(
+        tickets: tickets,
+        showTicketLimit: () => common.showSnackBar(context.useTickets(onetimeTicketLimitNumber), true),
+        showDialog: () => menu.buyOnetimeDialog(price: price, onTap: () => buyOnetimeAction()),
+      );
     }
 
     /// ===== CURRENTLY NOT USE FUNCTIONS =====

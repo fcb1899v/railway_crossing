@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -9,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'analytics_manager.dart';
 import 'common_function.dart';
 import 'common_widget.dart';
 import 'extension.dart';
@@ -105,7 +107,7 @@ class PhotoManager {
 
   /// ===== FREE PHOTO GENERATION =====
   // Daily free photo: generate until Storage has 9+ for the key; then use cache.
-  Future<List<Uint8List>> getFreePhoto(int countryNumber) async {
+  Future<PhotoResult> getFreePhoto(int countryNumber) async {
     "getFreePhoto (daily cache)".debugPrint();
     return _callGenerateTrainPhoto(
       countryNumber,
@@ -116,7 +118,7 @@ class PhotoManager {
 
   /// ===== AI PHOTO GENERATION (Cloud Functions) =====
   // Secrets stay on the server; client sends prompt + App Check + Auth only.
-  Future<List<Uint8List>> getGenerativeAIPhoto(int countryNumber) async {
+  Future<PhotoResult> getGenerativeAIPhoto(int countryNumber) async {
     "getGenerateTrainPhotoViaFunctions".debugPrint();
     return _callGenerateTrainPhoto(
       countryNumber,
@@ -125,29 +127,29 @@ class PhotoManager {
     );
   }
 
-  Future<List<Uint8List>> _callGenerateTrainPhoto(
+  Future<PhotoResult> _callGenerateTrainPhoto(
     int countryNumber, {
     required String mode,
     required int count,
   }) async {
     final common = CommonWidget(context: context);
     try {
-      return await _invokeGenerateTrainPhoto(
+      return PhotoResult.images(await _invokeGenerateTrainPhoto(
         countryNumber,
         mode: mode,
         count: count,
-      );
+      ));
     } on FirebaseFunctionsException catch (e) {
       // Stale/empty App Check JWT: refresh once and retry.
       if (_isAppCheckRejection(e)) {
         'App Check rejected; refreshing token and retrying once'.debugPrint();
         try {
           await refreshAppCheckToken();
-          return await _invokeGenerateTrainPhoto(
+          return PhotoResult.images(await _invokeGenerateTrainPhoto(
             countryNumber,
             mode: mode,
             count: count,
-          );
+          ));
         } on FirebaseFunctionsException catch (retryError) {
           return _handleGenerateFailure(common, retryError);
         } catch (retryError) {
@@ -194,7 +196,7 @@ class PhotoManager {
     }
     final images = data is Map ? data['images'] : null;
     if (images is! List || images.isEmpty) {
-      throw Exception('No images returned from Cloud Function.');
+      throw const EmptyPhotoException();
     }
     return images.map((item) {
       if (item is! String || item.isEmpty) {
@@ -212,7 +214,7 @@ class PhotoManager {
         message.contains('appcheck');
   }
 
-  List<Uint8List> _handleGenerateFailure(CommonWidget common, Object e) {
+  PhotoResult _handleGenerateFailure(CommonWidget common, Object e) {
     if (context.mounted) context.photoCaptureFailed().debugPrint();
     if (context.mounted) {
       common.showSnackBar(context.photoCaptureFailed(), true);
@@ -224,7 +226,7 @@ class PhotoManager {
     } else {
       'Failed to generate AI image via Functions: $e'.debugPrint();
     }
-    return [];
+    return photoFailureOf(e);
   }
 
   /// ===== DEVICE INFORMATION METHODS =====
@@ -280,4 +282,56 @@ class PhotoManager {
       return current;
     }
   }
+}
+
+/// The Cloud Function answered without any image
+class EmptyPhotoException implements Exception {
+  const EmptyPhotoException();
+  @override
+  String toString() => 'No images returned from Cloud Function.';
+}
+
+/// The result of one photo generation: images, or the reason none came back
+class PhotoResult {
+  final List<Uint8List> images;
+  /// Set when no image came back: `empty` (nothing returned) or `error` (any exception)
+  final String? failureReason;
+
+  const PhotoResult.images(this.images) : failureReason = null;
+  const PhotoResult.failed(String reason) : images = const [], failureReason = reason;
+}
+
+/// Empty when the Cloud Function returned no image, error for any other exception
+PhotoResult photoFailureOf(Object e) =>
+  PhotoResult.failed(e is EmptyPhotoException ? 'empty' : 'error');
+
+/// A free photo: one image asked for
+Future<PhotoResult> trackFreePhoto(Future<PhotoResult> Function() generate) =>
+  trackPhotoGeneration(kind: 'free', requested: 1, generate: generate);
+
+/// A ticket photo: `generatePhotoNumber` images asked for
+Future<PhotoResult> trackTicketPhoto(Future<PhotoResult> Function() generate) =>
+  trackPhotoGeneration(kind: 'ticket', requested: generatePhotoNumber, generate: generate);
+
+/// Runs one generation and logs it: requested before, then generated or failed
+/// An exception from the call itself is logged as an error and rethrown, so the caller's handling is unchanged
+Future<PhotoResult> trackPhotoGeneration({
+  required String kind,
+  required int requested,
+  required Future<PhotoResult> Function() generate,
+}) async {
+  unawaited(AnalyticsManager.photoRequested(kind: kind, requested: requested));
+  final PhotoResult result;
+  try {
+    result = await generate();
+  } catch (e) {
+    unawaited(AnalyticsManager.photoFailed(kind: kind, reason: 'error'));
+    rethrow;
+  }
+  if (result.images.isNotEmpty) {
+    unawaited(AnalyticsManager.photoGenerated(kind: kind, requested: requested, returned: result.images.length));
+  } else {
+    unawaited(AnalyticsManager.photoFailed(kind: kind, reason: result.failureReason ?? 'error'));
+  }
+  return result;
 }

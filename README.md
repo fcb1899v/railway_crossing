@@ -144,6 +144,7 @@ lib/
 ├── audio_manager.dart       # Audio playback
 ├── purchase_manager.dart    # RevenueCat purchases and the price notifier
 ├── photo_manager.dart       # Photo gallery and AI generation management
+├── analytics_manager.dart   # Firebase Analytics custom events
 ├── ticket_manager.dart      # Photo tickets and ad-free expiry, synced to Firestore
 ├── admob_banner.dart        # Banner ad management
 └── l10n/                    # Localization
@@ -162,6 +163,29 @@ assets/
 └── icon/                    # App icons
 ```
 
+## 📊 Analytics Events
+
+`lib/analytics_manager.dart` sends the custom events below to Firebase Analytics.
+A failure to send is swallowed and never affects purchase or photo generation.
+In debug builds each event is printed as `Analytics: <name> {params}`.
+Ad, reward and review events are not logged.
+
+| Event | Parameters | Sent when |
+|---|---|---|
+| `upgrade_offered` | `source` (`menu`) | The purchase dialog is shown (`menu.dart`, `toBuyOnetime`) |
+| `upgrade_started` | `source` | The purchase button is tapped and no purchase is running (`buyOnetimeAction`) |
+| `upgrade_purchased` | `source` | The purchase succeeded, before the plan is granted |
+| `upgrade_cancelled` | `source` | The user cancelled the store sheet (`PurchasesErrorCode.purchaseCancelledError`) |
+| `upgrade_failed` | `source`, `flow` (`purchase`), `reason` | Any other failure |
+| `photo_requested` | `kind` (`free`/`ticket`), `requested` (1 or 3) | A generation starts |
+| `photo_generated` | `kind`, `requested`, `returned` | One or more photos came back, so `returned` is at least 1 |
+| `photo_failed` | `kind`, `reason` (`empty`/`error`/`not_ready`) | No photo came back; `kind` is `unknown` for `not_ready` |
+
+- `reason` of `upgrade_failed` is `PurchasesErrorCode.name`, `store_unavailable` (no package to buy), `empty_result` or `other`.
+- `not_ready` means App Check or the server time was not available before the call.
+- Errors after a purchase or after photos came back (granting the plan, saving) and audio errors are not sent as failures.
+- Parameters need a custom dimension in the GA4 property before they can be broken down in reports.
+
 ## 📱 Supported Platforms
 
 - **Android**: API 24+ (`flutter.minSdkVersion`), compiled and targeted at API 37
@@ -176,7 +200,7 @@ flutter analyze   # expected: No issues found!
 
 ### Run Tests
 ```bash
-flutter test      # expected: All tests passed! (21 tests)
+flutter test      # expected: All tests passed! (50 tests)
 ```
 
 ### Firebase plugin versions are pinned on purpose
