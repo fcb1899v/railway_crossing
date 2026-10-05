@@ -168,6 +168,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get photoCaptureFailed => '摄影失败';
 
   @override
+  String get photoGenerateFailed => '生成失败，请检查网络后重试。';
+
+  @override
   String get photoNeedsConnection => '无法拍照。请检查网络连接。';
 
   @override

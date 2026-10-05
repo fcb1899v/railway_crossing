@@ -168,6 +168,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get photoCaptureFailed => '撮影に失敗しました';
 
   @override
+  String get photoGenerateFailed => '生成できませんでした。通信状態を確認してください。';
+
+  @override
   String get photoNeedsConnection => '写真は撮影できません。通信を確認してください。';
 
   @override

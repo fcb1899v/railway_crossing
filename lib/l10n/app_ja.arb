@@ -48,6 +48,7 @@
   "photos": "{number}回",
   "photoSaved": "写真を保存しました",
   "photoCaptureFailed": "撮影に失敗しました",
+  "photoGenerateFailed": "生成できませんでした。通信状態を確認してください。",
   "photoNeedsConnection": "写真は撮影できません。通信を確認してください。",
   "photoSavingFailed": "写真が保存に失敗しました",
   "photoAccessPermission": "電車の画像を保存するため、設定画面で写真へのアクセスを許可してください。",

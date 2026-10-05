@@ -43,6 +43,7 @@ extension L10nContextExt on BuildContext {
   // Photo-related localized strings
   String photoSaved() => AppLocalizations.of(this)!.photoSaved;
   String photoCaptureFailed() => AppLocalizations.of(this)!.photoCaptureFailed;
+  String photoGenerateFailed() => AppLocalizations.of(this)!.photoGenerateFailed;
   String photoNeedsConnection() => AppLocalizations.of(this)!.photoNeedsConnection;
   String photoSavingFailed() => AppLocalizations.of(this)!.photoSavingFailed;
   String photoAccessPermission() => AppLocalizations.of(this)!.photoAccessPermission;

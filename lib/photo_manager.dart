@@ -120,17 +120,20 @@ class PhotoManager {
   // Secrets stay on the server; client sends prompt + App Check + Auth only.
   Future<PhotoResult> getGenerativeAIPhoto(int countryNumber) async {
     "getGenerateTrainPhotoViaFunctions".debugPrint();
-    return _callGenerateTrainPhoto(
+    // Quiet: the caller shows the one failure message once the top-up has settled
+    return topUpTicketPhoto((count) => _callGenerateTrainPhoto(
       countryNumber,
       mode: 'standard',
-      count: generatePhotoNumber,
-    );
+      count: count,
+      quiet: true,
+    ));
   }
 
   Future<PhotoResult> _callGenerateTrainPhoto(
     int countryNumber, {
     required String mode,
     required int count,
+    bool quiet = false,
   }) async {
     final common = CommonWidget(context: context);
     try {
@@ -151,14 +154,14 @@ class PhotoManager {
             count: count,
           ));
         } on FirebaseFunctionsException catch (retryError) {
-          return _handleGenerateFailure(common, retryError);
+          return _handleGenerateFailure(common, retryError, quiet: quiet);
         } catch (retryError) {
-          return _handleGenerateFailure(common, retryError);
+          return _handleGenerateFailure(common, retryError, quiet: quiet);
         }
       }
-      return _handleGenerateFailure(common, e);
+      return _handleGenerateFailure(common, e, quiet: quiet);
     } catch (e) {
-      return _handleGenerateFailure(common, e);
+      return _handleGenerateFailure(common, e, quiet: quiet);
     }
   }
 
@@ -214,10 +217,11 @@ class PhotoManager {
         message.contains('appcheck');
   }
 
-  PhotoResult _handleGenerateFailure(CommonWidget common, Object e) {
-    if (context.mounted) context.photoCaptureFailed().debugPrint();
-    if (context.mounted) {
-      common.showSnackBar(context.photoCaptureFailed(), true);
+  /// A quiet failure shows no message: the caller may still recover with another request
+  PhotoResult _handleGenerateFailure(CommonWidget common, Object e, {bool quiet = false}) {
+    if (context.mounted) context.photoGenerateFailed().debugPrint();
+    if (context.mounted && !quiet) {
+      common.showSnackBar(context.photoGenerateFailed(), true);
     }
     if (e is FirebaseFunctionsException) {
       'Cloud Function error: ${e.code} ${e.message}'.debugPrint();
@@ -308,6 +312,23 @@ PhotoResult photoFailureOf(Object e) =>
 /// A free photo: one image asked for
 Future<PhotoResult> trackFreePhoto(Future<PhotoResult> Function() generate) =>
   trackPhotoGeneration(kind: 'free', requested: 1, generate: generate);
+
+/// The fewest images that count as a ticket photo
+const minTicketPhotos = 2;
+
+/// Whether a ticket photo returned enough images to be shown and to cost a ticket; fewer is a failed capture
+bool ticketPhotoCounts(int returned) => returned >= minTicketPhotos;
+
+/// Asks for a ticket photo, and when fewer than `minTicketPhotos` return, once more for the missing images.
+/// The images of both requests are kept; the caller reports a failure from the final count
+Future<PhotoResult> topUpTicketPhoto(Future<PhotoResult> Function(int count) request) async {
+  final first = await request(generatePhotoNumber);
+  if (ticketPhotoCounts(first.images.length)) return first;
+  final second = await request(generatePhotoNumber - first.images.length);
+  final images = [...first.images, ...second.images];
+  if (images.isEmpty) return second;
+  return PhotoResult.images(images.take(generatePhotoNumber).toList());
+}
 
 /// A ticket photo: `generatePhotoNumber` images asked for
 Future<PhotoResult> trackTicketPhoto(Future<PhotoResult> Function() generate) =>

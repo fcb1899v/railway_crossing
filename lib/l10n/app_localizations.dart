@@ -388,6 +388,12 @@ abstract class AppLocalizations {
   /// **'Photo capture failed.'**
   String get photoCaptureFailed;
 
+  /// No description provided for @photoGenerateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t generate the photo. Check your network connection.'**
+  String get photoGenerateFailed;
+
   /// No description provided for @photoNeedsConnection.
   ///
   /// In en, this message translates to:

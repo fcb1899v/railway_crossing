@@ -47,6 +47,7 @@
   "photos": "{number}张",
   "photoSaved": "照片已保存",
   "photoCaptureFailed": "摄影失败",
+  "photoGenerateFailed": "生成失败，请检查网络后重试。",
   "photoNeedsConnection": "无法拍照。请检查网络连接。",
   "photoSavingFailed": "照片保存失败",
   "photoAccessPermission": "为了保存火车图片，请在设置中允许访问照片。",

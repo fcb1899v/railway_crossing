@@ -24,7 +24,7 @@ It features realistic visuals, authentic sounds, photo galleries, train illustra
 - **Audio**: just_audio, with playback stopped when the app is not visible
 - **Interactive UI Elements**: Blinking camera button animation and credits dialog
 - **In-app Purchase**: a one-time purchase through RevenueCat adds 24 tickets and hides the ads for a month
-- **Photo Tickets**: one free photo a day, more with tickets; the balance and the ad-free expiry sync through Firestore, keyed by the Game Center / Play Games player id so they survive a reinstall
+- **Photo Tickets**: one free photo a day, more with tickets (a ticket photo asks for three images; when fewer than two return it asks once more for the missing ones, and it costs a ticket only when at least two images end up returned); the balance and the ad-free expiry sync through Firestore, keyed by the Game Center / Play Games player id so they survive a reinstall
 - **AI Photo Generation**: a Cloud Function calls the model server-side; the app never holds a model key
 
 ## 🚀 Technology Stack

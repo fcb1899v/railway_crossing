@@ -169,6 +169,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get photoCaptureFailed => 'Photo capture failed.';
 
   @override
+  String get photoGenerateFailed =>
+      'Couldn\'t generate the photo. Check your network connection.';
+
+  @override
   String get photoNeedsConnection =>
       'Photos can\'t be taken. Check your connection.';
 

@@ -128,7 +128,7 @@ class PhotoButton extends HookConsumerWidget {
         );
         final aiPhoto = result.images;
         "photoImage: $aiPhoto".debugPrint();
-        if (aiPhoto.isNotEmpty) {
+        if (ticketPhotoCounts(aiPhoto.length)) {
           ref.read(photoProvider.notifier).update(aiPhoto);
           final prefs = await SharedPreferences.getInstance();
           final newTickets = tickets - 1;
@@ -140,7 +140,10 @@ class PhotoButton extends HookConsumerWidget {
             lastClaimed: ref.read(lastClaimedProvider),
           ));
         } else {
-          "Generative AI photo error: empty result".debugPrint();
+          "Generative AI photo error: ${aiPhoto.length} returned, no ticket spent".debugPrint();
+          if (context.mounted) {
+            CommonWidget(context: context).showSnackBar(context.photoGenerateFailed(), true);
+          }
         }
       } catch (e) {
         "Generative AI photo error: $e".debugPrint();

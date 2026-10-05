@@ -47,6 +47,7 @@
   "photos": "{number} times",
   "photoSaved": "Photo saved to album.",
   "photoCaptureFailed": "Photo capture failed.",
+  "photoGenerateFailed": "Couldn't generate the photo. Check your network connection.",
   "photoNeedsConnection": "Photos can't be taken. Check your connection.",
   "photoSavingFailed": "Photo saving failed.",
   "photoAccessPermission": "To save train images, please allow photo access from settings.",
