@@ -164,14 +164,14 @@ const ukSpot = [
   "British Museum", "Buckingham Palace", "Trafalgar Square", "London Eye", "Tower of London",
   "Westminster Abbey", "Kew Garden with flowers", "St Paul's Cathedral", "Piccadilly Circus", "Kings Cross Station",
   "Greenwich Observatory", "Oxford University", "Windsor Castle", "Bourton on the Water", "Jurassic Coast",
-  "Edinburgh Castle", "Hadrian's Wall", "Livepool Cathedral", "Old Trafford Stadium", "Giant's Causeway",
+  "Edinburgh Castle", "Hadrian's Wall", "Liverpool Cathedral", "Old Trafford Stadium", "Giant's Causeway",
 ];
 // Chinese landmarks for AI photo generation
 const cnSpot = [
   "Great wall", "Tiananmen Square", "Shanghai", "Guilin", "Stone Forest",
   "Zhangjiajie", "Potala Palace", "Jiuzhaigou Valley", "Yu Garden", "Forbidden City",
   "Broken Bridge of West Lake", "Terracotta Army", "Lijiang old town", "Mogao Caves", "Jiulong Waterfalls",
-  "Sanya Beaches", "Kashga old Town", "Shaolin Temple", "Dazu Rock Carvings", "Longmen Grottoes",
+  "Sanya Beaches", "Kashgar old Town", "Shaolin Temple", "Dazu Rock Carvings", "Longmen Grottoes",
   "Temple of Heaven", "Summer Palace", "Xi'an City Wall", "Canton Tower", "Ping An Finance Centre"
 ];
 // US landmarks for AI photo generation

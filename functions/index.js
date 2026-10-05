@@ -75,7 +75,7 @@ const PROMPT_CATALOG = {
       "Jurassic Coast",
       "Edinburgh Castle",
       "Hadrian's Wall",
-      "Livepool Cathedral",
+      "Liverpool Cathedral",
       "Old Trafford Stadium",
       "Giant's Causeway",
     ]),
@@ -101,7 +101,7 @@ const PROMPT_CATALOG = {
       "Mogao Caves",
       "Jiulong Waterfalls",
       "Sanya Beaches",
-      "Kashga old Town",
+      "Kashgar old Town",
       "Shaolin Temple",
       "Dazu Rock Carvings",
       "Longmen Grottoes",
@@ -142,6 +142,23 @@ const PROMPT_CATALOG = {
     ]),
   },
 };
+
+// Spellings shipped in older app builds; they are read as the corrected names.
+const LEGACY_SPOT_NAMES = {
+  "Livepool Cathedral": "Liverpool Cathedral",
+  "Kashga old Town": "Kashgar old Town",
+};
+
+/** Returns the identity with a legacy spot spelling replaced by the corrected one. */
+function normalizeLegacySpot(identity) {
+  if (!identity || typeof identity !== "object") {
+    return identity;
+  }
+  const key = identity.spot ? "spot" : "background";
+  const value = identity[key];
+  const fixed = Object.hasOwn(LEGACY_SPOT_NAMES, value) ? LEGACY_SPOT_NAMES[value] : null;
+  return fixed ? {...identity, [key]: fixed} : identity;
+}
 
 /** Rebuilds the prompt from the identity; null when it is not in the catalog. */
 function buildPromptFromIdentity(identity) {
@@ -465,7 +482,7 @@ exports.generateTrainPhoto = onCall(
 
     // The client's own prompt is ignored.
     // The server rebuilds it from the identity so no arbitrary string reaches Gemini under our project.
-    const cacheIdentity = request.data?.cacheIdentity;
+    const cacheIdentity = normalizeLegacySpot(request.data?.cacheIdentity);
     const prompt = buildPromptFromIdentity(cacheIdentity);
     if (!prompt) {
       throw new HttpsError(

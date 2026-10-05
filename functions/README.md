@@ -17,6 +17,7 @@ The client sends `prompt`, `count`, `mode` and `cacheIdentity` (country, train, 
 
 Only **country, train and spot** are validated.
 Change one of those on the client alone and the call fails with `invalid-argument`: a landmark breaks that one spot, a renamed train breaks every request for that country.
+The two spots whose spelling was corrected (`Livepool Cathedral`, `Kashga old Town`) are read as the corrected names by `LEGACY_SPOT_NAMES`, so builds that still send the old spelling work; remove the entries once those builds are gone.
 
 **Colors are not validated.**
 `aiImageGenerationRequest` in `lib/common_extension.dart` writes them into the prompt string the client sends, but `generateTrainPhoto` throws that string away and calls `buildPromptFromIdentity` instead.
