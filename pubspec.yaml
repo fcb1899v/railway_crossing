@@ -77,19 +77,20 @@ dev_dependencies:
   flutter_lints: ^6.0.0
 
 flutter_icons:
-  image_path: "assets/icon/appIcon.png"
+  image_path: "assets/icon/icon.png"
+  image_path_android: "assets/icon/icon_legacy.png"
   android: true
   ios: true
   remove_alpha_ios: true
-  adaptive_icon_background: "#ffffff"
-  adaptive_icon_foreground: "assets/icon/icon.png"
+  adaptive_icon_background: "#C84D3E"
+  adaptive_icon_foreground: "assets/icon/icon_android.png"
 
 flutter_native_splash:
   image: "assets/icon/icon.png"
-  color: "#ffffff"
+  color: "C84D3E"
   android_12:
-    image: "assets/icon/icon.png"
-    icon_background_color: "#ffffff"
+    image: "assets/icon/icon_android.png"
+    color: "C84D3E"
   ios: true
   web: false
 
@@ -100,7 +101,6 @@ flutter:
     # All current iOS plugins support SPM; CocoaPods has been removed.
     enable-swift-package-manager: true
   assets:
-    - assets/icon/
     - assets/images/
     - assets/images/flag/
     - assets/images/crossing/

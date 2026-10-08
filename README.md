@@ -1,7 +1,7 @@
 # LETS CROSSING -- Railway Crossing Simulator
 
 <div align="center">
-  <img src="assets/icon/appIcon.png" alt="LETS CROSSING Icon" width="120" height="120">
+  <img src="assets/icon/icon.png" alt="LETS CROSSING Icon" width="120" height="120">
   <br>
   <strong>Enjoy railway crossings from around the world, anytime, anywhere</strong>
   <br>
@@ -160,8 +160,17 @@ assets/
 ├── images/                  # Image resources (crossings, trains, flags, etc.)
 ├── audios/                  # Audio files (crossing sounds, warnings, etc.)
 ├── fonts/                   # Font files
-└── icon/                    # App icons
+└── icon/                    # Launcher icon and splash sources (read by the generators, not bundled)
+    ├── icon.png             # iOS icon and splash image (iOS and Android 11 and earlier)
+    ├── icon_android.png     # Adaptive icon foreground and Android 12+ splash icon
+    ├── icon_legacy.png      # Android 7.x icon (rounded corners)
+    ├── play_store_512.png   # Google Play Console icon only (not referenced by the app)
+    ├── appIcon.png          # Not referenced by the app
+    └── icon.jpg             # Not referenced by the app
 ```
+
+Regenerate the icons and the splash with `dart run flutter_launcher_icons -f pubspec.yaml` and `dart run flutter_native_splash:create`.
+`flutter_launcher_icons.yaml` is a template that takes precedence over `pubspec.yaml` unless `-f pubspec.yaml` is given.
 
 ## 📊 Analytics Events
 
