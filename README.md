@@ -164,13 +164,10 @@ assets/
     ├── icon.png             # iOS icon and splash image (iOS and Android 11 and earlier)
     ├── icon_android.png     # Adaptive icon foreground and Android 12+ splash icon
     ├── icon_legacy.png      # Android 7.x icon (rounded corners)
-    ├── play_store_512.png   # Google Play Console icon only (not referenced by the app)
-    ├── appIcon.png          # Not referenced by the app
-    └── icon.jpg             # Not referenced by the app
+    └── play_store_512.png   # Google Play Console icon only (not referenced by the app)
 ```
 
 Regenerate the icons and the splash with `dart run flutter_launcher_icons -f pubspec.yaml` and `dart run flutter_native_splash:create`.
-`flutter_launcher_icons.yaml` is a template that takes precedence over `pubspec.yaml` unless `-f pubspec.yaml` is given.
 
 ## 📊 Analytics Events
 
