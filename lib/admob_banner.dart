@@ -8,6 +8,23 @@ import 'extension.dart';
 import 'dart:io';
 import 'constant.dart';
 
+// Shared one-shot start of the Mobile Ads SDK, called by every ad load once canRequestAds allows it.
+// Dropped on failure so a later request can retry; returns null, never throws.
+Future<InitializationStatus?>? _mobileAdsInitialization;
+
+Future<InitializationStatus?> initializeMobileAds() =>
+    _mobileAdsInitialization ??= _startMobileAds();
+
+Future<InitializationStatus?> _startMobileAds() async {
+  try {
+    return await MobileAds.instance.initialize();
+  } catch (e) {
+    _mobileAdsInitialization = null;
+    'MobileAds initialize failed: $e'.debugPrint();
+    return null;
+  }
+}
+
 /// ===== AD BANNER WIDGET CLASS =====
 // Ad Banner Widget - Handles Google AdMob banner advertisement display
 class AdBannerWidget extends HookWidget {
@@ -95,6 +112,11 @@ class AdBannerWidget extends HookWidget {
       // The claim follows this check with no await in between.
       if (isAdRequested.value) return;
       isAdRequested.value = true;
+      // A failed start is already logged, so load anyway.
+      // The SDK also starts itself on the first request.
+      await initializeMobileAds();
+      // The start can outlive this widget, and loadAdBanner writes its state.
+      if (!context.mounted) return;
       await loadAdBanner(slotWidth);
     }
 

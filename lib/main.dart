@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:railroad_crossing/extension.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -159,7 +158,7 @@ Future<void> main() async {
   /// ===== Post-Launch Services =====
   // Remaining network work after UI is up; App Check future is already in flight.
   unawaited(bootstrapAfterLaunch());
-  await MobileAds.instance.initialize();
+  // The Mobile Ads SDK starts in admob_banner.dart after the consent check allows ads.
 }
 
 /// ===== Main application widget =====
