@@ -6,6 +6,7 @@ const {GoogleAuth} = require("google-auth-library");
 const {initializeApp} = require("firebase-admin/app");
 const {getStorage} = require("firebase-admin/storage");
 const crypto = require("crypto");
+const {unknownIdentityField, rejectionLogLine} = require("./identity_check");
 
 initializeApp();
 
@@ -15,9 +16,9 @@ setGlobalOptions({
 });
 
 const PROJECT_ID = process.env.GCLOUD_PROJECT || "railway-crossing-9fca7";
-// Imagen 4 Fast was discontinued 2026-06-30; we moved off it on 2026-09-03.
+// Imagen 4 Fast is discontinued, so this Gemini image model generates the photos.
 const GEMINI_MODEL = "gemini-3.1-flash-lite-image";
-// Verified 2026-09-17: this model answers only on the global endpoint.
+// This model answers only on the global endpoint.
 // us-central1 returns "not found" for both 3.1 image models.
 const GEMINI_LOCATIONS = ["global"];
 
@@ -162,14 +163,11 @@ function normalizeLegacySpot(identity) {
 
 /** Rebuilds the prompt from the identity; null when it is not in the catalog. */
 function buildPromptFromIdentity(identity) {
-  const entry = PROMPT_CATALOG[identity?.country];
-  if (!entry || identity?.train !== entry.train) {
+  if (unknownIdentityField(PROMPT_CATALOG, identity)) {
     return null;
   }
-  const spot = identity?.spot || identity?.background;
-  if (!spot || !entry.spots.has(spot)) {
-    return null;
-  }
+  const entry = PROMPT_CATALOG[identity.country];
+  const spot = identity.spot || identity.background;
   return `A square realistic scenic photo showing the entire ${entry.train} ` +
     `train. The train's primary color is ${entry.primary} and its accent ` +
     `color is ${entry.accent}. ${spot} in ${identity.country} is clearly ` +
@@ -485,6 +483,12 @@ exports.generateTrainPhoto = onCall(
     const cacheIdentity = normalizeLegacySpot(request.data?.cacheIdentity);
     const prompt = buildPromptFromIdentity(cacheIdentity);
     if (!prompt) {
+      // One line per rejection; keep its leading text stable because the log is counted by it.
+      console.warn(rejectionLogLine(
+          unknownIdentityField(PROMPT_CATALOG, cacheIdentity),
+          cacheIdentity,
+          request.app?.appId,
+      ));
       throw new HttpsError(
           "invalid-argument",
           "Unknown country, train or spot.",

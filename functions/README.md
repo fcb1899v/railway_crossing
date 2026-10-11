@@ -17,7 +17,21 @@ The client sends `prompt`, `count`, `mode` and `cacheIdentity` (country, train, 
 
 Only **country, train and spot** are validated.
 Change one of those on the client alone and the call fails with `invalid-argument`: a landmark breaks that one spot, a renamed train breaks every request for that country.
-The two spots whose spelling was corrected (`Livepool Cathedral`, `Kashga old Town`) are read as the corrected names by `LEGACY_SPOT_NAMES`, so builds that still send the old spelling work; remove the entries once those builds are gone.
+`LEGACY_SPOT_NAMES` maps the old spellings (`Livepool Cathedral`, `Kashga old Town`) to the correct names, so builds that still send them work.
+Remove the entries once those builds are gone.
+
+Every rejection writes one warning line before the error is thrown, so the count can be read from the log:
+
+```
+generateTrainPhoto rejected: invalid-argument {"field":"spot","value":"...","country":"Japan","appId":"1:...:ios:..."}
+```
+
+`field` is `cacheIdentity`, `country`, `train` or `spot`, whichever the catalog rejected first.
+`value` is cut at 80 characters.
+The line carries no user, device or IP identifier; `appId` is the Firebase app id, which separates iOS from Android.
+The client sends no app version, so the build cannot be told apart.
+
+The catalog check lives in `identity_check.js` (no Firebase imports); `npm test` runs `identity_check.test.js` with `node --test`.
 
 **Colors are not validated.**
 `aiImageGenerationRequest` in `lib/common_extension.dart` writes them into the prompt string the client sends, but `generateTrainPhoto` throws that string away and calls `buildPromptFromIdentity` instead.
@@ -47,7 +61,7 @@ Cache folders are keyed on country, train and spot, so changing the English prom
    Every call to the function is authenticated that way.
 5. Create the Firestore database and the Cloud Storage bucket.
    Only the function touches the bucket, so put it next to the function rather than next to the users.
-   No-cost quotas exist only for buckets in `us-central1`, `us-west1` and `us-east1` (https://firebase.google.com/pricing, checked 2026-09-17).
+   No-cost quotas exist only for buckets in `us-central1`, `us-west1` and `us-east1` (https://firebase.google.com/pricing).
 6. **Recreate `firebase.json`.**
    It is not in git: `flutterfire configure` regenerates its `flutter` section, and anything regenerable stays out of the repository.
    Run `flutterfire configure`, then merge in the three sections it does not write.
