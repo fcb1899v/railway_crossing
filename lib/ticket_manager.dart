@@ -214,12 +214,12 @@ class TicketManager {
     return playerId;
   }
 
-  /// One native sign-in at a time, shared across launch and resume: on Android a
-  /// second concurrent call replaces the first, whose result then never arrives.
+  /// One native sign-in at a time, shared across launch and resume.
+  /// On Android a second concurrent call replaces the first, whose result then never arrives.
   static Future<GamesSignInOutcome>? _signInInFlight;
 
-  /// Requests Game Center / Play Games sign-in UI at most once per local day, then
-  /// always re-checks the current session (no UI). Call from homepage launch / resume only.
+  /// Requests Game Center / Play Games sign-in UI at most once per local day, then always re-checks the current session (no UI).
+  /// Call from homepage launch / resume only.
   Future<GamesSignInOutcome> ensureGamesSignedInOncePerDay() =>
     _signInInFlight ??= _ensureGamesSignedInOncePerDay()
       .whenComplete(() => _signInInFlight = null);
@@ -476,7 +476,7 @@ class TicketManager {
   }
 
   // Pulls cloud tickets (player then device), merges by updatedAtMs, mirrors both docs.
-  // Re-checks games session (no sign-in UI). Call [ensureGamesSignedInOncePerDay] for UI.
+  // Re-checks the games session without sign-in UI; call [ensureGamesSignedInOncePerDay] for UI.
   Future<TicketSnapshot> pullAndMerge({
     required int localTickets,
     required int localExpiration,
@@ -590,7 +590,7 @@ class TicketManager {
   }
 
   // Pushes local tickets/expiration/lastClaimed after purchase, spend, or daily claim.
-  // Re-checks the games session first (no sign-in UI). Cloud write only when signed in.
+  // Re-checks the games session first without sign-in UI, and writes to the cloud only when signed in.
   Future<void> pushProgress({
     required int tickets,
     required int expiration,
@@ -697,7 +697,7 @@ class TicketManager {
                 if (Platform.isIOS || Platform.isMacOS)
                   TextButton(
                     onPressed: () async {
-                      // iOS: open Game Center settings. Android has no sync button.
+                      // iOS only: opens Game Center settings, since Android has no sync button.
                       if (dialogContext.mounted) {
                         Navigator.of(dialogContext).pop();
                       }

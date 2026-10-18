@@ -104,11 +104,12 @@ final lastClaimedProvider = NotifierProvider<LastClaimedNotifier, int>(LastClaim
 final loadingProvider = NotifierProvider<LoadingNotifier, bool>(LoadingNotifier.new);
 final photoProvider = NotifierProvider<PhotoNotifier, List<Uint8List>>(PhotoNotifier.new);
 
-/// The app's provider state. Held here so a store-started purchase can grant tickets with no widget alive
+/// The app's provider state.
+/// Held here so a store-started purchase can grant tickets with no widget alive.
 late final ProviderContainer appContainer;
 
-/// Main application entry point. No ATT call here: on iOS the UMP form raises
-/// the system ATT prompt itself, so asking again would show a second explainer
+/// Main application entry point.
+/// No ATT call here, because on iOS the UMP form raises the system ATT prompt itself and asking again would show a second explainer.
 Future<void> main() async {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);

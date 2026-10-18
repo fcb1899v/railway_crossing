@@ -96,7 +96,7 @@ final revenueCatApiKey = dotenv.get((Platform.isIOS || Platform.isMacOS) ?
   "REVENUE_CAT_IOS_API_KEY":
   "REVENUE_CAT_ANDROID_API_KEY"
 );
-// App Check. Debug tokens come from .env, never source (public repo); one per platform.
+// App Check debug tokens come from .env, never source (public repo), one per platform.
 // Register: firebase appcheck:debugtokens:create <token> --app <appId>
 final androidAppCheckProvider = kDebugMode
     ? AndroidDebugProvider(debugToken: dotenv.env['APPCHECK_DEBUG_TOKEN_ANDROID'])

@@ -1,5 +1,5 @@
 // ===== AnalyticsManager: Firebase Analytics event logging =====
-// Purchase funnel and photo generation events. Ad, reward and review events are not logged.
+// Purchase funnel and photo generation events only; ad, reward and review events are not logged.
 
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart';

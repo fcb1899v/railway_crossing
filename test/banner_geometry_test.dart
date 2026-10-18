@@ -6,8 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:railroad_crossing/extension.dart';
 import 'package:railroad_crossing/constant.dart';
 
-/// The narrowest standard creative is 320x50. A slot under it cannot be filled
-/// by one.
+/// The narrowest standard creative is 320x50, and a slot under it cannot be filled by one.
 const double narrowestStandardCreative = 320;
 
 /// One device, as MediaQuery reports it in landscape.
@@ -49,8 +48,8 @@ Future<void> withDevice(
 // bannerSlotWidth() is the expression admob_banner.dart uses.
 // Restating it here would let this file pass while the widget is broken.
 
-/// Where the control row ends: the left margin plus five 0.12h buttons with 0.03h
-/// margins. Five is the count with the emergency button showing, the widest the row gets.
+/// Where the control row ends: the left margin plus five 0.12h buttons with 0.03h margins.
+/// Five is the count with the emergency button showing, the widest the row gets.
 double controlsRightEdge(BuildContext context) =>
     context.sideMargin() + 5 * (context.operationButtonSize() + context.buttonSpace());
 

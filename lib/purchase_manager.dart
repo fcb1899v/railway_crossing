@@ -19,8 +19,8 @@ class PurchaseManager {
   });
 
   /// ===== PRICE LOADING METHODS =====
-  /// The live store price, empty while unknown. Purchase entry points are drawn only
-  /// from it: never from a stored price or a fixed fallback, which may not be what is charged
+  /// The live store price, empty while unknown.
+  /// Purchase entry points are drawn only from it, never from a stored price or a fixed fallback, which may not be what is charged.
   static final ValueNotifier<String> onetimePrice = ValueNotifier("");
   /// The fetch in flight, joined by a second caller instead of starting another
   static Future<String?>? _pricing;
@@ -51,8 +51,8 @@ class PurchaseManager {
     }
   }
 
-  /// The one-time package: both the displayed price and the purchase come from it,
-  /// so what is shown is what is charged. Null means nothing to sell
+  /// The one-time package: both the displayed price and the purchase come from it, so what is shown is what is charged.
+  /// Null means nothing to sell.
   static Package? onetimePackage(Offerings offerings, String offering) =>
     offerings.getOffering(offering)?.lifetime;
 

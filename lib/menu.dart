@@ -150,7 +150,8 @@ class MenuButton extends HookConsumerWidget {
 
     // Show one-time purchase dialog or snackbar
      void toBuyOnetime() {
-      // No live price, no purchase dialog. Read at tap time: a refetch can clear it between frames
+      // No live price, no purchase dialog.
+      // Read at tap time, because a refetch can clear it between frames.
       final price = PurchaseManager.onetimePrice.value;
       if (price.isEmpty) return;
       isMenuOpen.value = false;

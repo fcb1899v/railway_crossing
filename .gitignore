@@ -80,27 +80,21 @@ ios/Runner.xcodeproj/project.xcworkspace/xcuserdata/
 *.xcuserdatad/
 
 # Security and sensitive files
-# google-services.json / GoogleService-Info.plist are ignored since 2026-09-12.
-# Their API key values also ship inside every binary, so this does not make them
-# secret; it keeps them out of a public repo that is scanned automatically. The
-# build needs them, so after a fresh clone download both from the Firebase console
-# (Project settings > Your apps). `git rm --cached` leaves the working copy alone,
-# so an existing checkout keeps building.
+# google-services.json / GoogleService-Info.plist are ignored.
+# Their API key values also ship inside every binary, so this does not make them secret; it keeps them out of a public repo that is scanned automatically.
+# The build needs them, so after a fresh clone download both from the Firebase console (Project settings > Your apps).
+# `git rm --cached` leaves the working copy alone, so an existing checkout keeps building.
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
 assets/letscrossing-app-804542f853dd.json
 android/key.properties
-# firebase_options.dart is ignored since 2026-09-12. This does not make its API
-# keys secret: the same values sit in google-services.json / GoogleService-Info.plist
-# and inside every shipped binary. What it does is keep them out of the file that
-# GitHub's scanner flags. Pushing this file on 2026-09-06 was detected, reported to
-# Google through the secret scanning partner program, and the project was suspended
-# two days later. Run `flutterfire configure` after a fresh clone to regenerate it.
+# firebase_options.dart is ignored.
+# This does not make its API keys secret: the same values sit in google-services.json / GoogleService-Info.plist and inside every shipped binary.
+# What it does is keep them out of the file that GitHub's scanner flags, and a flagged file can get the Firebase project reported.
+# Run `flutterfire configure` after a fresh clone to regenerate it.
 lib/firebase_options.dart
-# Anything regenerable stays out (2026-09-18): `flutterfire configure` writes the
-# flutter section of firebase.json. Its firestore/storage/functions sections are
-# hand written and the tool does not bring them back, so functions/README.md
-# carries a copy of those three sections.
+# Anything regenerable stays out: `flutterfire configure` writes the flutter section of firebase.json.
+# Its firestore/storage/functions sections are hand written and the tool does not bring them back, so functions/README.md carries a copy of those three sections.
 firebase.json
 ios/firebase_app_id_file.json
 
@@ -124,12 +118,10 @@ ios/Flutter/flutter_export_environment.sh
 **/generated_plugin_registrant.*
 **/xcuserdata/
 
-# --- Signing assets (added 2026-09-06) ---
-# None of these are in any repository today. The rules exist so that a
-# certificate exported to the project directory for a one-off cannot be
-# committed by a later `git add -A`. Distribution certificates and the App
-# Store Connect key grant publishing rights, and a leak is not fixed by
-# deleting the file: the history keeps it.
+# --- Signing assets ---
+# None of these are in any repository today.
+# The rules exist so that a certificate exported to the project directory for a one-off cannot be committed by a later `git add -A`.
+# Distribution certificates and the App Store Connect key grant publishing rights, and a leak is not fixed by deleting the file: the history keeps it.
 *.p12
 *.p8
 *.cer

@@ -21,15 +21,16 @@ final appCheckReady = ValueNotifier<bool>(false);
 
 Future<void>? _firebaseReadyFuture;
 
-/// App Check + anonymous Auth. Shared Future; cleared on failure so callers can retry.
+/// App Check + anonymous Auth.
+/// Shared Future; cleared on failure so callers can retry.
 Future<void> ensureFirebaseReady() =>
     _firebaseReadyFuture ??= _activateFirebaseServices().catchError((Object e) {
       _firebaseReadyFuture = null;
       throw e;
     });
 
-/// Retries the launch bootstrap, and only while it is still down. Nothing else
-/// re-runs it, so a session that started offline stayed broken until a restart
+/// Retries the launch bootstrap, and only while it is still down.
+/// Nothing else re-runs it, so a session that started offline would stay broken until a restart.
 Future<void> retryAppCheckIfNeeded() async {
   if (appCheckReady.value) return;
   try {
@@ -41,8 +42,8 @@ Future<void> retryAppCheckIfNeeded() async {
   }
 }
 
-/// Forces a fresh App Check JWT. For the retry after a rejection: the Functions
-/// SDK attaches the token itself, so nothing has to be fetched before a call
+/// Forces a fresh App Check JWT, for the retry after a rejection.
+/// The Functions SDK attaches the token itself, so nothing has to be fetched before a call.
 Future<String> refreshAppCheckToken() async {
   await ensureFirebaseReady();
   final token = await _getAppCheckToken(forceRefresh: true);
@@ -69,8 +70,8 @@ Future<void> _activateFirebaseServices() async {
   'Firebase anonymous auth: ${FirebaseAuth.instance.currentUser?.uid}'.debugPrint();
 }
 
-/// Returns a real App Check JWT, or throws. Native SDKs can return a non-empty
-/// placeholder after attestation failure ("Decoding App Check token failed" server side).
+/// Returns a real App Check JWT, or throws.
+/// Native SDKs can return a non-empty placeholder after attestation failure ("Decoding App Check token failed" server side).
 Future<String> _obtainValidAppCheckToken() async {
   var token = await _getAppCheckToken(forceRefresh: false);
   if (_isValidAppCheckJwt(token)) {
@@ -129,7 +130,8 @@ bool _isValidAppCheckJwt(String? token) {
 /// ===== PURCHASE INITIALIZATION =====
 Future<void>? _purchaseInitFuture;
 
-/// RevenueCat configure. Shared Future across concurrent callers.
+/// RevenueCat configure.
+/// Shared Future across concurrent callers.
 Future<void> ensurePurchaseInitialized() =>
     _purchaseInitFuture ??= _configurePurchases();
 
@@ -148,7 +150,8 @@ Future<void> _configurePurchases() async {
 
 typedef ProgressPusher = Future<void> Function({required int tickets, required int expiration, required int lastClaimed});
 
-/// Adds the one-time pass tickets and ad-free month. Reads the state after its awaits, then writes without one, so a grant adds to the tickets the previous one left
+/// Adds the one-time pass tickets and ad-free month.
+/// Reads the state after its awaits, then writes without one, so a grant adds to the tickets the previous one left.
 Future<void> grantOnetimePlan(ProviderContainer container, {
   Future<int> Function() serverTime = getServerDateTime,
   ProgressPusher? pushProgress,
