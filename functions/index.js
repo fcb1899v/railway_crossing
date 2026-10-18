@@ -519,8 +519,8 @@ exports.generateTrainPhoto = onCall(
     );
     const cachedCount = cachedFiles.length;
 
-    let images = [];
-    let usedCache = false;
+    let images;
+    let usedCache;
 
     if (mode === "daily") {
       // Daily free: build cache until 9; then return 1 cached image only.

@@ -17,5 +17,10 @@
     "firebase-functions": "^7.4.0",
     "google-auth-library": "^9.15.1"
   },
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.13.0",
+    "globals": "^17.13.0"
+  }
 }
