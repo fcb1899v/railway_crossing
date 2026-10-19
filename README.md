@@ -51,6 +51,10 @@ The function runs in `us-central1`, and the app calls that same region through `
 - **WebView**: webview_flutter
 - **UI Components**: fab_circular_menu_plus
 - **Ticket Sync**: games_services (Game Center / Play Games), cloud_firestore
+- **Launch splash**: shown for at least 3 seconds and at most 5 seconds from launch (`lib/splash_hold.dart`); its colour, image and size are set in `lib/splash_config.dart`.
+  Android draws it in Flutter, so the window takes input at once; touches and the back button do nothing while it is up.
+  iOS keeps Apple's launch screen for the same time.
+  The consent form and the banner request wait until it is gone.
 
 ## 📋 Prerequisites
 

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +8,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'extension.dart';
 import 'dart:io';
 import 'constant.dart';
+import 'splash_hold.dart';
 
 // Shared one-shot start of the Mobile Ads SDK, called by every ad load once canRequestAds allows it.
 // Dropped on failure so a later request can retry; returns null, never throws.
@@ -28,7 +30,12 @@ Future<InitializationStatus?> _startMobileAds() async {
 /// ===== AD BANNER WIDGET CLASS =====
 // Ad Banner Widget - Handles Google AdMob banner advertisement display
 class AdBannerWidget extends HookWidget {
-  const AdBannerWidget({super.key});
+  const AdBannerWidget({super.key, this.hold});
+
+  /// The launch splash to wait for; the app-wide [splashHold] when null.
+  /// Tests pass their own.
+  final SplashHold? hold;
+
   @override
   Widget build(BuildContext context) {
 
@@ -125,9 +132,11 @@ class AdBannerWidget extends HookWidget {
     final slotWidthRef = useRef<int>(0);
     final hasWidth = useState(false);
 
-    // Initialize ad consent and load banner ad with proper lifecycle management
-    useEffect(() {
-      if (!hasWidth.value) return null;
+    // The consent form, like the banner, waits for the launch splash to go, so it never appears over the splash.
+    // The slot width is read after the wait, because the layout can change meanwhile.
+    Future<void> requestConsent() async {
+      await (hold ?? splashHold).hidden();
+      if (!context.mounted) return;
       final slotWidth = slotWidthRef.value;
       ConsentInformation.instance.requestConsentInfoUpdate(ConsentRequestParameters(
         // consentDebugSettings: ConsentDebugSettings(
@@ -148,6 +157,12 @@ class AdBannerWidget extends HookWidget {
         "error: ${error.errorCode}: ${error.message}".debugPrint();
         await requestAdIfAllowed(slotWidth);
       });
+    }
+
+    // Initialize ad consent and load banner ad with proper lifecycle management
+    useEffect(() {
+      if (!hasWidth.value) return null;
+      unawaited(requestConsent());
       "bannerAd: ${bannerAd.value}".debugPrint();
       return () => bannerAd.value?.dispose();      // Dispose ad on unmount
     }, [hasWidth.value]);

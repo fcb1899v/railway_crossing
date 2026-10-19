@@ -7,7 +7,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:railroad_crossing/photo.dart';
 import 'package:vibration/vibration.dart';
-import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'splash_hold.dart';
 import 'common_widget.dart';
 import 'extension.dart';
 import 'common_function.dart';
@@ -141,7 +141,7 @@ class HomePage extends HookConsumerWidget {
     useEffect(() {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         await setNormalState();
-        FlutterNativeSplash.remove();
+        await splashHold.removeWhenReady();
         // Price prefetch after launch work plus a delay; configure stays where main() puts it
         unawaited(PurchaseManager.prefetchOnetimePrice());
         try {

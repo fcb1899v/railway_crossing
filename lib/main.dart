@@ -7,6 +7,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:railroad_crossing/extension.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'splash_hold.dart';
 import 'l10n/app_localizations.dart' show AppLocalizations;
 import 'firebase_options.dart';
 import 'common_function.dart';
@@ -112,7 +113,13 @@ late final ProviderContainer appContainer;
 /// No ATT call here, because on iOS the UMP form raises the system ATT prompt itself and asking again would show a second explainer.
 Future<void> main() async {
   final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
-  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  splashHold.start();
+  // iOS keeps the native splash; Android draws SplashOverlay as the first Flutter frame instead
+  if (Platform.isAndroid) {
+    await splashHold.loadImage();
+  } else {
+    FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  }
   /// ===== UI CONFIGURATION =====
   // Configure system UI, orientation, and platform-specific styling
   await SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
@@ -180,7 +187,7 @@ class MyApp extends StatelessWidget {
     /// ===== Routing =====
     // Navigation routes to different app screens
     initialRoute: "/h",
-    routes: {'/h' : (_) => HomePage()},
+    routes: {'/h' : (_) => SplashOverlay(child: HomePage())},
     /// ===== Navigation Observers =====
     // Track navigation for analytics and debugging
     navigatorObservers: <NavigatorObserver>[

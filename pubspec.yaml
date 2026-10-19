@@ -119,6 +119,7 @@ flutter:
     - assets/audios/us/
     - assets/fonts/
     - assets/.env
+    - assets/icon/icon.png
     - assets/
 
   fonts:
