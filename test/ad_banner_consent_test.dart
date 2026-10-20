@@ -22,7 +22,7 @@ void main() {
     adCalls = [];
     canRequestAds = true;
     umpCalls = [];
-    hold = SplashHold(elapsed: () => splashMaxDuration, delay: (_) async {}, remove: () {});
+    hold = SplashHold(elapsed: () => splashMinDuration, delay: (_) async {}, remove: () {});
     final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
     // Consent is already given unless a test sets canRequestAds to false
     messenger.setMockMessageHandler(_ump, (message) async {

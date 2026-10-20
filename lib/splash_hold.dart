@@ -12,9 +12,6 @@ import 'splash_config.dart';
 /// The shortest time the launch splash stays on screen, counted from the start of main().
 const splashMinDuration = Duration(seconds: 3);
 
-/// The longest time the launch splash stays on screen, counted from the start of main().
-const splashMaxDuration = Duration(seconds: 5);
-
 /// The longest side, in pixels, the splash image is decoded to.
 const splashMaxImageSide = 1024;
 
@@ -30,7 +27,7 @@ int splashTargetWidth({required int sourceWidth, required int sourceHeight, doub
   return math.max(width, 1);
 }
 
-/// Keeps the launch splash up for at least [minDuration] after launch, and never past [maxDuration].
+/// Keeps the launch splash up for at least [minDuration] after launch, until the first page asks to remove it.
 /// iOS keeps the native splash (FlutterNativeSplash.preserve).
 /// Android shows [SplashOverlay] as the first Flutter frame instead, so the window is drawn and takes input at once:
 /// a key pressed while no window is drawn waits, and after 5 s Android reports the app as not responding.
@@ -38,7 +35,6 @@ class SplashHold {
   /// [elapsed], [delay] and [remove] can be replaced in tests.
   SplashHold({
     this.minDuration = splashMinDuration,
-    this.maxDuration = splashMaxDuration,
     this.elapsed,
     Future<void> Function(Duration)? delay,
     void Function()? remove,
@@ -46,12 +42,10 @@ class SplashHold {
         _remove = remove ?? FlutterNativeSplash.remove;
 
   final Duration minDuration;
-  final Duration maxDuration;
   final Duration Function()? elapsed;
   final Future<void> Function(Duration) _delay;
   final void Function() _remove;
   final Stopwatch _stopwatch = Stopwatch();
-  final List<Future<void>> _work = [];
   bool _removed = false;
 
   /// True while the Flutter splash covers the app. [SplashOverlay] listens to it.
@@ -60,12 +54,8 @@ class SplashHold {
   /// The splash image, decoded before runApp so the very first frame already has it.
   ui.Image? image;
 
-  /// Starts the clock, and a timer that removes the splash at [maxDuration] even when the page never asks.
-  /// Call it first in main().
-  void start() {
-    _stopwatch.start();
-    unawaited(_delay(maxDuration).then((_) => removeWhenReady()));
-  }
+  /// Starts the clock. Call it first in main().
+  void start() => _stopwatch.start();
 
   /// Completes once the splash is gone.
   Future<void> hidden() {
@@ -81,9 +71,6 @@ class SplashHold {
   }
 
   Duration get _elapsed => elapsed?.call() ?? _stopwatch.elapsed;
-
-  /// Startup work the splash waits for, up to [maxDuration]. Its failure does not keep the splash up.
-  void track(Future<void> work) => _work.add(work.catchError((Object e) => debugPrint('Startup work: $e')));
 
   /// Decodes [splashImageAsset] for [SplashOverlay], no larger than it is drawn. Failure leaves the plain background.
   Future<void> loadImage() async {
@@ -116,17 +103,13 @@ class SplashHold {
     return left > Duration.zero ? left : Duration.zero;
   }
 
-  /// Waits out the remaining time and the tracked work (never past [maxDuration]), then removes the splash once.
+  /// Waits out the remaining time, then removes the splash once.
   /// It touches no widget, so it is safe to finish after the caller was disposed.
   Future<void> removeWhenReady() async {
     if (_removed) return;
     _removed = true;
     final wait = remaining();
     if (wait > Duration.zero) await _delay(wait);
-    final left = maxDuration - _elapsed;
-    if (_work.isNotEmpty && left > Duration.zero) {
-      await Future.any([Future.wait(_work), _delay(left)]);
-    }
     _remove();
     visible.value = false;
     debugPrint('Splash removed at ${_elapsed.inMilliseconds} ms');

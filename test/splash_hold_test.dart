@@ -18,9 +18,8 @@ void main() {
     removes = 0;
   });
 
-  test('the minimum is 3 seconds and the cap is 5 seconds', () {
+  test('the minimum is 3 seconds', () {
     expect(splashMinDuration, const Duration(seconds: 3));
-    expect(splashMaxDuration, const Duration(seconds: 5));
   });
 
   test('1 s elapsed waits 2 s, then removes', () async {
@@ -62,104 +61,9 @@ void main() {
   });
 
   test('the real clock waits about 3 s when just started', () {
-    // The timer start() sets never completes, so no real timer is left behind
-    final h = SplashHold(delay: (_) => Completer<void>().future)..start();
+    final h = SplashHold()..start();
     expect(h.remaining(), greaterThan(const Duration(milliseconds: 2500)));
     expect(h.remaining(), lessThanOrEqualTo(splashMinDuration));
-  });
-
-  group('the cap', () {
-    test('start() sets a timer for the cap, and the splash goes when no page asks', () async {
-      final h = SplashHold(
-        elapsed: () => splashMaxDuration,
-        delay: (d) async => waits.add(d),
-        remove: () => removes++,
-      )..start();
-      await Future<void>.delayed(Duration.zero);
-      expect(waits.first, splashMaxDuration);
-      expect(h.visible.value, isFalse);
-      expect(removes, 1);
-    });
-
-    test('the page asking first and the timer later remove once', () async {
-      final h = SplashHold(
-        elapsed: () => splashMaxDuration,
-        delay: (d) async => waits.add(d),
-        remove: () => removes++,
-      )..start();
-      await h.removeWhenReady();
-      await Future<void>.delayed(Duration.zero);
-      expect(removes, 1);
-    });
-
-    test('the splash stays up until the timer completes, then goes', () async {
-      var now = const Duration(seconds: 1);
-      final timer = Completer<void>();
-      final h = SplashHold(
-        elapsed: () => now,
-        delay: (_) => timer.future,
-        remove: () => removes++,
-      )..start();
-      await Future<void>.delayed(Duration.zero);
-      expect(h.visible.value, isTrue);
-      expect(removes, 0);
-      now = splashMaxDuration;
-      timer.complete();
-      await Future<void>.delayed(Duration.zero);
-      expect(h.visible.value, isFalse);
-      expect(removes, 1);
-    });
-  });
-
-  group('startup work', () {
-    late Duration now;
-    late List<Duration> delays;
-    late int removed;
-
-    SplashHold workHold() => SplashHold(
-          elapsed: () => now,
-          // The fake delay moves the clock, so the 5 s cap is measured from the same start
-          delay: (d) async {
-            delays.add(d);
-            now += d;
-          },
-          remove: () => removed++,
-        );
-
-    setUp(() {
-      now = Duration.zero;
-      delays = [];
-      removed = 0;
-    });
-
-    test('work done before 3 s: removed at 3 s', () async {
-      final h = workHold()..track(Future<void>.value());
-      await h.removeWhenReady();
-      expect(delays.first, const Duration(seconds: 3));
-      expect(removed, 1);
-      expect(h.visible.value, isFalse);
-    });
-
-    test('work never ends: removed at the 5 s cap', () async {
-      final h = workHold()..track(Completer<void>().future);
-      await h.removeWhenReady();
-      expect(delays, [const Duration(seconds: 3), const Duration(seconds: 2)]);
-      expect(removed, 1);
-    });
-
-    test('failed work does not keep the splash up', () async {
-      final h = workHold()..track(Future<void>.error(StateError('offline')));
-      await h.removeWhenReady();
-      expect(removed, 1);
-    });
-
-    test('past the cap already: no wait for the work', () async {
-      now = const Duration(seconds: 6);
-      final h = workHold()..track(Completer<void>().future);
-      await h.removeWhenReady();
-      expect(delays, isEmpty);
-      expect(removed, 1);
-    });
   });
 
   group('image size', () {
