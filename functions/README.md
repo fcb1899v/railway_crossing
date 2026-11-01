@@ -96,7 +96,8 @@ Cache folders are keyed on country, train and spot, so changing the English prom
    ```
 
 8. Register App Check **debug tokens** for local and emulator builds, **one per platform** (`APPCHECK_DEBUG_TOKEN_ANDROID`, `APPCHECK_DEBUG_TOKEN_IOS`).
-   The app reads them from `assets/.env` through dotenv (`lib/constant.dart`), so the value registered in the console must be the value already in that file, not a freshly generated one.
+   A debug run reads them only from the file passed with `--dart-define-from-file` (`lib/constant.dart`), so register the values in that file; the app's README describes the file.
+   Run without that file and the SDK generates a token per install and prints it to the log, so register that token instead.
    Treat a registered debug token as a credential, and revoke it if the build leaves your hands.
 
 9. Register the **production** App Check providers.

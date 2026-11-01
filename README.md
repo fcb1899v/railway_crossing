@@ -84,6 +84,7 @@ flutter pub get
 The template lists every key with what it is for, and is the one place that list is maintained.
 `pubspec.yaml` declares `assets/.env`, so the file has to exist or the build fails.
 Ad unit ids are not in this file: debug builds use Google's demo ad units, and release builds take the production ids from a separate file (see **Ad unit ids** below).
+App Check debug tokens are not in this file either (see **App Check debug tokens** below).
 
 **Android signing, release only.** The signing file lives outside the repository, at `~/key/keystore/key.properties` or at the path in the `ANDROID_KEY_PROPERTIES` environment variable.
 Use `android/key.properties.example` as the template.
@@ -113,6 +114,24 @@ Gradle runs this check for Android, and the Xcode build phase `Verify release de
 An Xcode archive uses the defines of the last `flutter` command, so run `flutter build ios --release --dart-define-from-file=<ad-unit-file>` right before archiving.
 Debug and profile builds use Google's demo ad units and need nothing passed.
 The demo unit for an inline adaptive request is not the same id as the fixed-size one (`lib/constant.dart`).
+
+**App Check debug tokens, debug only.** Debug builds use the App Check debug provider, and release builds use Play Integrity and DeviceCheck (`lib/constant.dart`).
+To use fixed debug tokens, keep them in a file of your own outside the repository and pass it when you run a debug build.
+The file holds one `KEY=value` line per platform:
+
+```text
+APPCHECK_DEBUG_TOKEN_ANDROID=<your Android debug token>
+APPCHECK_DEBUG_TOKEN_IOS=<your iOS debug token>
+```
+
+```bash
+flutter run -d <device-id> --dart-define-from-file=<app-check-file>
+```
+
+Register each value under Firebase Console -> App Check -> the app -> Manage debug tokens; Android and iOS are separate App Check apps, so the two values differ.
+Run without the file and the SDK generates a token per install and prints it to the log, so register that token instead.
+Never pass this file to a release build: any key starting with `APPCHECK_` stops it, as described above.
+A registered debug token passes App Check from anywhere, so delete it from the Firebase Console when you are done with the device.
 
 ### 4. Firebase Configuration
 

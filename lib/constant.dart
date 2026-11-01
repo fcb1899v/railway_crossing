@@ -96,13 +96,14 @@ final revenueCatApiKey = dotenv.get((Platform.isIOS || Platform.isMacOS) ?
   "REVENUE_CAT_IOS_API_KEY":
   "REVENUE_CAT_ANDROID_API_KEY"
 );
-// App Check debug tokens come from .env, never source (public repo), one per platform.
-// Register: firebase appcheck:debugtokens:create <token> --app <appId>
+// Debug builds use a fixed token only when the run passes it with --dart-define-from-file; otherwise the SDK logs a per-install token.
+const String _appCheckDebugTokenAndroid = String.fromEnvironment('APPCHECK_DEBUG_TOKEN_ANDROID');
+const String _appCheckDebugTokenIos = String.fromEnvironment('APPCHECK_DEBUG_TOKEN_IOS');
 final androidAppCheckProvider = kDebugMode
-    ? AndroidDebugProvider(debugToken: dotenv.env['APPCHECK_DEBUG_TOKEN_ANDROID'])
+    ? AndroidDebugProvider(debugToken: _appCheckDebugTokenAndroid.isEmpty ? null : _appCheckDebugTokenAndroid)
     : const AndroidPlayIntegrityProvider();
 final appleAppCheckProvider = kDebugMode
-    ? AppleDebugProvider(debugToken: dotenv.env['APPCHECK_DEBUG_TOKEN_IOS'])
+    ? AppleDebugProvider(debugToken: _appCheckDebugTokenIos.isEmpty ? null : _appCheckDebugTokenIos)
     : const AppleDeviceCheckProvider();
 const appCheckTokenTimeout = Duration(seconds: 12);
 // Game Center / Play Games sign-in must not block launch forever when offline.
