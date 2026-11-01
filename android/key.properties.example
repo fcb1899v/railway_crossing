@@ -1,16 +1,17 @@
-# Template for android/key.properties, which is untracked. Copy this to that
-# name and fill in the values. android/app/build.gradle reads all four keys.
+# Template for the release signing file.
+# Copy it outside the repository to ~/key/keystore/key.properties, or to the path in ANDROID_KEY_PROPERTIES, and fill in the values.
+# android/app/build.gradle reads all four keys.
 #
-# Unlike assets/.env, nothing here ships inside the app, and storePassword and
-# keyPassword are real secrets: together with the keystore they let anyone
-# publish an update that Play accepts as coming from you. Keep the keystore
-# itself outside the repository, and keep a backup of both. A lost upload key
-# can be reset through Play support; a lost app signing key cannot.
+# Unlike assets/.env, nothing here ships inside the app, and storePassword and keyPassword are real secrets: together with the keystore they let anyone publish an update that Play accepts as coming from you.
+# Keep the keystore itself outside the repository, and keep a backup of both.
+# A lost upload key can be reset through Play support; a lost app signing key cannot.
 #
-# Release builds fall back to the debug signing config when this file is
-# absent, which produces an artifact Play rejects.
+# Only release builds read this file.
+# Debug, profile, flutter test and flutter analyze do not.
+# A release build stops with a reason when the file is unreadable, a value is missing, or storeFile is not an absolute path.
 
-# Absolute path to the .jks, or a path relative to android/.
+# Absolute path to the .jks.
+# A relative path is rejected.
 storeFile=
 
 storePassword=

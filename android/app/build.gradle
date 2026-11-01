@@ -24,10 +24,24 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
-def keystoreProperties = new Properties()
-def keystorePropertiesFile = rootProject.file('key.properties')
-if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+// Release signing reads a file outside the repository, and only when a release output is requested.
+def releaseSigningTasks = ['assembleRelease', 'bundleRelease', ':app:assembleRelease', ':app:bundleRelease']
+def releaseSigningRequested = gradle.startParameter.taskNames.any { it in releaseSigningTasks }
+def keyPropertiesPath = System.getenv('ANDROID_KEY_PROPERTIES') ?: "${System.getProperty('user.home')}/key/keystore/key.properties"
+def keystoreProperties = new java.util.Properties()
+if (releaseSigningRequested) {
+    try {
+        new File(keyPropertiesPath).withReader('UTF-8') { keystoreProperties.load(it) }
+    } catch (IOException e) {
+        throw new GradleException("Release signing: cannot read ${keyPropertiesPath} (${e.message}). Create it from android/key.properties.example, or point ANDROID_KEY_PROPERTIES at it.")
+    }
+    def missing = ['storeFile', 'storePassword', 'keyAlias', 'keyPassword'].findAll { !keystoreProperties.getProperty(it) }
+    if (missing) {
+        throw new GradleException("Release signing: ${keyPropertiesPath} has no ${missing.join(', ')}.")
+    }
+    if (!new File(keystoreProperties.getProperty('storeFile')).isAbsolute()) {
+        throw new GradleException("Release signing: storeFile in ${keyPropertiesPath} must be an absolute path.")
+    }
 }
 
 android {
@@ -67,10 +81,12 @@ android {
 
     signingConfigs {
         release {
-            keyAlias keystoreProperties['keyAlias']
-            keyPassword keystoreProperties['keyPassword']
-            storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
-            storePassword keystoreProperties['storePassword']
+            if (releaseSigningRequested) {
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+                storeFile new File(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+            }
         }
     }
 
@@ -93,6 +109,17 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 }
+
+// A release built under any other task name (an abbreviation such as bR, or Android Studio) would skip the key file above.
+def verifyReleaseSigning = tasks.register('verifyReleaseSigning') {
+    def requested = releaseSigningRequested
+    doLast {
+        if (!requested) {
+            throw new GradleException('Release signing: run assembleRelease or bundleRelease by its full name so the key file is read.')
+        }
+    }
+}
+tasks.matching { it.name == 'assembleRelease' || it.name == 'bundleRelease' }.configureEach { dependsOn verifyReleaseSigning }
 
 flutter {
     source '../..'
