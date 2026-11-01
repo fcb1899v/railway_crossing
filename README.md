@@ -83,16 +83,36 @@ flutter pub get
 **Environment variables.** Copy `assets/.env_example` to `assets/.env` and fill in the values.
 The template lists every key with what it is for, and is the one place that list is maintained.
 `pubspec.yaml` declares `assets/.env`, so the file has to exist or the build fails.
-Debug builds use Google's demo ad units and need no real ids, and the demo unit for an inline adaptive request is not the same id as the fixed-size one.
+Ad unit ids are not in this file: debug builds use Google's demo ad units, and release builds take the production ids from a separate file (see **Ad unit ids** below).
 
 **Android signing, release only.** The signing file lives outside the repository, at `~/key/keystore/key.properties` or at the path in the `ANDROID_KEY_PROPERTIES` environment variable.
 Use `android/key.properties.example` as the template.
 Nothing in it ships inside the app, and the two passwords are real secrets: together with the keystore they let anyone publish an update Play accepts as coming from you.
 Keep the keystore outside the repository and back both up.
 Only release builds read this file, so debug, profile, `flutter test` and `flutter analyze` do not need it.
-Build the release with `flutter build appbundle`.
+Build the release with `flutter build appbundle --dart-define-from-file=<ad-unit-file>`, where the ad unit file is the one described next.
 If you run Gradle yourself, give the full task name `assembleRelease` or `bundleRelease`, because an abbreviation such as `bR` stops the build.
 A release build stops with a reason if the file cannot be read, a value is missing, or `storeFile` is not an absolute path.
+
+**Ad unit ids, release only.** The production AdMob banner ad unit ids are not in the repository or in `assets/.env`.
+Keep them in a file outside the repository and pass it to every release build with `--dart-define-from-file`.
+The file holds one `KEY=value` line per id:
+
+```text
+ANDROID_BANNER_UNIT_ID=<your Android banner ad unit id>
+IOS_BANNER_UNIT_ID=<your iOS banner ad unit id>
+```
+
+```bash
+flutter build appbundle --dart-define-from-file=<ad-unit-file>
+flutter build ios --release --dart-define-from-file=<ad-unit-file>
+```
+
+A release build stops with a reason if the id for its platform is missing, or if any key starting with `APPCHECK_` is passed.
+Gradle runs this check for Android, and the Xcode build phase `Verify release defines` runs it for iOS.
+An Xcode archive uses the defines of the last `flutter` command, so run `flutter build ios --release --dart-define-from-file=<ad-unit-file>` right before archiving.
+Debug and profile builds use Google's demo ad units and need nothing passed.
+The demo unit for an inline adaptive request is not the same id as the fixed-size one (`lib/constant.dart`).
 
 ### 4. Firebase Configuration
 
@@ -223,15 +243,17 @@ Every Firebase plugin requires its own `firebase-ios-sdk` with `exact:`, and one
 All six are pinned without a caret in `pubspec.yaml`, so bump them together.
 
 ### Build
+
+Release builds need the ad unit file, and Android release builds also need the signing file, both described in **Configuration Files Setup**.
 ```bash
 # Android APK
-flutter build apk
+flutter build apk --dart-define-from-file=<ad-unit-file>
 
 # Android App Bundle
-flutter build appbundle
+flutter build appbundle --dart-define-from-file=<ad-unit-file>
 
 # iOS
-flutter build ios
+flutter build ios --release --dart-define-from-file=<ad-unit-file>
 ```
 
 ## 📄 License

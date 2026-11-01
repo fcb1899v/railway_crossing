@@ -2,13 +2,16 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'extension.dart';
 import 'dart:io';
 import 'constant.dart';
 import 'splash_hold.dart';
+
+// Production units arrive only through --dart-define-from-file on release builds; the build stops without them.
+const String _iosBannerUnitId = String.fromEnvironment('IOS_BANNER_UNIT_ID');
+const String _androidBannerUnitId = String.fromEnvironment('ANDROID_BANNER_UNIT_ID');
 
 // Shared one-shot start of the Mobile Ads SDK, called by every ad load once canRequestAds allows it.
 // Dropped on failure so a later request can retry; returns null, never throws.
@@ -55,9 +58,9 @@ class AdBannerWidget extends HookWidget {
     /// ===== AD UNIT ID CONFIGURATION =====
     // Get appropriate banner ad unit ID based on platform and debug mode
     String bannerUnitId() =>
-        (!kDebugMode && (Platform.isIOS || Platform.isMacOS)) ? dotenv.get("IOS_BANNER_UNIT_ID"):
+        (kReleaseMode && (Platform.isIOS || Platform.isMacOS)) ? _iosBannerUnitId:
         (Platform.isIOS || Platform.isMacOS) ? iosBannerTestId:
-        (!kDebugMode) ? dotenv.get("ANDROID_BANNER_UNIT_ID"):
+        (kReleaseMode) ? _androidBannerUnitId:
         androidBannerTestId;
 
     /// ===== AD LOADING METHODS =====

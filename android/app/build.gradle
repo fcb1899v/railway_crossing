@@ -121,6 +121,25 @@ def verifyReleaseSigning = tasks.register('verifyReleaseSigning') {
 }
 tasks.matching { it.name == 'assembleRelease' || it.name == 'bundleRelease' }.configureEach { dependsOn verifyReleaseSigning }
 
+// Production ad unit ids come only from --dart-define-from-file, and debug-only values must never ride along in a release.
+def requiredReleaseDefines = ['ANDROID_BANNER_UNIT_ID']
+def verifyReleaseDefines = tasks.register('verifyReleaseDefines') {
+    def encoded = (project.findProperty('dart-defines') ?: '').toString()
+    doLast {
+        def values = encoded.split(',').findAll { it }.collect { new String(it.decodeBase64(), 'UTF-8') }
+            .collectEntries { def i = it.indexOf('='); i < 0 ? [:] : [(it.substring(0, i)): it.substring(i + 1)] }
+        def missing = requiredReleaseDefines.findAll { !values[it] }
+        if (missing) {
+            throw new GradleException("Release: --dart-define-from-file gave no ${missing.join(', ')}. Pass the ad unit file outside the repository.")
+        }
+        def debugOnly = values.keySet().findAll { it.startsWith('APPCHECK_') }
+        if (debugOnly) {
+            throw new GradleException("Release: ${debugOnly.join(', ')} is debug-only and must not be passed to a release build.")
+        }
+    }
+}
+tasks.matching { it.name == 'assembleRelease' || it.name == 'bundleRelease' }.configureEach { dependsOn verifyReleaseDefines }
+
 flutter {
     source '../..'
 }

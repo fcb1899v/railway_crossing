@@ -141,6 +141,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 97C147051CF9000F007C117D /* Build configuration list for PBXNativeTarget "Runner" */;
 			buildPhases = (
+				406DA9108D63BF69F6C6E8A8 /* Verify release defines */,
 				9740EEB61CF901F6004384FC /* Run Script */,
 				97C146EA1CF9000F007C117D /* Sources */,
 				97C146EB1CF9000F007C117D /* Frameworks */,
@@ -249,6 +250,21 @@
 			shellPath = /bin/sh;
 			shellScript = "if [ \"${CONFIGURATION}\" = \"Debug\" ]; then exit 0; fi\nmkdir -p \"${DWARF_DSYM_FOLDER_PATH}\"\nFRAMEWORK_PATH=\"${TARGET_BUILD_DIR}/${WRAPPER_NAME}/Frameworks/objective_c.framework\"\nif [ ! -d \"$FRAMEWORK_PATH\" ]; then\n  FRAMEWORK_PATH=$(find \"${TARGET_BUILD_DIR}\" -name \"objective_c.framework\" -type d 2>/dev/null | head -1)\nfi\nif [ -n \"$FRAMEWORK_PATH\" ] && [ -d \"$FRAMEWORK_PATH\" ]; then\n  dsymutil \"$FRAMEWORK_PATH\" -o \"${DWARF_DSYM_FOLDER_PATH}/objective_c.framework.dSYM\" 2>/dev/null || true\nfi\n";
 			showEnvVarsInLog = 0;
+		};
+		406DA9108D63BF69F6C6E8A8 /* Verify release defines */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Verify release defines";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Production ad unit ids come only from --dart-define-from-file; debug-only values must never reach a release.\n[ \"$CONFIGURATION\" = \"Release\" ] || exit 0\ndefines=$(echo \"${DART_DEFINES:-}\" | tr ',' '\\n' | while read -r d; do [ -n \"$d\" ] && echo \"$d\" | base64 --decode && echo; done)\nfor key in IOS_BANNER_UNIT_ID; do\n  echo \"$defines\" | grep -q \"^${key}=.\" || { echo \"error: Release: --dart-define-from-file gave no ${key}.\"; exit 1; }\ndone\nif echo \"$defines\" | grep -q '^APPCHECK_'; then echo \"error: Release: App Check debug values must not be passed to a release build.\"; exit 1; fi";
 		};
 		9740EEB61CF901F6004384FC /* Run Script */ = {
 			isa = PBXShellScriptBuildPhase;
