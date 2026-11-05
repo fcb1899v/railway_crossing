@@ -121,24 +121,48 @@ def verifyReleaseSigning = tasks.register('verifyReleaseSigning') {
 }
 tasks.matching { it.name == 'assembleRelease' || it.name == 'bundleRelease' }.configureEach { dependsOn verifyReleaseSigning }
 
-// Production ad unit ids come only from --dart-define-from-file, and debug-only values must never ride along in a release.
-def requiredReleaseDefines = ['ANDROID_BANNER_UNIT_ID']
-def verifyReleaseDefines = tasks.register('verifyReleaseDefines') {
+// Release builds read the production ad unit ids from assets/.env, so a missing, malformed or Google demo id stops them here.
+// Debug-only App Check values must never ride along in a release, neither as a define nor in assets/.env.
+def requiredReleaseEnvKeys = ['ANDROID_BANNER_UNIT_ID']
+def releaseEnvFile = rootProject.file('../assets/.env')
+def verifyReleaseConfig = tasks.register('verifyReleaseConfig') {
     def encoded = (project.findProperty('dart-defines') ?: '').toString()
     doLast {
+        def lines
+        try {
+            lines = releaseEnvFile.readLines('UTF-8')
+        } catch (IOException e) {
+            throw new GradleException("Release: cannot read assets/.env (${e.message}). Copy assets/.env_example to assets/.env and fill it in.")
+        }
+        // The first line for a key wins, as in flutter_dotenv; a trailing comment and surrounding quotes are dropped.
+        def env = [:]
+        lines.each { line ->
+            def m = line =~ /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=(.*)$/
+            if (m.find() && !env.containsKey(m.group(1))) {
+                env[m.group(1)] = m.group(2).replaceFirst(/#.*/, '').trim().replaceFirst(/^(["'])(.*)\1$/, '$2')
+            }
+        }
+        // Key names only in the messages: the values stay out of build logs.
+        def bad = requiredReleaseEnvKeys.findAll { key ->
+            def value = env[key] ?: ''
+            !(value ==~ /ca-app-pub-[0-9]+\/[0-9]+/) || value.startsWith('ca-app-pub-3940256099942544/')
+        }
+        if (bad) {
+            throw new GradleException("Release: assets/.env has no production ad unit id in ${bad.join(', ')} (missing, malformed or a Google demo unit).")
+        }
+        def envDebugOnly = env.keySet().findAll { it.startsWith('APPCHECK_') }
+        if (envDebugOnly) {
+            throw new GradleException("Release: ${envDebugOnly.join(', ')} is debug-only and must not be in assets/.env, which ships inside the app.")
+        }
         def values = encoded.split(',').findAll { it }.collect { new String(it.decodeBase64(), 'UTF-8') }
             .collectEntries { def i = it.indexOf('='); i < 0 ? [:] : [(it.substring(0, i)): it.substring(i + 1)] }
-        def missing = requiredReleaseDefines.findAll { !values[it] }
-        if (missing) {
-            throw new GradleException("Release: --dart-define-from-file gave no ${missing.join(', ')}. Pass the ad unit file outside the repository.")
-        }
         def debugOnly = values.keySet().findAll { it.startsWith('APPCHECK_') }
         if (debugOnly) {
             throw new GradleException("Release: ${debugOnly.join(', ')} is debug-only and must not be passed to a release build.")
         }
     }
 }
-tasks.matching { it.name == 'assembleRelease' || it.name == 'bundleRelease' }.configureEach { dependsOn verifyReleaseDefines }
+tasks.matching { it.name == 'assembleRelease' || it.name == 'bundleRelease' }.configureEach { dependsOn verifyReleaseConfig }
 
 flutter {
     source '../..'

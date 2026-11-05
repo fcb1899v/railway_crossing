@@ -141,7 +141,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 97C147051CF9000F007C117D /* Build configuration list for PBXNativeTarget "Runner" */;
 			buildPhases = (
-				406DA9108D63BF69F6C6E8A8 /* Verify release defines */,
+				406DA9108D63BF69F6C6E8A8 /* Verify release config */,
 				9740EEB61CF901F6004384FC /* Run Script */,
 				97C146EA1CF9000F007C117D /* Sources */,
 				97C146EB1CF9000F007C117D /* Frameworks */,
@@ -235,7 +235,7 @@
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" embed_and_thin";
 		};
-		406DA9108D63BF69F6C6E8A8 /* Verify release defines */ = {
+		406DA9108D63BF69F6C6E8A8 /* Verify release config */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -243,12 +243,12 @@
 			);
 			inputPaths = (
 			);
-			name = "Verify release defines";
+			name = "Verify release config";
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Production ad unit ids come only from --dart-define-from-file; debug-only values must never reach a release.\n[ \"$CONFIGURATION\" = \"Release\" ] || exit 0\ndefines=$(echo \"${DART_DEFINES:-}\" | tr ',' '\\n' | while read -r d; do [ -n \"$d\" ] && echo \"$d\" | base64 --decode && echo; done)\nfor key in IOS_BANNER_UNIT_ID; do\n  echo \"$defines\" | grep -q \"^${key}=.\" || { echo \"error: Release: --dart-define-from-file gave no ${key}.\"; exit 1; }\ndone\nif echo \"$defines\" | grep -q '^APPCHECK_'; then echo \"error: Release: App Check debug values must not be passed to a release build.\"; exit 1; fi";
+			shellScript = "# A release must take production ad unit ids from assets/.env and carry no debug-only value; only key names are printed.\n[ \"$CONFIGURATION\" = \"Release\" ] || exit 0\nenv_file=\"${SRCROOT}/../assets/.env\"\n[ -r \"$env_file\" ] || { echo \"error: Release: cannot read assets/.env.\"; exit 1; }\nfor key in IOS_BANNER_UNIT_ID; do\n  value=$(grep -E \"^[[:space:]]*(export[[:space:]]+)?${key}[[:space:]]*=\" \"$env_file\" | head -n 1 | sed -e 's/^[^=]*=//' -e 's/#.*$//' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's/^\"\\(.*\\)\"$/\\1/' -e \"s/^'\\(.*\\)'$/\\1/\")\n  case \"$value\" in ca-app-pub-3940256099942544/*) value=\"\" ;; esac\n  echo \"$value\" | grep -Eq '^ca-app-pub-[0-9]+/[0-9]+$' || { echo \"error: Release: assets/.env has no production ad unit id in ${key} (missing, malformed or a Google demo unit).\"; exit 1; }\ndone\nif grep -Eq '^[[:space:]]*(export[[:space:]]+)?APPCHECK_' \"$env_file\"; then echo \"error: Release: App Check debug values must not be in assets/.env, which ships inside the app.\"; exit 1; fi\ndefines=$(echo \"${DART_DEFINES:-}\" | tr ',' '\\n' | while read -r d; do [ -n \"$d\" ] && echo \"$d\" | base64 --decode && echo; done)\nif echo \"$defines\" | grep -q '^APPCHECK_'; then echo \"error: Release: App Check debug values must not be passed to a release build.\"; exit 1; fi";
 		};
 		8E3F2A1B4C5D6E7F8901A2B3 /* Generate dSYM for objective_c.framework */ = {
 			isa = PBXShellScriptBuildPhase;
